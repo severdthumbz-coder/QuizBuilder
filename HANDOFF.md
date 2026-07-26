@@ -1,11 +1,103 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.20.1 build 1 (stage `drag-reorder-sections`)
-**Status:** Builds green on Windows. 465 tests, 0 failures, 0 warnings.
-**Deliverable:** `/mnt/user-data/outputs/QuizBuilder.zip`
+**Last shipped:** v0.25.0 build 1 (stage `sequence-question`)
+**Status:** Builds green on Windows. Live on GitHub with green CI (both jobs).
+**Deliverable:** `/mnt/user-data/outputs/QuizBuilder_v25.zip`
 
 This document exists so a new chat can resume without re-reading the whole
-history. Read it top to bottom before touching code.
+history. Read §0 first for current state, then the rest as reference.
+
+---
+
+## 0. CURRENT STATE & RECENT WINS (read this first)
+
+### Where the project is right now
+- **Version 0.25.0** — the **Sequence question type** is complete, shipped, and
+  verified in real CI. The app now has **8 question types** (see §5).
+- **On GitHub for the first time.** Repo: `severdthumbz-coder/QuizBuilder`,
+  branch `main`. The push-first workflow (add/commit/push → wait for the green
+  checkmark → build locally) is now live for this project, matching the user's
+  other repos (Video Metadata Editor, TimerSuite, FileOrganizer).
+- **CI is green on both jobs** (`.github/workflows/build.yml`):
+  - `core-tests` (ubuntu) — restores/builds/tests the Tests project (Core comes
+    via project reference); runs the full xUnit suite with the *real* runner.
+  - `app-build` (windows) — publishes the WPF app as a self-contained
+    single-file exe. Previously never run; **now confirmed working.**
+
+### The Sequence question type (the headline feature of this arc)
+A taker drags items into the correct order; scoring is **adjacent-pair partial
+credit** (each correctly-ordered neighbouring pair earns a share of the points,
+so one misplaced item does not fail the whole question).
+- **Model:** `SequenceQuestion` with `Items` in correct order (the answer key).
+- **Presentation:** the shuffle the taker sees is a *projection* on the compiled
+  question — `CompiledQuestion.SequencePresentation` (a permutation of item
+  indices). The model's `Items` are never reordered. Mirrors how
+  `MatchingOptions` works. Guard: **never the identity permutation for n≥2** when
+  randomising (Fisher-Yates with a rotate-by-one fallback). With randomisation
+  off, presents in correct order (author's choice, like fixed-order matching).
+- **Wired end-to-end (all 8 App integration points + Core):** grader, compiler,
+  HTML/Word/Excel/self-grading-web exporters, Excel import, preview, editor VM +
+  DataTemplate (with move up/down), take-view drag UI (reuses the existing
+  `ListReorderDropTarget`, so the drag-down off-by-one fix is inherited),
+  picker, `CreateQuestion`, editor factory, settings default-points row, and
+  **pause/resume persistence** (`SequencePresentation` is saved in the paused
+  snapshot and restored — without it a resumed sequence would show the answer).
+- **Design decisions locked in:** min 2 items (editor seeds 3 empty rows);
+  RandomizeAnswerOrder off → present correct order; an untouched sequence counts
+  as **unanswered → scores 0** (consistent with every other type).
+
+### Format version bump — IMPORTANT
+`.qbx` `FormatVersion` is now **2** (was 1). The load gate rejects files
+*newer* than the build understands, so a v0.25 file will not open in v0.24 or
+earlier — even a quiz with no sequence question. This is the deliberate
+unconditional-bump tradeoff. A v1 file still opens in v0.25 (proven, see below).
+
+### Test suite additions this arc (all run in CI with real xUnit)
+- `SequenceQuestionTests` — grader: all permutations, malformed input, results-
+  screen rendering via `AttemptRecordBuilder` (that builder had had **zero**
+  tests before; now covered).
+- `SequencePresentationTests` — compiler shuffle/guard, every exporter, Excel
+  round-trip, pause/resume presentation survival.
+- `PackageBackwardCompatTests` — a hand-built **v1 `.qbx` still opens** in the
+  v2 build, keeps its reported version (reading ≠ upgrading), preserves content
+  and images; a current save is stamped v2.
+- `MobileReadPathContractTests` — pins the exact Core slice the future MAUI
+  player depends on (load → compile → grade with **storage sandboxed** and
+  **DPAPI disabled**), so a Core change that breaks mobile fails on desktop CI.
+
+### GitHub hygiene note (learned the hard way)
+The first push accidentally committed ~40 build-snapshot zips (~814 MB). Fixed by
+un-tracking (`git rm --cached "*.zip"`), adding `*.zip` to `.gitignore`, and
+`git commit --amend` + `git push --force` on the single fresh commit (safe: solo
+repo, no other clones). Repo dropped from 814 MB to ~420 KB. **Build zips live in
+a sibling folder outside the repo now, never in the tree.** If build artifacts
+should be kept *with* the repo, the right home is GitHub **Releases**, not commits.
+
+### MAUI readiness (the planned next chapter — see §13 for detail)
+All three documented blockers are de-risked:
+1. **TFM** — Core is `net8.0`; MAUI wants `net10.0`. **DECISION: stay on net8
+   now, multi-target `net8.0;net10.0` when MAUI begins, drop net8 after MAUI is
+   stable (before net8 EOL, Nov 2026).** A full audit found Core is
+   multi-target-ready with **no code migration** — no WPF/Drawing/Win32, no
+   removed APIs, reflection is single-file-safe.
+2. **Storage** — all four data services already take an `overrideDirectory`
+   seam; MAUI passes a sandbox path. Guarded by `MobileReadPathContractTests`.
+3. **DPAPI** — isolated behind `ProtectedDataShim`/`TokenProtector`; degrades to
+   a clean, catchable error off-Windows; None/Passphrase modes are cross-platform.
+
+### Immediate next-step options
+- **MAUI/Android player** — the big one. Start in a **fresh chat with this doc.**
+  First step there is literally `dotnet new maui` and reading the template's
+  `Platforms/Android` structure — do not pre-create folders.
+- **Android CI job** — a third workflow job producing an `.apk`/`.aab` as a
+  build **artifact** (not committed); needs the keystore as an encrypted secret.
+  Belongs *after* the MAUI project exists.
+- **CI housekeeping** — bump `actions/checkout` and `actions/setup-dotnet` off
+  the deprecated Node 20 (yellow warning only, not failing).
+- **More question types** — considered (iSpring comparison). Verdict: numeric and
+  dropdown-lists are low-cost/high-value if wanted; the drag family (hotspot,
+  drag-drop) is expensive and hits the least-verifiable surface; Likert = survey
+  mode, a different concept. **Reach (MAUI) was judged higher value than breadth.**
 
 ---
 
@@ -35,9 +127,15 @@ message instead of letting MSBuild emit NETSDK1045.
 Output: `publish\QuizBuilder vX.Y.Z.B.exe` — self-contained, single file.
 The user has been building on **.NET SDK 11.0.100-preview** successfully.
 
+**GitHub / CI is now the primary gate.** The user's workflow is: `git add/commit/
+push` to `main` → GitHub Actions runs `build.yml` (both jobs must go green) →
+*then* build locally. The green checkmark is the authoritative "it survives on a
+clean machine" signal; `build.bat` is the local confirmation. Check runs with
+`gh run list` / `gh run watch` / `gh run view <id> --log-failed`.
+
 ---
 
-## 2. THE CRITICAL CONSTRAINT (read this first)
+## 2. THE CRITICAL CONSTRAINT (read this too, before touching code)
 
 **The AI assistant cannot compile or run this app.**
 
@@ -334,6 +432,15 @@ creates *false confidence*: the checks pass, then the real compiler disagrees.
 | `CS0535` CountingCompiler | changed `IQuizCompiler` signature; checked **callers** but not **implementers** | **when changing an interface, check IMPLEMENTERS too** |
 | `CS9035` missing required members | built `CompiledQuiz` outside the compiler, missed `PassPercentage` + `PassMarkBasis` | **when constructing a type with `required` members outside its usual home, enumerate ALL required members** |
 | `xUnit2029` warning | `Assert.Empty(x.Where(...))` | use `Assert.DoesNotContain(x, pred)` |
+| Pause/resume showed the answer | `PausedAttemptPaper` carried `MatchingOptions` but not `SequencePresentation`; a resumed sequence fell back to correct order | **when adding a presentation projection, persist it through the paused snapshot too** |
+| Word answer-key test wrong | test expected `->` but Word XML-escapes `>` to `-&gt;` | assert on the escaped form; escaping is correct behaviour |
+| Excel 1-item-sequence test wrong | assumed `Success==true` for an all-skipped file | an all-skipped import reports failure; pair the bad row with a valid one |
+| CI red on first run | Restore step named **two** projects on one `dotnet restore` (MSB1008) | restore the Tests project only (Core comes via project ref); never build the Windows App on the Linux runner |
+
+**NEW THIS ARC — bugs caught by RUNNING tests in-sandbox, not just compiling.**
+The pause/resume answer-leak and both test-logic errors were caught by actually
+executing the suite in the sandbox (see §11) before the user pushed. This is a
+meaningfully stronger net than the old "compiles clean" bar. Prefer it.
 
 ### Self-checks now in the pre-package routine
 1. **Unresolved-local-call scan** per edited file.
@@ -416,8 +523,17 @@ This is what the assistant has available — useful for planning verification.
   the exported HTML's script, assert on results). Reuse this for any further
   web-export work.
 - Python 3 — used for logic models before writing C#, and for `tools/validate.py`.
-- **No .NET SDK, no NuGet, no WPF.** See §2.
-- `api.github.com` is reachable; most other domains are not.
+- **A .NET 8 SDK CAN be bootstrapped in-sandbox** (discovered this arc): apt has
+  `dotnet-sdk-8.0`; `apt-get download` the debs + deps and `dpkg-deb -x` them
+  into a prefix. NuGet is still blocked, so the two Core package DLLs are
+  referenced directly from the SDK folder, and Core is compiled with `csc`
+  against the net8 ref pack. Tests were run via a hand-written xUnit stub +
+  reflection runner (`Fact`/`Theory`/`Assert`). **This let 59 tests actually
+  RUN and pass in-sandbox before the user pushed** — a big step up from
+  "compiles". The WPF App still cannot be built here (net8.0-windows). Reuse
+  this approach for Core/Tests verification.
+- `api.github.com` and the Ubuntu apt feed are reachable; most other domains
+  (incl. nuget.org) are not.
 
 ---
 
