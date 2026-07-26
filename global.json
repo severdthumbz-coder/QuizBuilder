@@ -1,0 +1,8 @@
+{
+  "sdk": {
+    "version": "8.0.0",
+    "rollForward": "latestMajor",
+    "allowPrerelease": true
+  },
+  "_comment": "Prefers a stable .NET 8 SDK when one is installed, but rolls forward (including to a preview) rather than refusing to build. Projects target net8.0; building them with a much newer SDK is supported, provided the .NET 8 targeting pack is present. If the build reports NETSDK1045 or cannot find the net8.0 targeting pack, install the .NET 8 SDK from https://dot.net/download and it will be preferred automatically."
+}

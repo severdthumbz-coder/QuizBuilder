@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Quiz Builder application icon - SOURCE FILE.
+
+  This is not a usable Windows icon on its own. Windows needs a multi-size
+  .ico (16/32/48/256 px). See tools/make-icon.md for how to convert this.
+
+  Design: a document sheet with a checkmark, on the Academic theme's primary
+  navy (#1F3A5F) with the accent bronze (#8C6D3F). Deliberately simple -
+  at 16x16 an icon has roughly 256 pixels to work with, so fine detail turns
+  to mud. The silhouette has to read at that size or it reads as nothing.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+
+  <defs>
+    <!-- Subtle depth. Kept shallow: heavy gradients muddy small sizes. -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2A4B75"/>
+      <stop offset="100%" stop-color="#1F3A5F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded-square base. 48px radius approximates the Windows 11 app-icon
+       silhouette without copying any system asset. -->
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="url(#bg)"/>
+
+  <!-- Document sheet, offset slightly left to leave room for the check.
+       Corner fold implied by the notch rather than drawn, which survives
+       downscaling far better than a literal folded triangle. -->
+  <path d="M 66 56
+           L 66 200
+           Q 66 210 76 210
+           L 158 210
+           Q 168 210 168 200
+           L 168 92
+           L 132 56
+           Z"
+        fill="#F5F3EE"/>
+
+  <!-- Fold triangle. -->
+  <path d="M 132 56 L 132 88 Q 132 92 136 92 L 168 92 Z"
+        fill="#D6D1C4"/>
+
+  <!-- Text rules on the sheet. Three lines only: more become noise at 32px. -->
+  <rect x="86" y="120" width="62" height="9" rx="4.5" fill="#8C99A8"/>
+  <rect x="86" y="144" width="62" height="9" rx="4.5" fill="#8C99A8"/>
+  <rect x="86" y="168" width="40" height="9" rx="4.5" fill="#8C99A8"/>
+
+  <!-- Accent checkmark, overlapping the sheet's lower-right. The overlap is
+       what makes the silhouette legible at 16px - it breaks the plain
+       rectangle into a recognisable shape. -->
+  <circle cx="178" cy="176" r="46" fill="#1F3A5F"/>
+  <circle cx="178" cy="176" r="38" fill="#8C6D3F"/>
+  <path d="M 160 176 L 172 189 L 197 163"
+        fill="none"
+        stroke="#FFFFFF"
+        stroke-width="11"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

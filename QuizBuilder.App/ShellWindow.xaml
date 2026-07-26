@@ -1,0 +1,81 @@
+<Window x:Class="QuizBuilder.App.ShellWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Height="800" Width="1280"
+        MinHeight="560" MinWidth="900"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Brush.Background}">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/QuizBuilder.App;component/Controls/NavRailStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <!-- Fixed 200px rail. Seven items is a short list, so collapsing it
+                 would treat a symptom the content panel does not have. Adding
+                 collapse later is a Width animation plus a settings key. -->
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Navigation rail -->
+        <Border Grid.Column="0"
+                Background="{DynamicResource Brush.SurfaceSunken}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,1,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="16,20,16,16">
+                    <TextBlock Text="Quiz Builder"
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Subtitle}"
+                               FontWeight="{DynamicResource Font.Weight.Bold}"
+                               Foreground="{DynamicResource Brush.TextPrimary}" />
+                </StackPanel>
+
+                <!-- Version pinned to the bottom of the rail -->
+                <TextBlock DockPanel.Dock="Bottom"
+                           Text="{Binding Title}"
+                           Margin="16,8,16,16"
+                           TextWrapping="Wrap"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Caption}"
+                           Foreground="{DynamicResource Brush.TextDisabled}" />
+
+                <ItemsControl ItemsSource="{Binding Items}"
+                              KeyboardNavigation.TabNavigation="Continue"
+                              Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource NavRailItemStyle}"
+                                    Command="{Binding DataContext.NavigateCommand,
+                                              RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"
+                                    ToolTip="{Binding Tooltip}"
+                                    AutomationProperties.Name="{Binding Label}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <!-- Content host. Views are added by the code-behind from DI and
+             toggled by Visibility, so each keeps its state across tab
+             switches and its ViewModel is constructor-injected.
+
+             Focusable with no focus visual: the shell parks initial focus here
+             on load so the nav rail does not start with a visible focus ring.
+             Explicitly focusable rather than relying on a Grid's default
+             Focusable=false making the call a silent no-op; a no-op that
+             happens to do the right thing is a bug waiting to be "fixed". -->
+        <Grid Grid.Column="1" x:Name="ContentHost"
+              Focusable="True"
+              FocusVisualStyle="{x:Null}"
+              KeyboardNavigation.TabNavigation="Local" />
+    </Grid>
+</Window>

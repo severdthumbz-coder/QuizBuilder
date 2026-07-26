@@ -1,0 +1,7 @@
+bin/
+obj/
+publish/
+.vs/
+
+# Transient: build.bat copies the user's settings here across a clean.
+.build-preserve/

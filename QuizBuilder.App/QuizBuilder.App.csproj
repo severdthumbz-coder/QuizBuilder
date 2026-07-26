@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>QuizBuilder.App</RootNamespace>
+    <AssemblyName>QuizBuilder.App</AssemblyName>
+
+    <!--
+      PROBE NOTE: this is the file that tells us whether the toolchain works.
+      UseWPF pulls in Microsoft.NET.Sdk.WindowsDesktop and the XAML build
+      tasks, which are separate from the plain net8.0 targeting pack that
+      QuizBuilder.Core already builds against. If the .NET 8 Windows Desktop
+      pack is missing under a preview-only SDK install, this project fails
+      here with NETSDK1147 and the fix is to install the .NET 8 SDK.
+    -->
+
+    <!--
+      RuntimeIdentifier, SelfContained and PublishSingleFile are deliberately
+      NOT set here. They belong on the publish command only:
+
+        - A RID in the csproj makes every `dotnet build` RID-specific,
+          restoring the whole win-x64 runtime pack each time, and mixing a
+          RID-specific App with RID-agnostic net8.0 Core/Tests in one solution
+          build invites restore conflicts.
+        - SelfContained without a RID is an outright error (NETSDK1031).
+
+      build.bat passes the RID, self-contained and single-file flags
+      on the publish command, which is the only place they are needed.
+
+      The two settings kept below only take effect during a single-file
+      publish and are inert otherwise, so they are safe here.
+
+      Trimming is off on purpose: WPF resolves XAML types and bindings by
+      reflection, and a trimmed WPF app fails at runtime in ways that are
+      genuinely painful to diagnose. Bigger exe, working app.
+    -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuizBuilder.Core\QuizBuilder.Core.csproj" />
+  </ItemGroup>
+
+</Project>

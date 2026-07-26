@@ -1,0 +1,49 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Core is platform-neutral on purpose, so its tests run on the cheaper,
+  # faster Linux runner. This job gates every push.
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore QuizBuilder.Core/QuizBuilder.Core.csproj QuizBuilder.Tests/QuizBuilder.Tests.csproj
+
+      - name: Build
+        run: dotnet build QuizBuilder.Tests/QuizBuilder.Tests.csproj --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test QuizBuilder.Tests/QuizBuilder.Tests.csproj --configuration Release --no-build --verbosity normal
+
+  # The WPF host needs a Windows runner. Kept as a separate job so a failure
+  # here is obviously a UI-layer problem rather than a domain-logic one.
+  # Enable once QuizBuilder.App exists.
+  app-build:
+    runs-on: windows-latest
+    needs: core-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish portable single-file exe
+        run: >
+          dotnet publish QuizBuilder.App/QuizBuilder.App.csproj
+          --configuration Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true

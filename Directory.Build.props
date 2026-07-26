@@ -1,0 +1,30 @@
+<Project>
+
+  <!--
+    Applies to every project in the solution. Version values are overridden by
+    build.bat from version.json; the defaults here keep a plain `dotnet build`
+    working without the batch script.
+  -->
+  <PropertyGroup>
+    <Company>QuizBuilder</Company>
+    <Product>Quiz Builder</Product>
+    <Copyright>Copyright (c) 2026</Copyright>
+
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <AssemblyVersion>0.1.0.1</AssemblyVersion>
+    <FileVersion>0.1.0.1</FileVersion>
+
+    <!-- Surfaced in the Help/About tab alongside the version. -->
+    <InformationalVersion>0.1.0+spine</InformationalVersion>
+  </PropertyGroup>
+
+  <!--
+    Icon wiring. Only applies to the WPF host: setting ApplicationIcon on a
+    library is meaningless, and on the test project it would just be noise.
+    The condition means this is inert until QuizBuilder.App exists.
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'QuizBuilder.App'">
+    <ApplicationIcon>$(MSBuildThisFileDirectory)assets\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+</Project>

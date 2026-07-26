@@ -1,0 +1,161 @@
+<UserControl x:Class="QuizBuilder.App.Views.QuestionBankView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:QuizBuilder.App.Converters">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+        <conv:BoolToVisibilityConverter x:Key="BoolVisInv" Invert="True" />
+    </UserControl.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Question bank"
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Title}"
+                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                       Foreground="{DynamicResource Brush.TextPrimary}" />
+            <TextBlock Text="A reusable pool of questions. Save questions here from the Quiz Builder, then add copies into any quiz."
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Body}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Controls: category filter + target section -->
+        <Grid Grid.Row="1" Margin="0,0,0,14"
+              Visibility="{Binding IsEmpty, Converter={StaticResource BoolVisInv}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="Show"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Body}"
+                       Foreground="{DynamicResource Brush.TextSecondary}" />
+            <ComboBox Grid.Column="1"
+                      Width="180"
+                      ItemsSource="{Binding CategoryFilters}"
+                      SelectedItem="{Binding CategoryFilter}" />
+
+            <TextBlock Grid.Column="3"
+                       Text="Add to section"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Body}"
+                       Foreground="{DynamicResource Brush.TextSecondary}" />
+            <ComboBox Grid.Column="4"
+                      Width="200"
+                      ItemsSource="{Binding TargetSections}"
+                      SelectedItem="{Binding TargetSection}"
+                      DisplayMemberPath="Title" />
+        </Grid>
+
+        <!-- Empty state -->
+        <TextBlock Grid.Row="2"
+                   Text="{Binding EmptyMessage}"
+                   Visibility="{Binding IsEmpty, Converter={StaticResource BoolVis}}"
+                   TextWrapping="Wrap"
+                   MaxWidth="460"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   FontFamily="{DynamicResource Font.Family}"
+                   FontSize="{DynamicResource Font.Size.Body}"
+                   Foreground="{DynamicResource Brush.TextSecondary}" />
+
+        <!-- Entry list -->
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsEmpty, Converter={StaticResource BoolVisInv}}">
+            <ItemsControl ItemsSource="{Binding Entries}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource Brush.Surface}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="{DynamicResource Radius.Sm}"
+                                Padding="14,10"
+                                Margin="0,0,0,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0"
+                                        Background="{DynamicResource Brush.SurfaceSunken}"
+                                        CornerRadius="{DynamicResource Radius.Sm}"
+                                        Padding="8,3"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,12,0">
+                                    <TextBlock Text="{Binding TypeLabel}"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Caption}"
+                                               Foreground="{DynamicResource Brush.TextSecondary}" />
+                                </Border>
+
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding Prompt}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           FontFamily="{DynamicResource Font.Family}"
+                                           FontSize="{DynamicResource Font.Size.Body}"
+                                           Foreground="{DynamicResource Brush.TextPrimary}" />
+
+                                <TextBox Grid.Column="2"
+                                         Width="130"
+                                         Margin="10,0"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding Category, UpdateSourceTrigger=LostFocus}"
+                                         ToolTip="Category (optional) — used for filtering" />
+
+                                <Button Grid.Column="3"
+                                        Content="Add to quiz"
+                                        Command="{Binding AddToQuizCommand}"
+                                        Margin="0,0,8,0"
+                                        Padding="14,6"
+                                        Cursor="Hand"
+                                        FontFamily="{DynamicResource Font.Family}"
+                                        FontSize="{DynamicResource Font.Size.Body}"
+                                        Background="{DynamicResource Brush.Primary}"
+                                        Foreground="{DynamicResource Brush.OnPrimary}"
+                                        BorderThickness="0" />
+
+                                <Button Grid.Column="4"
+                                        Content="Delete"
+                                        Command="{Binding RemoveCommand}"
+                                        Padding="12,6"
+                                        Cursor="Hand"
+                                        FontFamily="{DynamicResource Font.Family}"
+                                        FontSize="{DynamicResource Font.Size.Caption}"
+                                        Background="Transparent"
+                                        Foreground="{DynamicResource Brush.Error}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

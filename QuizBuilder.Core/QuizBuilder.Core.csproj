@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12.0</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <!--
+      Deliberately NOT net8.0-windows. Core holds the domain model, settings
+      and .qbx logic, none of which need WPF. Keeping it platform-neutral means
+      the unit tests run on a plain ubuntu-latest CI runner rather than
+      requiring a Windows agent for every push.
+
+      The one Windows-only dependency (DPAPI, via ProtectedDataShim) is reached
+      through a swappable delegate and guarded by OperatingSystem.IsWindows().
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Provides System.Security.Cryptography.ProtectedData on net8.0. The API
+      throws PlatformNotSupportedException off Windows, which ProtectedDataShim
+      pre-empts with an explicit check and a clearer message.
+    -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+
+    <!-- Required by CoreServiceRegistration. Abstractions only: Core registers
+         services but never builds the container; that is App's job. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Tests need to reach ProtectedDataShim (internal) to swap out the DPAPI
+      delegate, so TokenProtector can be tested without a Windows profile.
+      Written as an explicit attribute rather than the <InternalsVisibleTo>
+      item, which only generates on newer SDKs.
+    -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>QuizBuilder.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,553 @@
+<Window x:Class="QuizBuilder.App.Views.TakeQuizWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:QuizBuilder.App.ViewModels"
+        xmlns:views="clr-namespace:QuizBuilder.App.Views"
+        xmlns:conv="clr-namespace:QuizBuilder.App.Converters"
+        Title="{Binding Title}"
+        Height="760" Width="900"
+        MinHeight="520" MinWidth="640"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Brush.Background}">
+
+    <Window.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+        <conv:BoolToVisibilityConverter x:Key="BoolVisInv" Invert="True" />
+        <conv:HexToBrushConverter x:Key="HexBrush" />
+        <conv:BytesToImageConverter x:Key="BytesToImage" />
+
+        <Style x:Key="Body" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Caption}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="AnswerBox" TargetType="TextBox">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+            <Setter Property="Background" Value="{DynamicResource Brush.Background}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+        </Style>
+
+        <Style x:Key="Option" TargetType="RadioButton">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="Margin" Value="0,4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style x:Key="OptionCheck" TargetType="CheckBox">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="Margin" Value="0,4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <!--
+            One template per question type, picked by the IsX flags on the
+            question view model. A DataTemplateSelector would need a class per
+            type; these flags are simpler and the set is closed at seven.
+        -->
+        <DataTemplate x:Key="SingleChoiceTemplate">
+            <ItemsControl ItemsSource="{Binding Choices}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <RadioButton Content="{Binding Text}"
+                                     GroupName="{Binding RadioGroup}"
+                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                     Style="{StaticResource Option}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </DataTemplate>
+
+        <DataTemplate x:Key="MultiChoiceTemplate">
+            <StackPanel>
+                <TextBlock Text="Select all that apply."
+                           Style="{StaticResource Caption}"
+                           Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding Choices}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Text}"
+                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      Style="{StaticResource OptionCheck}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="TrueFalseTemplate">
+            <StackPanel>
+                <RadioButton Content="True"
+                             GroupName="{Binding RadioGroup}"
+                             IsChecked="{Binding IsTrueSelected, Mode=TwoWay}"
+                             Style="{StaticResource Option}" />
+                <RadioButton Content="False"
+                             GroupName="{Binding RadioGroup}"
+                             IsChecked="{Binding IsFalseSelected, Mode=TwoWay}"
+                             Style="{StaticResource Option}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ShortAnswerTemplate">
+            <TextBox Text="{Binding TextAnswer, UpdateSourceTrigger=PropertyChanged}"
+                     Style="{StaticResource AnswerBox}"
+                     MaxWidth="420"
+                     HorizontalAlignment="Left" />
+        </DataTemplate>
+
+        <DataTemplate x:Key="BlanksTemplate">
+            <ItemsControl ItemsSource="{Binding Blanks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="0,3">
+                            <TextBlock Text="{Binding Label}"
+                                       Style="{StaticResource Body}"
+                                       Width="28"
+                                       VerticalAlignment="Center" />
+                            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource AnswerBox}"
+                                     Width="320" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </DataTemplate>
+
+        <DataTemplate x:Key="MatchingTemplate">
+            <ItemsControl ItemsSource="{Binding Pairs}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MaxWidth="240" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" MaxWidth="240" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Left}"
+                                       Style="{StaticResource Body}"
+                                       VerticalAlignment="Center" />
+
+                            <ComboBox Grid.Column="2"
+                                      ItemsSource="{Binding Options}"
+                                      SelectedItem="{Binding Selected, Mode=TwoWay}"
+                                      FontFamily="{DynamicResource Font.Family}"
+                                      FontSize="{DynamicResource Font.Size.Body}"
+                                      Padding="6,4" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </DataTemplate>
+
+        <DataTemplate x:Key="SequenceTemplate">
+            <StackPanel>
+                <TextBlock Text="Drag the items into the correct order, top to bottom."
+                           Style="{StaticResource Caption}"
+                           Margin="0,0,0,6" />
+                <ListBox ItemsSource="{Binding SequenceItems}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         AllowDrop="True"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         PreviewMouseLeftButtonDown="OnSequencePreviewMouseDown"
+                         PreviewMouseMove="OnSequenceMouseMove"
+                         DragOver="OnSequenceDragOver"
+                         DragLeave="OnSequenceDragLeave"
+                         Drop="OnSequenceDrop">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Focusable" Value="False" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,3"
+                                    Padding="12,9"
+                                    Background="{DynamicResource Brush.SurfaceRaised}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Cursor="SizeAll">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE76F;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding Text}"
+                                               Style="{StaticResource Body}"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="EssayTemplate">
+            <StackPanel>
+                <TextBlock Text="This answer is not marked automatically — it will be listed for your review."
+                           Style="{StaticResource Caption}"
+                           Margin="0,0,0,4" />
+                <TextBox Text="{Binding TextAnswer, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource AnswerBox}"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         MinHeight="120"
+                         VerticalScrollBarVisibility="Auto" />
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1"
+                Padding="20,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding Title}"
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Subtitle}"
+                               FontWeight="{DynamicResource Font.Weight.Bold}"
+                               Foreground="{DynamicResource Brush.TextPrimary}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding ProgressLabel}"
+                               Style="{StaticResource Caption}"
+                               Visibility="{Binding IsSubmitted, Converter={StaticResource BoolVisInv}}" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding TimeRemaining}"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding IsSubmitted, Converter={StaticResource BoolVisInv}}" />
+            </Grid>
+        </Border>
+
+        <!-- The paper -->
+        <ScrollViewer Grid.Row="1"
+                      x:Name="PaperScroller"
+                      VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsSubmitted, Converter={StaticResource BoolVisInv}}">
+            <StackPanel Margin="24,20" MaxWidth="760" HorizontalAlignment="Left">
+
+                <StackPanel views:DescriptionPresenter.FormattedDescription="{Binding Description}"
+                            TextElement.Foreground="{DynamicResource Brush.TextSecondary}"
+                            TextElement.FontFamily="{DynamicResource Font.Family}"
+                            TextElement.FontSize="{DynamicResource Font.Size.Caption}"
+                            Margin="0,0,0,16"
+                            Visibility="{Binding HasDescription, Converter={StaticResource BoolVis}}" />
+
+                <ItemsControl ItemsSource="{Binding Questions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource Brush.Surface}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource Radius.Md}"
+                                    Padding="16"
+                                    Margin="0,0,0,12">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Number, StringFormat='{}{0}.'}"
+                                                   FontFamily="{DynamicResource Font.Family}"
+                                                   FontSize="{DynamicResource Font.Size.Body}"
+                                                   FontWeight="{DynamicResource Font.Weight.Bold}"
+                                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                                   Margin="0,0,8,0" />
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Prompt}"
+                                                   Style="{StaticResource Body}" />
+
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding PointsLabel}"
+                                                   Style="{StaticResource Caption}"
+                                                   Margin="12,0,0,0" />
+                                    </Grid>
+
+                                    <Image Source="{Binding ImageBytes, Converter={StaticResource BytesToImage}}"
+                                           MaxHeight="240"
+                                           HorizontalAlignment="Left"
+                                           Stretch="Uniform"
+                                           Margin="0,8,0,0"
+                                           Visibility="{Binding HasImage, Converter={StaticResource BoolVis}}" />
+
+                                    <TextBlock Text="{Binding Hint}"
+                                               Style="{StaticResource Caption}"
+                                               Margin="0,0,0,8"
+                                               Visibility="{Binding HasHint, Converter={StaticResource BoolVis}}" />
+
+                                    <ContentControl Content="{Binding}">
+                                        <ContentControl.Style>
+                                            <Style TargetType="ContentControl">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSingleChoice}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource SingleChoiceTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsMultiChoice}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource MultiChoiceTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsTrueFalse}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource TrueFalseTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsShortAnswer}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource ShortAnswerTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsBlanks}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource BlanksTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsMatching}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource MatchingTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsSequence}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource SequenceTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsEssay}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource EssayTemplate}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ContentControl.Style>
+                                    </ContentControl>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Results -->
+        <!--
+            DataContext goes on the INNER panel, not on this ScrollViewer.
+
+            Setting both DataContext and Visibility on the same element makes the
+            Visibility binding resolve against the NEW context: {Binding
+            IsSubmitted} would be looked up on Summary, which is null before
+            submit. A binding against a null context produces UnsetValue, the
+            converter is never called, and Visibility falls back to its default
+            of Visible, so the whole results panel rendered on top of the
+            question paper from the moment the window opened. An empty white card
+            (a Border with a background and no resolvable text) and two stray
+            headings (literal strings whose Visibility bindings were also unset).
+
+            Visibility is the sitting's business; the CONTENT is the summary's.
+            The nesting now says exactly that.
+        -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsSubmitted, Converter={StaticResource BoolVis}}">
+            <StackPanel Margin="24,20" MaxWidth="760" HorizontalAlignment="Left"
+                        DataContext="{Binding Summary}">
+
+                <Border Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource Radius.Md}"
+                        Padding="24"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Headline}"
+                                   FontFamily="{DynamicResource Font.Family}"
+                                   FontSize="{DynamicResource Font.Size.Title}"
+                                   FontWeight="{DynamicResource Font.Weight.Bold}"
+                                   Foreground="{Binding HeadlineColor, Converter={StaticResource HexBrush}}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Text="{Binding ScoreLine}"
+                                   FontFamily="{DynamicResource Font.Family}"
+                                   FontSize="{DynamicResource Font.Size.Subtitle}"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   Margin="0,8,0,0"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Text="{Binding DetailLine}"
+                                   Style="{StaticResource Caption}"
+                                   Margin="0,6,0,0" />
+
+                        <TextBlock Text="{Binding ReviewLine}"
+                                   Style="{StaticResource Caption}"
+                                   Margin="0,6,0,0"
+                                   Visibility="{Binding HasReviewItems, Converter={StaticResource BoolVis}}" />
+
+                        <TextBlock Text="{Binding TimeLine}"
+                                   Style="{StaticResource Caption}"
+                                   Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- What went wrong -->
+                <TextBlock Text="Questions you got wrong"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextPrimary}"
+                           Margin="0,0,0,8"
+                           Visibility="{Binding HasIncorrect, Converter={StaticResource BoolVis}}" />
+
+                <ItemsControl ItemsSource="{Binding Incorrect}"
+                              Visibility="{Binding HasIncorrect, Converter={StaticResource BoolVis}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource Brush.Surface}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource Radius.Md}"
+                                    Padding="16"
+                                    Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Body}" FontWeight="{DynamicResource Font.Weight.Bold}">
+                                        <Run Text="{Binding Number, Mode=OneWay}" />
+                                        <Run Text="." />
+                                        <Run Text="{Binding Prompt, Mode=OneWay}" />
+                                    </TextBlock>
+
+                                    <TextBlock Style="{StaticResource Caption}" Margin="0,6,0,0">
+                                        <Run Text="You put:" FontWeight="Bold" />
+                                        <Run Text="{Binding GivenAnswerDisplay, Mode=OneWay}" />
+                                    </TextBlock>
+
+                                    <TextBlock Style="{StaticResource Caption}" Margin="0,2,0,0">
+                                        <Run Text="Answer:" FontWeight="Bold" />
+                                        <Run Text="{Binding CorrectAnswer, Mode=OneWay}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Awaiting review -->
+                <TextBlock Text="Needs your review"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextPrimary}"
+                           Margin="0,12,0,8"
+                           Visibility="{Binding HasReviewItems, Converter={StaticResource BoolVis}}" />
+
+                <ItemsControl ItemsSource="{Binding AwaitingReview}"
+                              Visibility="{Binding HasReviewItems, Converter={StaticResource BoolVis}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource Brush.Surface}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource Radius.Md}"
+                                    Padding="16"
+                                    Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Body}" FontWeight="{DynamicResource Font.Weight.Bold}">
+                                        <Run Text="{Binding Number, Mode=OneWay}" />
+                                        <Run Text="." />
+                                        <Run Text="{Binding Prompt, Mode=OneWay}" />
+                                    </TextBlock>
+
+                                    <TextBlock Text="{Binding GivenAnswerDisplay}"
+                                               Style="{StaticResource Caption}"
+                                               Margin="0,6,0,0" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0"
+                Padding="20,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="CloseButton"
+                        Content="Close"
+                        Click="OnCloseClick"
+                        Margin="0,0,10,0"
+                        Padding="16,8"
+                        Cursor="Hand"
+                        FontFamily="{DynamicResource Font.Family}"
+                        FontSize="{DynamicResource Font.Size.Body}"
+                        Background="Transparent"
+                        Foreground="{DynamicResource Brush.TextPrimary}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1" />
+
+                <Button x:Name="SaveForLaterButton"
+                        Content="Save &amp; continue later"
+                        Click="OnSaveForLaterClick"
+                        Margin="0,0,10,0"
+                        Padding="16,8"
+                        Cursor="Hand"
+                        FontFamily="{DynamicResource Font.Family}"
+                        FontSize="{DynamicResource Font.Size.Body}"
+                        Background="Transparent"
+                        Foreground="{DynamicResource Brush.TextPrimary}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        Visibility="{Binding IsSubmitted, Converter={StaticResource BoolVisInv}}" />
+
+                <Button x:Name="SubmitButton"
+                        Content="Submit answers"
+                        Click="OnSubmitClick"
+                        Padding="16,8"
+                        Cursor="Hand"
+                        FontFamily="{DynamicResource Font.Family}"
+                        FontSize="{DynamicResource Font.Size.Body}"
+                        Background="{DynamicResource Brush.Primary}"
+                        Foreground="{DynamicResource Brush.OnPrimary}"
+                        BorderThickness="0"
+                        Visibility="{Binding IsSubmitted, Converter={StaticResource BoolVisInv}}" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

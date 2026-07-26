@@ -1,0 +1,16 @@
+<Application x:Class="QuizBuilder.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      No StartupUri: the main window is resolved from the DI container in
+      App.OnStartup so it gets its ViewModel injected. Setting StartupUri here
+      would construct a second, parameterless window instead.
+
+      Resources are populated at runtime by ThemeResourceBuilder rather than
+      being declared here, since the active theme is not known until settings
+      have loaded.
+    -->
+    <Application.Resources>
+        <ResourceDictionary />
+    </Application.Resources>
+</Application>

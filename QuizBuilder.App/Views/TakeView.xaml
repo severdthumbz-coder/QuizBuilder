@@ -1,0 +1,291 @@
+<UserControl x:Class="QuizBuilder.App.Views.TakeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:QuizBuilder.App.Converters">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+        <conv:BoolToVisibilityConverter x:Key="BoolVisInv" Invert="True" />
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource Radius.Md}" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style x:Key="Heading" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Subtitle}" />
+            <Setter Property="FontWeight" Value="{DynamicResource Font.Weight.Bold}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Caption}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel Margin="24" MaxWidth="720" HorizontalAlignment="Left">
+
+            <TextBlock Text="Take the quiz"
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Title}"
+                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                       Foreground="{DynamicResource Brush.TextPrimary}"
+                       Margin="0,0,0,4" />
+
+            <TextBlock Text="Sit the quiz in a separate window, timed and marked. Your results are kept with this quiz."
+                       Style="{StaticResource Hint}"
+                       Margin="0,0,0,20" />
+
+            <!-- Start -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{Binding QuizTitle}" Style="{StaticResource Heading}" />
+                    <TextBlock Text="{Binding SummaryLine}" Style="{StaticResource Hint}" />
+
+                    <!-- Section picker: shown only when the grading scope is
+                         "choose at quiz time" and there is more than one section. -->
+                    <StackPanel Margin="0,14,0,0"
+                                Visibility="{Binding NeedsSectionChoice, Converter={StaticResource BoolVis}}">
+                        <TextBlock Text="Sections to include"
+                                   FontFamily="{DynamicResource Font.Family}"
+                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                   FontWeight="{DynamicResource Font.Weight.Bold}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   Margin="0,0,0,6" />
+
+                        <ItemsControl ItemsSource="{Binding SectionChoices}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected}"
+                                              Margin="0,3"
+                                              Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontFamily="{DynamicResource Font.Family}"
+                                                       FontSize="{DynamicResource Font.Size.Body}"
+                                                       Foreground="{DynamicResource Brush.TextPrimary}" />
+                                            <TextBlock Text="{Binding CountLabel}"
+                                                       FontFamily="{DynamicResource Font.Family}"
+                                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                                       Margin="8,0,0,0"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <Button x:Name="StartButton"
+                            Content="Start"
+                            Click="OnStartClick"
+                            IsEnabled="{Binding CanStart}"
+                            HorizontalAlignment="Left"
+                            Margin="0,12,0,0"
+                            Padding="20,8"
+                            Cursor="Hand"
+                            FontFamily="{DynamicResource Font.Family}"
+                            FontSize="{DynamicResource Font.Size.Body}"
+                            Background="{DynamicResource Brush.Primary}"
+                            Foreground="{DynamicResource Brush.OnPrimary}"
+                            BorderThickness="0" />
+
+                    <TextBlock Text="Essay questions are not marked automatically — they are listed for your review at the end, and left out of the score."
+                               Style="{StaticResource Hint}"
+                               Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Paused quizzes -->
+            <StackPanel Margin="0,4,0,8"
+                        Visibility="{Binding HasPausedAttempts, Converter={StaticResource BoolVis}}">
+                <TextBlock Text="Paused quizzes"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextPrimary}"
+                           Margin="0,0,0,8" />
+
+                <ItemsControl ItemsSource="{Binding PausedAttempts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource Brush.Surface}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource Radius.Sm}"
+                                    Padding="14,10"
+                                    Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding SavedAt}"
+                                                   FontFamily="{DynamicResource Font.Family}"
+                                                   FontSize="{DynamicResource Font.Size.Body}"
+                                                   Foreground="{DynamicResource Brush.TextPrimary}" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                            <TextBlock Text="{Binding Progress}"
+                                                       FontFamily="{DynamicResource Font.Family}"
+                                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}" />
+                                            <TextBlock Text="  •  "
+                                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}" />
+                                            <TextBlock Text="{Binding Elapsed}"
+                                                       FontFamily="{DynamicResource Font.Family}"
+                                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Content="Resume"
+                                            Click="OnResumeClick"
+                                            Tag="{Binding}"
+                                            Margin="0,0,8,0"
+                                            Padding="14,6"
+                                            Cursor="Hand"
+                                            FontFamily="{DynamicResource Font.Family}"
+                                            FontSize="{DynamicResource Font.Size.Body}"
+                                            Background="{DynamicResource Brush.Primary}"
+                                            Foreground="{DynamicResource Brush.OnPrimary}"
+                                            BorderThickness="0" />
+
+                                    <Button Grid.Column="2"
+                                            Content="Discard"
+                                            Command="{Binding DiscardCommand}"
+                                            Padding="12,6"
+                                            Cursor="Hand"
+                                            FontFamily="{DynamicResource Font.Family}"
+                                            FontSize="{DynamicResource Font.Size.Caption}"
+                                            Background="Transparent"
+                                            Foreground="{DynamicResource Brush.Error}"
+                                            BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- History -->
+            <Grid Margin="0,4,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="Past attempts"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextPrimary}"
+                           VerticalAlignment="Center" />
+
+                <Button Grid.Column="1"
+                        Content="Clear history"
+                        Command="{Binding ClearHistoryCommand}"
+                        Visibility="{Binding HasHistory, Converter={StaticResource BoolVis}}"
+                        Padding="12,4"
+                        Cursor="Hand"
+                        FontFamily="{DynamicResource Font.Family}"
+                        FontSize="{DynamicResource Font.Size.Caption}"
+                        Background="Transparent"
+                        Foreground="{DynamicResource Brush.Error}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1" />
+            </Grid>
+
+            <!-- Empty state -->
+            <Border Style="{StaticResource Card}"
+                    Visibility="{Binding HasHistory, Converter={StaticResource BoolVisInv}}">
+                <TextBlock Text="No attempts yet. Once you sit the quiz, your scores appear here — and they are still here when you reopen this quiz."
+                           Style="{StaticResource Hint}"
+                           Margin="0" />
+            </Border>
+
+            <ItemsControl ItemsSource="{Binding Attempts}"
+                          Visibility="{Binding HasHistory, Converter={StaticResource BoolVis}}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource Brush.Surface}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="{DynamicResource Radius.Md}"
+                                Padding="16"
+                                Margin="0,0,0,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" MinWidth="72">
+                                    <TextBlock Text="{Binding Score}"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Subtitle}"
+                                               FontWeight="{DynamicResource Font.Weight.Bold}"
+                                               Foreground="{DynamicResource Brush.TextPrimary}" />
+
+                                    <!--
+                                        Shape as well as colour: a tick and a
+                                        dash differ in greyscale and to a
+                                        colour-blind reader, which a green/red
+                                        pill alone would not.
+                                    -->
+                                    <TextBlock Text="{Binding Outcome}"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Caption}"
+                                               Foreground="{DynamicResource Brush.TextSecondary}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="{Binding TakenAt}"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Body}"
+                                               Foreground="{DynamicResource Brush.TextPrimary}" />
+
+                                    <TextBlock Text="{Binding Detail}"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Caption}"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
+                                               Margin="0,2,0,0" />
+
+                                    <TextBlock Text="{Binding Elapsed}"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Caption}"
+                                               Foreground="{DynamicResource Brush.TextSecondary}" />
+
+                                    <TextBlock Text="{Binding ReviewNote}"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Caption}"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
+                                               Visibility="{Binding HasReviewNote, Converter={StaticResource BoolVis}}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

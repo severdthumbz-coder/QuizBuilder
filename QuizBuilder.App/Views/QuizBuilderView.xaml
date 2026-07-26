@@ -1,0 +1,625 @@
+<UserControl x:Class="QuizBuilder.App.Views.QuizBuilderView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:QuizBuilder.App.Converters">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/QuizBuilder.App;component/Views/Questions/QuestionEditorTemplates.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+            <conv:BoolToVisibilityConverter x:Key="BoolVisInv" Invert="True" />
+            <conv:BytesToImageConverter x:Key="BytesToImage" />
+
+            <!--
+              A borderless TextBox looks exactly like a label, so nobody thinks
+              to click it. These two styles are the affordance: a pencil next to
+              the field, plus a border that appears on hover and focus.
+
+              The pencil sits at low opacity by default and brightens on hover.
+              At full strength it competes with the text for attention on every
+              row; invisible until hover would not help someone who has not
+              thought to hover. Faint-but-present is the middle.
+            -->
+            <Style x:Key="EditableField" TargetType="TextBox">
+                <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="Padding" Value="3,2" />
+                <Setter Property="Margin" Value="-4,0,0,0" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="Cursor" Value="IBeam" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+                        <Setter Property="Background" Value="{DynamicResource Brush.SurfaceSunken}" />
+                    </Trigger>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
+                        <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Drag grip for section rows. Unlike EditPencil this IS
+                 hit-testable: it is the drag handle, so it must be the
+                 OriginalSource of the mousedown. A section row's title is an
+                 editable TextBox, whose inner text layer is not a Visual, so a
+                 press there cannot walk up to the ListBoxItem and the drag
+                 never starts. The grip is a TextBlock, which surfaces itself
+                 and walks cleanly. Questions need no grip: their row is a
+                 plain TextBlock already. -->
+            <Style x:Key="DragGrip" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="Text" Value="&#xE76F;" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+                <Setter Property="Opacity" Value="0.45" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Margin" Value="0,0,4,0" />
+                <Setter Property="Padding" Value="2,4" />
+                <Setter Property="Cursor" Value="SizeNS" />
+                <Setter Property="ToolTip" Value="Drag to reorder this section" />
+                <Setter Property="AutomationProperties.Name" Value="Reorder section" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Opacity" Value="1.0" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="EditPencil" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+                <Setter Property="Opacity" Value="0.45" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Margin" Value="6,0,0,0" />
+                <Setter Property="ToolTip" Value="Click the text to edit" />
+                <!-- Not hit-testable: the pencil is a hint, not a button. If it
+                     swallowed clicks, clicking it would do nothing and feel
+                     broken. Clicks pass through to the field. -->
+                <Setter Property="IsHitTestVisible" Value="False" />
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Alt+Up / Alt+Down reorder the selected question. Drag-and-drop alone
+         would exclude anyone not using a mouse, and this is faster anyway for
+         nudging a single row. -->
+    <UserControl.InputBindings>
+        <KeyBinding Key="Up" Modifiers="Alt" Command="{Binding MoveQuestionUpCommand}" />
+        <KeyBinding Key="Down" Modifiers="Alt" Command="{Binding MoveQuestionDownCommand}" />
+
+        <!--
+            Structural undo only: adding, deleting, reordering and renaming.
+            Typing inside an editor is handled by the TextBox's own undo while
+            it has focus, which is why Ctrl+Z there does not reach this binding.
+        -->
+        <KeyBinding Key="Z" Modifiers="Control" Command="{Binding UndoCommand}" />
+        <KeyBinding Key="Y" Modifiers="Control" Command="{Binding RedoCommand}" />
+
+        <!-- Ctrl+Shift+Z redoes too: the habit varies by application. -->
+        <KeyBinding Key="Z" Modifiers="Control+Shift" Command="{Binding RedoCommand}" />
+    </UserControl.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header: title + file commands -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1"
+                Padding="20,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <!-- The pencil marks this as editable. Without it a
+                         borderless TextBox is indistinguishable from a label,
+                         so nobody thinks to click it. -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Text="{Binding QuizTitle, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource EditableField}"
+                                 FontSize="{DynamicResource Font.Size.Title}"
+                                 FontWeight="{DynamicResource Font.Weight.Bold}"
+                                 Foreground="{DynamicResource Brush.TextPrimary}"
+                                 MaxWidth="560"
+                                 AutomationProperties.Name="Quiz title"
+                                 ToolTip="Click to rename this quiz" />
+                        <TextBlock Text="&#xE70F;"
+                                   Style="{StaticResource EditPencil}"
+                                   FontSize="12" />
+                    </StackPanel>
+
+                    <!-- Description: optional, so no placeholder shouting at
+                         someone who does not want one. PropertyChanged is safe
+                         here because SetDescription never coerces the value. -->
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBox Text="{Binding QuizDescription, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource EditableField}"
+                                 FontSize="{DynamicResource Font.Size.Body}"
+                                 Foreground="{DynamicResource Brush.TextSecondary}"
+                                 MaxWidth="560"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MaxLines="3"
+                                 VerticalScrollBarVisibility="Auto"
+                                 AutomationProperties.Name="Quiz description"
+                                 ToolTip="Optional: instructions or context shown under the title.&#x0a;Formatting: &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, &lt;ul&gt;&lt;li&gt;bullets&lt;/li&gt;&lt;/ul&gt;, and line breaks." />
+                        <TextBlock Text="&#xE70F;"
+                                   Style="{StaticResource EditPencil}"
+                                   FontSize="11"
+                                   VerticalAlignment="Top"
+                                   Margin="6,2,0,0" />
+                    </StackPanel>
+
+                    <TextBlock Text="Formatting: &lt;b&gt; bold, &lt;i&gt; italic, &lt;ul&gt;&lt;li&gt; bullets, and line breaks."
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Caption}"
+                               Foreground="{DynamicResource Brush.TextSecondary}"
+                               Margin="0,2,0,0" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="{Binding FileDisplayName}"
+                                   FontFamily="{DynamicResource Font.Family}"
+                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}" />
+                        <TextBlock Text="  (unsaved changes)"
+                                   FontFamily="{DynamicResource Font.Family}"
+                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                   Foreground="{DynamicResource Brush.Warning}"
+                                   Visibility="{Binding IsDirty, Converter={StaticResource BoolVis}}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!--
+                        Undo/redo sit apart from the file commands: they act on
+                        the document in memory, not the file on disk. The
+                        tooltip names the change so the user knows what they
+                        are getting back before pressing it.
+                    -->
+                    <Button Content="&#xE7A7;" FontFamily="Segoe MDL2 Assets"
+                            Command="{Binding UndoCommand}"
+                            Style="{StaticResource SmallButton}"
+                            Padding="8,2" Margin="0,0,4,0"
+                            ToolTip="{Binding UndoLabel}"
+                            AutomationProperties.Name="{Binding UndoLabel}" />
+                    <Button Content="&#xE7A6;" FontFamily="Segoe MDL2 Assets"
+                            Command="{Binding RedoCommand}"
+                            Style="{StaticResource SmallButton}"
+                            Padding="8,2" Margin="0,0,8,0"
+                            ToolTip="{Binding RedoLabel}"
+                            AutomationProperties.Name="{Binding RedoLabel}" />
+
+                    <Border Width="1" Margin="0,2,12,2"
+                            Background="{DynamicResource Brush.Border}" />
+
+                    <Button x:Name="NewButton" Content="New"
+                            Command="{Binding NewCommand}"
+                            Style="{StaticResource SmallButton}"
+                            Margin="0,0,8,0" />
+                    <Button x:Name="OpenButton" Content="Open..."
+                            Click="OnOpenClick"
+                            Style="{StaticResource SmallButton}"
+                            Margin="0,0,8,0" />
+                    <Button x:Name="SaveButton" Content="Save"
+                            Click="OnSaveClick"
+                            Style="{StaticResource SmallButton}"
+                            Margin="0,0,8,0" />
+                    <Button x:Name="SaveAsButton" Content="Save as..."
+                            Click="OnSaveAsClick"
+                            Style="{StaticResource SmallButton}"
+                            Background="{DynamicResource Brush.Primary}"
+                            Foreground="{DynamicResource Brush.OnPrimary}"
+                            BorderThickness="0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Three columns: sections | questions | editor -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240" MinWidth="180" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="300" MinWidth="220" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="320" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sections -->
+            <DockPanel Grid.Column="0" Background="{DynamicResource Brush.SurfaceSunken}">
+                <Grid DockPanel.Dock="Top" Margin="14,14,14,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Sections"
+                               VerticalAlignment="Center"
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Body}"
+                               FontWeight="{DynamicResource Font.Weight.Bold}"
+                               Foreground="{DynamicResource Brush.TextPrimary}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Content="&#xE74A;" FontFamily="Segoe MDL2 Assets"
+                                Command="{Binding MoveSectionUpCommand}"
+                                Style="{StaticResource SmallButton}"
+                                Padding="6,2" Margin="0,0,4,0"
+                                ToolTip="Move section up"
+                                AutomationProperties.Name="Move section up" />
+                        <Button Content="&#xE74B;" FontFamily="Segoe MDL2 Assets"
+                                Command="{Binding MoveSectionDownCommand}"
+                                Style="{StaticResource SmallButton}"
+                                Padding="6,2"
+                                ToolTip="Move section down"
+                                AutomationProperties.Name="Move section down" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="14,8,14,14">
+                    <Button Content="Add section"
+                            Command="{Binding AddSectionCommand}"
+                            Style="{StaticResource SmallButton}"
+                            HorizontalAlignment="Stretch" />
+                    <Button Content="Remove section"
+                            Command="{Binding RemoveSectionCommand}"
+                            Style="{StaticResource SmallButton}"
+                            Foreground="{DynamicResource Brush.Error}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,6,0,0" />
+                </StackPanel>
+
+                <!-- Empty state -->
+                <TextBlock DockPanel.Dock="Top"
+                           Text="No sections yet. Add one to start building."
+                           Margin="14,20,14,0"
+                           TextWrapping="Wrap"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Caption}"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           Visibility="{Binding HasSections, Converter={StaticResource BoolVisInv}}" />
+
+                <ListBox x:Name="SectionList"
+                         ItemsSource="{Binding Sections}"
+                         SelectedItem="{Binding SelectedSection}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Margin="8,0"
+                         HorizontalContentAlignment="Stretch"
+                         AllowDrop="True"
+                         PreviewMouseLeftButtonDown="OnSectionPreviewMouseDown"
+                         MouseMove="OnSectionMouseMove"
+                         Drop="OnSectionDrop"
+                         DragOver="OnSectionDragOver"
+                         DragLeave="OnSectionDragLeave"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="4,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- The drag handle. Tag must stay in step with
+                                     QuizBuilderView.SectionGripTag. See the
+                                     DragGrip style. -->
+                                <TextBlock Grid.Column="0"
+                                           Tag="section-grip"
+                                           Style="{StaticResource DragGrip}" />
+
+                                <!-- Editable in place. LostFocus, not
+                                     PropertyChanged: the service coerces a blank
+                                     title to "Untitled Section", which would
+                                     otherwise fire the moment the box is cleared
+                                     to retype and yank the caret. -->
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding Title, UpdateSourceTrigger=LostFocus}"
+                                         Style="{StaticResource EditableField}"
+                                         FontSize="{DynamicResource Font.Size.Body}"
+                                         Foreground="{DynamicResource Brush.TextPrimary}"
+                                         AutomationProperties.Name="Section name"
+                                         ToolTip="Click to rename this section" />
+
+                                <TextBlock Grid.Column="2" Text="&#xE70F;"
+                                           Style="{StaticResource EditPencil}"
+                                           FontSize="10" />
+                                <Border Grid.Column="3"
+                                        Background="{DynamicResource Brush.SelectedOverlay}"
+                                        CornerRadius="{DynamicResource Radius.Pill}"
+                                        Padding="6,1" Margin="6,0,0,0">
+                                    <TextBlock Text="{Binding QuestionCount}"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Caption}"
+                                               Foreground="{DynamicResource Brush.TextSecondary}" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="1" Width="4"
+                          HorizontalAlignment="Stretch"
+                          Background="{DynamicResource Brush.Border}" />
+
+            <!-- Questions -->
+            <DockPanel Grid.Column="2" Background="{DynamicResource Brush.Background}">
+                <Grid DockPanel.Dock="Top" Margin="14,14,14,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Questions"
+                               VerticalAlignment="Center"
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Body}"
+                               FontWeight="{DynamicResource Font.Weight.Bold}"
+                               Foreground="{DynamicResource Brush.TextPrimary}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Content="&#xE74A;" FontFamily="Segoe MDL2 Assets"
+                                Command="{Binding MoveQuestionUpCommand}"
+                                Style="{StaticResource SmallButton}"
+                                Padding="6,2" Margin="0,0,4,0"
+                                ToolTip="Move up (Alt+Up)"
+                                AutomationProperties.Name="Move question up" />
+                        <Button Content="&#xE74B;" FontFamily="Segoe MDL2 Assets"
+                                Command="{Binding MoveQuestionDownCommand}"
+                                Style="{StaticResource SmallButton}"
+                                Padding="6,2"
+                                ToolTip="Move down (Alt+Down)"
+                                AutomationProperties.Name="Move question down" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="14,8,14,14">
+                    <Button x:Name="AddQuestionButton"
+                            Content="Add question"
+                            Click="OnAddQuestionClick"
+                            Style="{StaticResource SmallButton}"
+                            Background="{DynamicResource Brush.Primary}"
+                            Foreground="{DynamicResource Brush.OnPrimary}"
+                            BorderThickness="0"
+                            HorizontalAlignment="Stretch"
+                            IsEnabled="{Binding HasSelectedSection}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button Content="Duplicate"
+                                Command="{Binding DuplicateQuestionCommand}"
+                                Style="{StaticResource SmallButton}"
+                                Width="90" Margin="0,0,6,0" />
+                        <Button Content="Remove"
+                                Command="{Binding RemoveQuestionCommand}"
+                                Style="{StaticResource SmallButton}"
+                                Foreground="{DynamicResource Brush.Error}"
+                                Width="90" />
+                    </StackPanel>
+
+                    <Button Content="Save to bank"
+                            Command="{Binding SaveToBankCommand}"
+                            Style="{StaticResource SmallButton}"
+                            HorizontalAlignment="Left"
+                            Margin="0,6,0,0"
+                            ToolTip="Save a copy of this question to the reusable question bank" />
+                </StackPanel>
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="No questions in this section yet."
+                           Margin="14,20,14,0"
+                           TextWrapping="Wrap"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Caption}"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           Visibility="{Binding HasQuestions, Converter={StaticResource BoolVisInv}}" />
+
+                <!-- Drag to reorder; Alt+Up/Down does the same without a mouse -->
+                <ListBox x:Name="QuestionList"
+                         ItemsSource="{Binding Questions}"
+                         SelectedItem="{Binding SelectedQuestion}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Margin="8,0"
+                         HorizontalContentAlignment="Stretch"
+                         AllowDrop="True"
+                         PreviewMouseLeftButtonDown="OnQuestionPreviewMouseDown"
+                         MouseMove="OnQuestionMouseMove"
+                         Drop="OnQuestionDrop"
+                         DragOver="OnQuestionDragOver"
+                         DragLeave="OnQuestionDragLeave"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="4,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="&#xE700;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="12"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"
+                                           Foreground="{DynamicResource Brush.TextDisabled}"
+                                           ToolTip="Drag to reorder, or use Alt+Up and Alt+Down" />
+
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{Binding Editor.PromptSummary}"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontFamily="{DynamicResource Font.Family}"
+                                               FontSize="{DynamicResource Font.Size.Body}"
+                                               Foreground="{DynamicResource Brush.TextPrimary}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <TextBlock Text="{Binding Editor.KindDisplayName}"
+                                                   FontFamily="{DynamicResource Font.Family}"
+                                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}" />
+                                        <TextBlock Text="&#xE7BA;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="11"
+                                                   Margin="6,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource Brush.Warning}"
+                                                   ToolTip="This question is incomplete"
+                                                   Visibility="{Binding Editor.HasValidationMessages,
+                                                                Converter={StaticResource BoolVis}}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="3" Width="4"
+                          HorizontalAlignment="Stretch"
+                          Background="{DynamicResource Brush.Border}" />
+
+            <!-- Editor -->
+            <Grid Grid.Column="4" Background="{DynamicResource Brush.Background}">
+                <!-- Empty state -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            MaxWidth="360"
+                            Visibility="{Binding HasSelectedQuestion, Converter={StaticResource BoolVisInv}}">
+                    <TextBlock Text="No question selected"
+                               HorizontalAlignment="Center"
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Subtitle}"
+                               Foreground="{DynamicResource Brush.TextPrimary}" />
+                    <TextBlock Text="Pick a question from the list, or add one to start editing."
+                               Margin="0,6,0,0"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Caption}"
+                               Foreground="{DynamicResource Brush.TextSecondary}" />
+                </StackPanel>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Focusable="False"
+                              Visibility="{Binding HasSelectedQuestion, Converter={StaticResource BoolVis}}">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="{Binding SelectedEditor.KindDisplayName}"
+                                   FontFamily="{DynamicResource Font.Family}"
+                                   FontSize="{DynamicResource Font.Size.Subtitle}"
+                                   FontWeight="{DynamicResource Font.Weight.Bold}"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   Margin="0,0,0,14" />
+
+                        <!-- The per-type editor. DataTemplate picks it by ViewModel type. -->
+                        <ContentControl Content="{Binding SelectedEditor}" />
+
+                        <!-- Image: shared across all seven types via the base editor. -->
+                        <StackPanel Margin="0,16,0,0">
+                            <TextBlock Text="Image (optional)"
+                                       FontFamily="{DynamicResource Font.Family}"
+                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                       Margin="0,0,0,6" />
+
+                            <Border BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource Radius.Sm}"
+                                    Padding="12"
+                                    Visibility="{Binding SelectedEditor.HasImage, Converter={StaticResource BoolVis}}">
+                                <StackPanel>
+                                    <Image Source="{Binding SelectedEditor.ImageBytes, Converter={StaticResource BytesToImage}}"
+                                           MaxHeight="180"
+                                           HorizontalAlignment="Left"
+                                           Stretch="Uniform" />
+                                    <Button Content="Remove image"
+                                            Command="{Binding SelectedEditor.RemoveImageCommand}"
+                                            HorizontalAlignment="Left"
+                                            Margin="0,8,0,0"
+                                            Padding="12,6"
+                                            Cursor="Hand"
+                                            FontFamily="{DynamicResource Font.Family}"
+                                            FontSize="{DynamicResource Font.Size.Caption}"
+                                            Background="Transparent"
+                                            Foreground="{DynamicResource Brush.Error}"
+                                            BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" />
+                                </StackPanel>
+                            </Border>
+
+                            <Button Content="+ Add image"
+                                    Click="OnAddQuestionImageClick"
+                                    HorizontalAlignment="Left"
+                                    Padding="12,6"
+                                    Cursor="Hand"
+                                    FontFamily="{DynamicResource Font.Family}"
+                                    FontSize="{DynamicResource Font.Size.Caption}"
+                                    Background="Transparent"
+                                    Foreground="{DynamicResource Brush.TextPrimary}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    Visibility="{Binding SelectedEditor.HasImage, Converter={StaticResource BoolVisInv}}" />
+                        </StackPanel>
+
+
+                        <!-- Validation: advisory, never blocking. Someone
+                             mid-thought should not be stopped from moving on
+                             because a prompt is half-typed. -->
+                        <Border Margin="0,16,0,0"
+                                Padding="12,10"
+                                CornerRadius="{DynamicResource Radius.Sm}"
+                                Background="{DynamicResource Brush.SurfaceSunken}"
+                                BorderBrush="{DynamicResource Brush.Warning}"
+                                BorderThickness="0,0,0,2"
+                                Visibility="{Binding SelectedEditor.HasValidationMessages,
+                                             Converter={StaticResource BoolVis}}">
+                            <StackPanel>
+                                <TextBlock Text="Still to do"
+                                           FontFamily="{DynamicResource Font.Family}"
+                                           FontSize="{DynamicResource Font.Size.Caption}"
+                                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                                           Foreground="{DynamicResource Brush.TextPrimary}"
+                                           Margin="0,0,0,4" />
+                                <ItemsControl ItemsSource="{Binding SelectedEditor.ValidationMessages}"
+                                              Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,1"
+                                                       FontFamily="{DynamicResource Font.Family}"
+                                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+
+        <!-- Status bar -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource Brush.SurfaceSunken}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0"
+                Padding="20,6">
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}" />
+        </Border>
+    </Grid>
+</UserControl>

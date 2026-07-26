@@ -1,0 +1,214 @@
+<UserControl x:Class="QuizBuilder.App.Views.PublishView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:QuizBuilder.App.Converters">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource Radius.Md}" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style x:Key="Heading" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Subtitle}" />
+            <Setter Property="FontWeight" Value="{DynamicResource Font.Weight.Bold}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Caption}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel Margin="24" MaxWidth="720" HorizontalAlignment="Left">
+
+            <TextBlock Text="Publish"
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Title}"
+                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                       Foreground="{DynamicResource Brush.TextPrimary}" />
+
+            <TextBlock Text="{Binding Summary}"
+                       Style="{StaticResource Hint}"
+                       Margin="0,6,0,20" />
+
+            <!-- HTML -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Web page" Style="{StaticResource Heading}" />
+                    <TextBlock Text="A single self-contained HTML file. Everything is inside it, so it works when emailed, uploaded, or opened from a USB stick."
+                               Style="{StaticResource Hint}" />
+
+                    <CheckBox Content="Include the answer key"
+                              IsChecked="{Binding IncludeAnswerKey}"
+                              Cursor="Hand"
+                              Margin="0,4,0,0"
+                              FontFamily="{DynamicResource Font.Family}"
+                              FontSize="{DynamicResource Font.Size.Body}"
+                              Foreground="{DynamicResource Brush.TextPrimary}" />
+
+                    <TextBlock Text="{Binding ExportDescription}"
+                               Style="{StaticResource Hint}"
+                               Margin="0,4,0,8" />
+
+                    <CheckBox Content="Include a print button in the page"
+                              IsChecked="{Binding IncludePrintButton}"
+                              Cursor="Hand"
+                              FontFamily="{DynamicResource Font.Family}"
+                              FontSize="{DynamicResource Font.Size.Body}"
+                              Foreground="{DynamicResource Brush.TextPrimary}"
+                              ToolTip="Turn this off when the page is going on a website, where a stray Print button is noise." />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button x:Name="ExportButton"
+                                Content="Export web page..."
+                                Click="OnExportClick"
+                                IsEnabled="{Binding CanExport}"
+                                Padding="16,8"
+                                Cursor="Hand"
+                                FontFamily="{DynamicResource Font.Family}"
+                                FontSize="{DynamicResource Font.Size.Body}"
+                                Background="{DynamicResource Brush.Primary}"
+                                Foreground="{DynamicResource Brush.OnPrimary}"
+                                BorderThickness="0" />
+
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Self-grading quiz -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Self-grading quiz (web)" Style="{StaticResource Heading}" />
+                    <TextBlock Text="A single web page that marks itself in the browser: the taker answers, clicks Submit, and sees their score, what they got wrong, and any essays to review — graded by the same rules the app uses."
+                               Style="{StaticResource Hint}" />
+                    <TextBlock Text="For self-assessment and practice. The answers are stored in the page, so anyone who views its source can read them — it is not a supervised exam."
+                               Style="{StaticResource Hint}"
+                               Margin="0,4,0,8" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button x:Name="ExportWebQuizButton"
+                                Content="Export self-grading quiz..."
+                                Click="OnExportWebQuizClick"
+                                IsEnabled="{Binding CanExport}"
+                                Padding="16,8"
+                                Cursor="Hand"
+                                FontFamily="{DynamicResource Font.Family}"
+                                FontSize="{DynamicResource Font.Size.Body}"
+                                Background="{DynamicResource Brush.Primary}"
+                                Foreground="{DynamicResource Brush.OnPrimary}"
+                                BorderThickness="0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- PDF -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="PDF" Style="{StaticResource Heading}" />
+                    <TextBlock Text="Export the web page, open it, and use your browser's Print command with &quot;Save as PDF&quot; as the destination. The exported page carries print rules that keep each question on one page."
+                               Style="{StaticResource Hint}" />
+                    <TextBlock Text="This uses the browser's own print engine rather than a bundled PDF library, which keeps the output faithful to what you see and avoids a licence that would follow the app around."
+                               Style="{StaticResource Hint}"
+                               Margin="0,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Word -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Word document" Style="{StaticResource Heading}" />
+                    <TextBlock Text="A .docx you can edit, with the quiz styled from your current theme. Uses the same answer-key setting as the web page above."
+                               Style="{StaticResource Hint}" />
+
+                    <Button x:Name="ExportWordButton"
+                            Content="Export Word document..."
+                            Click="OnExportWordClick"
+                            IsEnabled="{Binding CanExport}"
+                            HorizontalAlignment="Left"
+                            Margin="0,8,0,0"
+                            Padding="16,8"
+                            Cursor="Hand"
+                            FontFamily="{DynamicResource Font.Family}"
+                            FontSize="{DynamicResource Font.Size.Body}"
+                            Background="{DynamicResource Brush.Primary}"
+                            Foreground="{DynamicResource Brush.OnPrimary}"
+                            BorderThickness="0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Excel -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Spreadsheet" Style="{StaticResource Heading}" />
+                    <TextBlock Text="One row per question, for bulk editing. Export it, change it in Excel, then import it back. The workbook includes a Guide sheet explaining each column."
+                               Style="{StaticResource Hint}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button x:Name="ExportExcelButton"
+                                Content="Export spreadsheet..."
+                                Click="OnExportExcelClick"
+                                IsEnabled="{Binding CanExport}"
+                                Padding="16,8"
+                                Cursor="Hand"
+                                FontFamily="{DynamicResource Font.Family}"
+                                FontSize="{DynamicResource Font.Size.Body}"
+                                Background="{DynamicResource Brush.Primary}"
+                                Foreground="{DynamicResource Brush.OnPrimary}"
+                                BorderThickness="0" />
+
+                        <Button x:Name="ImportExcelButton"
+                                Content="Import spreadsheet..."
+                                Click="OnImportExcelClick"
+                                Margin="10,0,0,0"
+                                Padding="16,8"
+                                Cursor="Hand"
+                                FontFamily="{DynamicResource Font.Family}"
+                                FontSize="{DynamicResource Font.Size.Body}"
+                                Background="Transparent"
+                                Foreground="{DynamicResource Brush.TextPrimary}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1" />
+                    </StackPanel>
+
+                    <TextBlock Text="Importing replaces every question in the current quiz."
+                               Style="{StaticResource Hint}"
+                               Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Applies to whatever was exported last, HTML or Word, so it
+                 sits outside both cards rather than implying one of them. -->
+            <Button x:Name="OpenButton"
+                    Content="Open last export"
+                    Click="OnOpenExportClick"
+                    Visibility="{Binding HasExported, Converter={StaticResource BoolVis}}"
+                    HorizontalAlignment="Left"
+                    Padding="16,8"
+                    Cursor="Hand"
+                    FontFamily="{DynamicResource Font.Family}"
+                    FontSize="{DynamicResource Font.Size.Body}"
+                    Background="Transparent"
+                    Foreground="{DynamicResource Brush.TextPrimary}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1" />
+
+            <TextBlock Text="{Binding StatusMessage}"
+                       Style="{StaticResource Hint}"
+                       Margin="0,10,0,0" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

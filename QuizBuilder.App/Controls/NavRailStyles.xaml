@@ -1,0 +1,134 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctl="clr-namespace:QuizBuilder.App.Controls">
+
+    <!--
+      Navigation rail item.
+
+      Built as an explicit ControlTemplate rather than styling a stock Button,
+      because the default Button template paints its own chrome that fights the
+      theme (a Background setter alone still leaves the default mouse-over and
+      pressed brushes underneath).
+
+      All colour, spacing and radius values come from DynamicResource so a theme
+      switch updates live. DynamicResource works inside a template's triggers;
+      StaticResource would freeze the first theme's values in place.
+    -->
+    <Style x:Key="NavRailItemStyle" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="12,10" />
+        <Setter Property="Margin" Value="8,2" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+        <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+
+        <!-- Opt into focus-visible tracking, and suppress WPF's built-in focus
+             visual: a 1px dotted rectangle that is effectively invisible on
+             most of these palettes and would sit under the themed ring anyway. -->
+        <Setter Property="ctl:FocusVisible.IsEnabled" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid>
+                        <!-- Root surface. Named so triggers can retarget it. -->
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{DynamicResource Radius.Md}"
+                                Padding="{TemplateBinding Padding}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="Icon"
+                                           Text="{Binding Glyph}"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="16"
+                                           Width="24"
+                                           VerticalAlignment="Center"
+                                           Foreground="{TemplateBinding Foreground}" />
+                                <TextBlock x:Name="Label"
+                                           Text="{Binding Label}"
+                                           Margin="8,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{TemplateBinding Foreground}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Active indicator: a bar on the leading edge. A left
+                             bar reads as "you are here" more clearly than colour
+                             alone, and does not rely on hue perception.
+                             Margin insets it past the focus ring's 2px border so
+                             the two never overdraw each other: previously both
+                             sat at x=0 and the ring clipped the bar to ~1px. -->
+                        <Border x:Name="ActiveBar"
+                                Width="3"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Stretch"
+                                Margin="4,7,0,7"
+                                CornerRadius="{DynamicResource Radius.Pill}"
+                                Background="{DynamicResource Brush.Primary}"
+                                Visibility="Collapsed" />
+
+                        <!-- Focus ring. WPF's default focus visual is a 1px
+                             dotted rectangle that is invisible on most of these
+                             themes, so it is replaced with a themed 2px ring. -->
+                        <Border x:Name="FocusRing"
+                                CornerRadius="{DynamicResource Radius.Md}"
+                                BorderBrush="{DynamicResource Brush.FocusRing}"
+                                BorderThickness="2"
+                                Visibility="Collapsed"
+                                IsHitTestVisible="False" />
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <!-- Active: filled surface, primary text, edge bar. -->
+                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                            <Setter TargetName="Root" Property="Background"
+                                    Value="{DynamicResource Brush.SelectedOverlay}" />
+                            <Setter TargetName="ActiveBar" Property="Visibility"
+                                    Value="Visible" />
+                            <Setter TargetName="Icon" Property="Foreground"
+                                    Value="{DynamicResource Brush.Primary}" />
+                            <Setter TargetName="Label" Property="Foreground"
+                                    Value="{DynamicResource Brush.TextPrimary}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </DataTrigger>
+
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background"
+                                    Value="{DynamicResource Brush.HoverOverlay}" />
+                            <Setter TargetName="Label" Property="Foreground"
+                                    Value="{DynamicResource Brush.TextPrimary}" />
+                        </Trigger>
+
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Root" Property="Background"
+                                    Value="{DynamicResource Brush.PressedOverlay}" />
+                        </Trigger>
+
+                        <!-- Show the ring only when focus arrived via the
+                             keyboard. IsKeyboardFocused was the obvious choice
+                             and is wrong: WPF sets it whenever an element holds
+                             focus, including the first tab stop when the window
+                             merely opens, and on a plain mouse click. The
+                             attached property tracks the last input device, so
+                             this behaves like CSS :focus-visible. -->
+                        <Trigger Property="ctl:FocusVisible.IsFocusVisible" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility"
+                                    Value="Visible" />
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

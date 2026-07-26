@@ -1,0 +1,217 @@
+<UserControl x:Class="QuizBuilder.App.Views.GitHubView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:QuizBuilder.App.Converters">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource Radius.Md}" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style x:Key="Heading" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Subtitle}" />
+            <Setter Property="FontWeight" Value="{DynamicResource Font.Weight.Bold}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Caption}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Caption}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <Style x:Key="Field" TargetType="TextBox">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+            <Setter Property="Background" Value="{DynamicResource Brush.Background}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+
+        <Style x:Key="Primary" TargetType="Button">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+            <Setter Property="Background" Value="{DynamicResource Brush.Primary}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.OnPrimary}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style x:Key="Secondary" TargetType="Button">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel Margin="24" MaxWidth="720" HorizontalAlignment="Left">
+
+            <TextBlock Text="GitHub"
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Title}"
+                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                       Foreground="{DynamicResource Brush.TextPrimary}"
+                       Margin="0,0,0,4" />
+
+            <TextBlock Text="Publish the quiz as a web page and get a link to hand out."
+                       Style="{StaticResource Hint}"
+                       Margin="0,0,0,20" />
+
+            <!-- Connect -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Account" Style="{StaticResource Heading}" />
+                    <TextBlock Style="{StaticResource Hint}">
+                        <Run Text="Paste a personal access token with the" />
+                        <Run Text="repo" FontWeight="Bold" />
+                        <Run Text="scope, and" />
+                        <Run Text="pages" FontWeight="Bold" />
+                        <Run Text="if you want the site turned on automatically. Create one under Settings → Developer settings → Personal access tokens on github.com." />
+                    </TextBlock>
+
+                    <TextBlock Text="Personal access token" Style="{StaticResource FieldLabel}" />
+
+                    <!--
+                        A PasswordBox, not a TextBox: its content is not a bindable
+                        property, which is the point. The token is read at the
+                        moment it is used and handed straight to the service, so it
+                        never sits in ViewModel state where a binding trace or a
+                        crash dump could pick it up.
+                    -->
+                    <PasswordBox x:Name="TokenBox"
+                                 FontFamily="{DynamicResource Font.Family}"
+                                 FontSize="{DynamicResource Font.Size.Body}"
+                                 Background="{DynamicResource Brush.Background}"
+                                 Foreground="{DynamicResource Brush.TextPrimary}"
+                                 BorderBrush="{DynamicResource Brush.Border}"
+                                 BorderThickness="1"
+                                 Padding="8,6"
+                                 Margin="0,0,0,12" />
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="ConnectButton"
+                                Content="Connect"
+                                Click="OnConnectClick"
+                                IsEnabled="{Binding IsNotBusy}"
+                                Style="{StaticResource Primary}" />
+
+                        <Button x:Name="DisconnectButton"
+                                Content="Forget token"
+                                Click="OnDisconnectClick"
+                                IsEnabled="{Binding IsNotBusy}"
+                                Margin="10,0,0,0"
+                                Style="{StaticResource Secondary}" />
+                    </StackPanel>
+
+                    <TextBlock Text="The token is encrypted on this machine using the mode set on the Settings tab."
+                               Style="{StaticResource Hint}"
+                               Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Repository -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Repository" Style="{StaticResource Heading}" />
+
+                    <TextBlock Text="Repository" Style="{StaticResource FieldLabel}" />
+                    <TextBox Text="{Binding RepositoryText, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource Field}" />
+
+                    <TextBlock Text="{Binding RepositoryHint}"
+                               Style="{StaticResource Hint}" />
+
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Branch" Style="{StaticResource FieldLabel}" />
+                            <TextBox Text="{Binding Branch, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource Field}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="File name" Style="{StaticResource FieldLabel}" />
+                            <TextBox Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource Field}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Publish -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Publish" Style="{StaticResource Heading}" />
+                    <TextBlock Text="Uploads the quiz as a web page, commits it, and turns on GitHub Pages. Publishing again updates the same file."
+                               Style="{StaticResource Hint}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <Button x:Name="PublishButton"
+                                Content="Publish to GitHub Pages"
+                                Click="OnPublishClick"
+                                IsEnabled="{Binding IsNotBusy}"
+                                Style="{StaticResource Primary}" />
+
+                        <Button x:Name="OpenPublishedButton"
+                                Content="Open published page"
+                                Click="OnOpenPublishedClick"
+                                IsEnabled="{Binding HasPublishedUrl}"
+                                Margin="10,0,0,0"
+                                Style="{StaticResource Secondary}" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Status}"
+                               Style="{StaticResource Hint}"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolVis}}" />
+
+                    <TextBlock Style="{StaticResource Hint}"
+                               Margin="0,4,0,0"
+                               Visibility="{Binding HasPublishedUrl, Converter={StaticResource BoolVis}}">
+                        <Run Text="Link:" />
+                        <Run Text="{Binding LastPublishedUrl, Mode=OneWay}" FontWeight="Bold" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0">
+                <Run Text="Note:" FontWeight="Bold" />
+                <Run Text="a new Pages site can take a minute or two to appear the first time. If the link 404s, wait and refresh." />
+            </TextBlock>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

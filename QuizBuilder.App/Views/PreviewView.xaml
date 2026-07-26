@@ -1,0 +1,373 @@
+<UserControl x:Class="QuizBuilder.App.Views.PreviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:QuizBuilder.App.Views"
+             xmlns:conv="clr-namespace:QuizBuilder.App.Converters">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+        <conv:BoolToVisibilityConverter x:Key="BoolVisInv" Invert="True" />
+        <conv:BytesToImageConverter x:Key="BytesToImage" />
+
+        <Style x:Key="ModeButton" TargetType="Button">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Caption}" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+        </Style>
+
+        <!-- The paper itself. Deliberately plain: this is meant to read like a
+             printed page, not like the rest of the app. -->
+        <Style x:Key="PaperText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
+            <Setter Property="FontSize" Value="{DynamicResource Font.Size.Body}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <!-- An answer line the student writes on. A Border with only a bottom
+             edge, rather than an underscore run, so it stretches to the column
+             width instead of depending on the font. -->
+        <DataTemplate x:Key="WritingLineTemplate">
+            <Border BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="0,0,0,1"
+                    Height="24"
+                    Margin="0,0,0,4" />
+        </DataTemplate>
+
+        <DataTemplate x:Key="OptionTemplate">
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Tick marks the answer. Shown by SHAPE, not by colour alone:
+                     a red/green-only cue is invisible to a colour-blind reader
+                     and disappears in a monochrome printout. -->
+                <TextBlock Grid.Column="0"
+                           Text="&#xE73E;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="12"
+                           Width="18"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource Brush.Success}"
+                           Visibility="{Binding ShowAsCorrect, Converter={StaticResource BoolVis}}" />
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Label, StringFormat={}{0}.}"
+                           Style="{StaticResource PaperText}"
+                           Margin="0,0,8,0"
+                           MinWidth="20" />
+
+                <TextBlock Grid.Column="2"
+                           Text="{Binding Text}"
+                           Style="{StaticResource PaperText}" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="QuestionTemplate">
+            <StackPanel Margin="0,0,0,22">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding Number, StringFormat={}{0}.}"
+                               Style="{StaticResource PaperText}"
+                               FontWeight="{DynamicResource Font.Weight.Bold}"
+                               MinWidth="28" />
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Prompt}"
+                               Style="{StaticResource PaperText}" />
+
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding PointsLabel}"
+                               Style="{StaticResource PaperText}"
+                               FontSize="{DynamicResource Font.Size.Caption}"
+                               Foreground="{DynamicResource Brush.TextSecondary}"
+                               Margin="12,2,0,0"
+                               VerticalAlignment="Top" />
+                </Grid>
+
+                <!-- Question image, if any -->
+                <Image Source="{Binding ImageBytes, Converter={StaticResource BytesToImage}}"
+                       MaxHeight="220"
+                       HorizontalAlignment="Left"
+                       Stretch="Uniform"
+                       Margin="28,8,0,0"
+                       Visibility="{Binding HasImage, Converter={StaticResource BoolVis}}" />
+
+                <!-- Options -->
+                <ItemsControl ItemsSource="{Binding Options}"
+                              ItemTemplate="{StaticResource OptionTemplate}"
+                              Margin="28,8,0,0"
+                              Focusable="False"
+                              Visibility="{Binding HasOptions, Converter={StaticResource BoolVis}}" />
+
+                <!-- Matching: the left column, each with a blank to fill -->
+                <ItemsControl ItemsSource="{Binding MatchingPrompts}"
+                              Margin="28,8,0,0"
+                              Focusable="False"
+                              Visibility="{Binding HasMatchingPrompts, Converter={StaticResource BoolVis}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="0,0,0,1"
+                                        Width="36" Height="20"
+                                        Margin="0,0,10,0"
+                                        VerticalAlignment="Bottom" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding}"
+                                           Style="{StaticResource PaperText}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Writing space for short answer and essay -->
+                <ItemsControl ItemsSource="{Binding WritingLines}"
+                              ItemTemplate="{StaticResource WritingLineTemplate}"
+                              Margin="28,10,0,0"
+                              Focusable="False"
+                              Visibility="{Binding HasWritingLines, Converter={StaticResource BoolVis}}" />
+
+                <!-- Hint -->
+                <TextBlock Text="{Binding Hint, StringFormat=Hint: {0}}"
+                           Style="{StaticResource PaperText}"
+                           FontSize="{DynamicResource Font.Size.Caption}"
+                           FontStyle="Italic"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           Margin="28,6,0,0"
+                           Visibility="{Binding HasHint, Converter={StaticResource BoolVis}}" />
+
+                <!-- Answer, key mode only -->
+                <Border Background="{DynamicResource Brush.SurfaceSunken}"
+                        BorderBrush="{DynamicResource Brush.Success}"
+                        BorderThickness="3,0,0,0"
+                        Padding="10,6"
+                        Margin="28,8,0,0"
+                        Visibility="{Binding ShowAnswers, Converter={StaticResource BoolVis}}">
+                    <StackPanel>
+                        <TextBlock Text="Answer"
+                                   Style="{StaticResource PaperText}"
+                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                   FontWeight="{DynamicResource Font.Weight.Bold}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}" />
+                        <TextBlock Text="{Binding AnswerText}"
+                                   Style="{StaticResource PaperText}"
+                                   Margin="0,2,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1"
+                Padding="20,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Content="Student view"
+                            Command="{Binding ShowStudentViewCommand}"
+                            Style="{StaticResource ModeButton}">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4,0,0,4" />
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="Answer key"
+                            Command="{Binding ShowAnswerKeyCommand}"
+                            Style="{StaticResource ModeButton}"
+                            Margin="-1,0,0,0" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ModeLabel}"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Caption}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextSecondary}" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <!-- A disabled button with no explanation is still a dead
+                         button, so the reason sits next to it. -->
+                    <TextBlock Text="{Binding ReshuffleHint}"
+                               VerticalAlignment="Center"
+                               MaxWidth="300"
+                               TextWrapping="Wrap"
+                               TextAlignment="Right"
+                               Margin="0,0,10,0"
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Caption}"
+                               Foreground="{DynamicResource Brush.TextSecondary}"
+                               Visibility="{Binding ShowReshuffleHint, Converter={StaticResource BoolVis}}" />
+
+                    <Button Content="Reshuffle"
+                            Command="{Binding RefreshCommand}"
+                            IsEnabled="{Binding CanReshuffle}"
+                            Style="{StaticResource ModeButton}"
+                            ToolTip="{Binding ReshuffleHint}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Warnings -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource Brush.SurfaceSunken}"
+                BorderBrush="{DynamicResource Brush.Warning}"
+                BorderThickness="0,0,0,2"
+                Padding="20,8"
+                Visibility="{Binding HasWarnings, Converter={StaticResource BoolVis}}">
+            <ItemsControl ItemsSource="{Binding Warnings}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}"
+                                   Style="{StaticResource PaperText}"
+                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <!-- The paper -->
+        <Grid Grid.Row="2" Background="{DynamicResource Brush.SurfaceSunken}">
+            <!-- Empty state -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                        MaxWidth="380"
+                        Visibility="{Binding IsEmpty, Converter={StaticResource BoolVis}}">
+                <TextBlock Text="Nothing to preview yet"
+                           HorizontalAlignment="Center"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock Text="Add some questions in the Quiz Builder tab and they will appear here as a paper."
+                           Margin="0,6,0,0"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Caption}"
+                           Foreground="{DynamicResource Brush.TextSecondary}" />
+            </StackPanel>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Visibility="{Binding IsEmpty, Converter={StaticResource BoolVisInv}}">
+                <!-- A page-like column rather than full width: long lines of
+                     text are hard to read, and this is pretending to be paper. -->
+                <Border Background="{DynamicResource Brush.Background}"
+                        MaxWidth="780"
+                        Margin="24,20,24,40"
+                        Padding="44,36"
+                        CornerRadius="{DynamicResource Radius.Sm}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Title}"
+                                   Style="{StaticResource PaperText}"
+                                   FontSize="{DynamicResource Font.Size.Title}"
+                                   FontWeight="{DynamicResource Font.Weight.Bold}" />
+
+                        <StackPanel views:DescriptionPresenter.FormattedDescription="{Binding Description}"
+                                    TextElement.Foreground="{DynamicResource Brush.TextSecondary}"
+                                    TextElement.FontFamily="{DynamicResource Font.Family}"
+                                    TextElement.FontSize="{DynamicResource Font.Size.Body}"
+                                    Margin="0,8,0,0"
+                                    Visibility="{Binding HasDescription, Converter={StaticResource BoolVis}}" />
+
+                        <TextBlock Text="{Binding SummaryLine}"
+                                   Style="{StaticResource PaperText}"
+                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   Margin="0,10,0,0" />
+
+                        <TextBlock Text="{Binding PassMarkLine}"
+                                   Style="{StaticResource PaperText}"
+                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   Margin="0,2,0,0"
+                                   Visibility="{Binding HasPassMark, Converter={StaticResource BoolVis}}" />
+
+                        <Border BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="0,0,0,1"
+                                Margin="0,16,0,20" />
+
+                        <ItemsControl ItemsSource="{Binding Sections}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,28">
+                                        <Grid Margin="0,0,0,14">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding Title}"
+                                                       Style="{StaticResource PaperText}"
+                                                       FontSize="{DynamicResource Font.Size.Subtitle}"
+                                                       FontWeight="{DynamicResource Font.Weight.Bold}" />
+
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding PointsLabel}"
+                                                       Style="{StaticResource PaperText}"
+                                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                                       VerticalAlignment="Bottom" />
+                                        </Grid>
+
+                                        <TextBlock Text="(no questions in this section)"
+                                                   Style="{StaticResource PaperText}"
+                                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                                   FontStyle="Italic"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                   Visibility="{Binding IsEmpty, Converter={StaticResource BoolVis}}" />
+
+                                        <ItemsControl ItemsSource="{Binding Questions}"
+                                                      ItemTemplate="{StaticResource QuestionTemplate}"
+                                                      Focusable="False" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>
