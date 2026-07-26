@@ -19,11 +19,11 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore QuizBuilder.Core/QuizBuilder.Core.csproj QuizBuilder.Tests/QuizBuilder.Tests.csproj
-
+        run: dotnet restore QuizBuilder.Tests/QuizBuilder.Tests.csproj
+        
       - name: Build
-        run: dotnet build QuizBuilder.Tests/QuizBuilder.Tests.csproj --configuration Release --no-restore
-
+        run: dotnet build QuizBuilder.Tests/QuizBuilder.Tests.csproj --configuration Release
+        
       - name: Test
         run: dotnet test QuizBuilder.Tests/QuizBuilder.Tests.csproj --configuration Release --no-build --verbosity normal
 
