@@ -6,6 +6,7 @@
     xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
     xmlns:views="clr-namespace:QuizBuilder.Player.Views"
     x:DataType="vm:TakeViewModel"
+    Shell.NavBarIsVisible="False"
     Title="{Binding QuizTitle}">
 
     <ContentPage.Resources>

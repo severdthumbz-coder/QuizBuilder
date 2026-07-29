@@ -8,3 +8,6 @@ publish/
 
 # Release archives / build zips
 *.zip
+
+# Release archives / build zips
+*.zip

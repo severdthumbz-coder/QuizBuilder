@@ -708,9 +708,84 @@ rules (semantic light/dark brushes, 48dp targets, one CTA per screen, inline
 validate-on-blur). Flash-card review was **not** built this pass — the player
 covers quiz-taking only; study-card review is the obvious next mobile slice.
 
-**Still to do on mobile:** first green Android build (the real gate); wire an
-Android CI job that installs `maui-android` and runs `build-android.ps1`; iOS
-target (needs a Mac); flash-card review screen.
+### Mobile status after first device run (v0.26.0)
+
+The player builds green, deploys to an Android emulator, and runs end to end:
+identity capture → `.qbx` import → take (all eight question types) → grade via
+Core → results. Scoring is Core's, so it matches desktop by construction. This
+proves the whole shared-Core premise on-device.
+
+Toolchain notes learned the hard way (all now handled by `build-android.ps1`):
+the machine needs a **stable .NET 10 SDK** with `global.json` pinned to it (a
+.NET 11 preview SDK pulls a mismatched net11 workload band); the **maui-android
+workload**, the **Android SDK** and a **JDK** are separate installs the workload
+does not bundle (the script detects all three and the API-36 platform, and
+accepts licences); and a hand-installed **debug APK crashes** with "No
+assemblies found … Fast Deployment" unless built with
+`-p:EmbedAssembliesIntoApk=true` (the script now does this) or deployed via
+`dotnet build -t:Run`.
+
+**Bug fixed on-device:** the Android back button used to pop the take page and
+destroy the in-progress `TakeSession`, restarting the quiz. `TakePage` now
+overrides `OnBackButtonPressed` to confirm before leaving, and hides the Shell
+nav bar so there is no stray back arrow. (This is a stopgap; real pause/resume
+below supersedes it.)
+
+### NEXT MOBILE SESSION: tier-1 offline features (decided, not yet built)
+
+Four things were requested after the first run. The back-button bug is done. The
+other three are real features for a **fresh chat** (bring HANDOFF.md). The
+data-location question was decided: **tier 1 — local on the device only.** No
+backend, no accounts; matches the app's offline/no-cloud invariant, and the
+existing email-results feature already covers getting a result to an instructor.
+(Tier 2 = add file export/import to bridge devices; tier 3 = cloud sync, a
+separate product with a backend/auth/privacy surface — explicitly out of scope.)
+
+The happy news: **Core already models all of this.** The work is wiring, not
+design. Build order:
+
+1. **Study Cards review screen.** Terminology: "Study Cards" (NOT "Flip Cards").
+   The `.qbx` already carries them; the desktop `StudyCardsView` is the
+   reference. Add a home-screen choice ("Take Quiz" vs "Review Study Cards") and
+   a card-flip UI. Self-contained; no persistence needed for a first cut.
+
+2. **Attempt history (local).** Core has it ready:
+   - `IAttemptHistoryService` / `AttemptHistoryService(string? overrideDirectory)`
+     — construct it with `FileSystem.AppDataDirectory` and it writes
+     `history.json` to the sandbox. Same `overrideDirectory` seam SettingsService
+     uses; no Core change needed.
+   - `AttemptRecordBuilder.Build(quizId, quizTitle, result)` converts the
+     `AttemptResult` the player already produces into a storable `AttemptRecord`.
+     So after grading: `history.Add(AttemptRecordBuilder.Build(doc.Id, title, result)); history.Save();`
+   - `AttemptRecord`/`AttemptQuestionRecord` are deliberately plain get/set (not
+     `required`) for forward-compatible reading — do not "tidy" that.
+   - New work: register the service (with the sandbox dir) in `MauiProgram`, call
+     it on the results screen, and add a history list screen (per quiz via
+     `ForQuiz(quizId)`, newest first) with a per-attempt detail view.
+
+3. **Pause / resume.** Core has `IPausedAttemptService` /
+   `PausedAttemptService(string? overrideDirectory)` writing
+   `paused-attempts.json`, plus the `PausedAttempt`/`PausedSection`/
+   `PausedQuestion` snapshot model — self-contained (stores the presented paper,
+   shuffled matching options, sequence presentation, and answers so far), so a
+   resumed sitting shows exactly what was paused even if the quiz is later
+   edited. New work: a "Pause" action on the take screen that snapshots the
+   `TakeSession` into a `PausedAttempt` and saves it; a "Resume" entry on the
+   home/quiz screen that rebuilds a `TakeSession` from the snapshot; and make the
+   back-button confirm dialog offer "Pause instead of leaving" once this exists.
+   The clock is time-spent (seconds), not wall-clock — pausing must not cost the
+   taker time.
+
+Mapping mobile ↔ Core snapshot needs care: the player's `TakeSession`/
+`QuestionPresenter` layer must translate to/from `PausedQuestion.Answer`
+(`QuestionAnswer`) and carry `MatchingOptions`/`SequencePresentation` so a
+resumed matching/sequence question keeps its shuffle (otherwise resume hands the
+taker the correct order). Model this in Python first, like the grading port.
+
+**Still to do beyond tier 1:** iOS target (needs a Mac); an Android CI job that
+installs `maui-android` and runs `build-android.ps1`; replace the placeholder
+app icon/monogram; test the email-results composer on a real phone (the emulator
+usually has no mail app).
 
 ---
 
