@@ -1,8 +1,8 @@
 {
   "sdk": {
-    "version": "8.0.0",
-    "rollForward": "latestMajor",
-    "allowPrerelease": true
+    "version": "10.0.100",
+    "rollForward": "latestFeature",
+    "allowPrerelease": false
   },
-  "_comment": "Prefers a stable .NET 8 SDK when one is installed, but rolls forward (including to a preview) rather than refusing to build. Projects target net8.0; building them with a much newer SDK is supported, provided the .NET 8 targeting pack is present. If the build reports NETSDK1045 or cannot find the net8.0 targeting pack, install the .NET 8 SDK from https://dot.net/download and it will be preferred automatically."
+  "_comment": "Selects a stable .NET 10 SDK. Chosen because the MAUI player targets net10.0-android (MAUI 10 rides .NET 10), and the desktop/Core/Tests target net8.0/net10.0 which a .NET 10 SDK builds cleanly. rollForward=latestFeature stays within the 10.0.x band (e.g. 10.0.203 is fine) but will NOT jump to .NET 11 — that matters here because a machine may also have an 11.x preview installed, and building MAUI 10 on an 11 preview pulls a mismatched workload band. allowPrerelease=false keeps it off preview SDKs. If dotnet reports it can't find a 10.0.x SDK, install the .NET 10 SDK from https://dot.net and it will be selected automatically. To build the desktop app on net8 only (no .NET 10 present), a .NET 8 SDK also satisfies the net8.0 targets; but the MAUI player REQUIRES .NET 10."
 }

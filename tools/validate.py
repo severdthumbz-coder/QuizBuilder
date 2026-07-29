@@ -38,7 +38,13 @@ def ok(msg):
 
 def check_xml():
     print("\n[1] XML/JSON well-formedness")
-    patterns = ["**/*.csproj", "**/*.props", "**/*.xaml", "**/*.svg", "**/*.config"]
+    # Include every XML-family file the .NET / Android build parses strictly.
+    # AndroidManifest.xml (a plain .xml) and .targets/.manifest were previously
+    # unchecked, which let a '--'-in-comment slip through to the Android build
+    # (illegal XML: a comment may not contain '--'). ET.parse rejects that, so
+    # widening the glob is the whole fix.
+    patterns = ["**/*.csproj", "**/*.props", "**/*.targets", "**/*.xaml",
+                "**/*.svg", "**/*.config", "**/*.xml", "**/*.manifest"]
     files = []
     for p in patterns:
         files.extend(glob.glob(os.path.join(ROOT, p), recursive=True))
@@ -420,7 +426,11 @@ def check_markup_extensions():
     print("\n[7] XAML markup extension escaping")
     known = ("Binding", "StaticResource", "DynamicResource", "x:Type", "x:Null",
              "x:Static", "TemplateBinding", "RelativeSource", "MultiBinding",
-             "x:Array", "x:Reference", "ThemeResource")
+             "x:Array", "x:Reference", "ThemeResource",
+             # MAUI markup extensions (QuizBuilder.Player). Valid, and like the
+             # WPF ones they legitimately begin an attribute value with '{'.
+             "AppThemeBinding", "AppThemeResource", "OnPlatform", "OnIdiom",
+             "DataTemplate", "FontImage")
     found = 0
     for f in sorted(glob.glob(os.path.join(ROOT, "**/*.xaml"), recursive=True)):
         if os.sep + "obj" + os.sep in f:

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuizBuilder.Player.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    x:DataType="vm:HomeViewModel"
+    Title="Your quiz">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16" MaximumWidthRequest="560" HorizontalOptions="Center">
+
+            <Label Text="{Binding WelcomeLine}" Style="{StaticResource Muted}" IsVisible="{Binding WelcomeLine, Converter={StaticResource NotEmpty}}" />
+
+            <!-- Import card -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Open a quiz" Style="{StaticResource Subtitle}" />
+                    <Label
+                        Text="Choose a .qbx quiz file exported from Quiz Builder, or open one from another app's share menu."
+                        Style="{StaticResource Muted}" />
+                    <Button
+                        Text="Choose file"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding PickFileCommand}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Busy indicator -->
+            <HorizontalStackLayout Spacing="10" IsVisible="{Binding IsBusy}" HorizontalOptions="Center">
+                <ActivityIndicator IsRunning="{Binding IsBusy}" WidthRequest="22" HeightRequest="22" />
+                <Label Text="{Binding StatusMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <!-- Error / status when not busy -->
+            <Label
+                Text="{Binding StatusMessage}"
+                Style="{StaticResource ErrorText}"
+                FontSize="14"
+                IsVisible="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+
+            <!-- Loaded quiz summary -->
+            <Border Style="{StaticResource Card}" IsVisible="{Binding HasQuiz}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="{Binding QuizTitle}" Style="{StaticResource Title}" />
+                    <Label
+                        Text="{Binding QuizDescription}"
+                        Style="{StaticResource Body}"
+                        IsVisible="{Binding QuizDescription, Converter={StaticResource NotEmpty}}" />
+
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="{Binding QuestionCount}" Style="{StaticResource Body}" FontAttributes="Bold" />
+                        <Label Text="questions" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <!-- Non-fatal load warnings, if any -->
+                    <Border
+                        IsVisible="{Binding WarningText, Converter={StaticResource NotEmpty}}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                        Padding="12"
+                        StrokeThickness="0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10" />
+                        </Border.StrokeShape>
+                        <Label Text="{Binding WarningText}" Style="{StaticResource Muted}" FontSize="13" />
+                    </Border>
+
+                    <Button
+                        Text="Start quiz"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding StartCommand}"
+                        Margin="0,4,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

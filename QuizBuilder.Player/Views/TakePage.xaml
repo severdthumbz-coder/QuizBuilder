@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuizBuilder.Player.Views.TakePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    xmlns:views="clr-namespace:QuizBuilder.Player.Views"
+    x:DataType="vm:TakeViewModel"
+    Title="{Binding QuizTitle}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+
+            <!-- ============ Per-type answer templates ============ -->
+
+            <!-- Multiple choice, single answer: tappable tiles, one selected. -->
+            <DataTemplate x:Key="SingleChoiceTemplate" x:DataType="vm:SingleChoicePresenter">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Options}" Spacing="10">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ChoiceOption">
+                            <Border Style="{StaticResource OptionTile}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleCommand}" />
+                                </Border.GestureRecognizers>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource AccentLight}, Dark={StaticResource AccentDark}}" />
+                                        <Setter Property="StrokeThickness" Value="2.5" />
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                    <!-- Radio glyph (selected state shown by fill), not color alone. -->
+                                    <Border Grid.Column="0" WidthRequest="22" HeightRequest="22" VerticalOptions="Center"
+                                            StrokeThickness="2"
+                                            Stroke="{AppThemeBinding Light={StaticResource OnSurfaceMutedLight}, Dark={StaticResource OnSurfaceMutedDark}}">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="11" />
+                                        </Border.StrokeShape>
+                                        <Border WidthRequest="10" HeightRequest="10" StrokeThickness="0"
+                                                IsVisible="{Binding IsSelected}"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource AccentLight}, Dark={StaticResource AccentDark}}">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="5" />
+                                            </Border.StrokeShape>
+                                        </Border>
+                                    </Border>
+                                    <Label Grid.Column="1" Text="{Binding Text}" Style="{StaticResource Body}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <!-- Multiple choice, multiple answers: checkbox tiles. -->
+            <DataTemplate x:Key="MultiChoiceTemplate" x:DataType="vm:MultiChoicePresenter">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Select all that apply." Style="{StaticResource Muted}" FontSize="13" />
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Options}" Spacing="10">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ChoiceOption">
+                                <Border Style="{StaticResource OptionTile}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding ToggleCommand}" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource AccentLight}, Dark={StaticResource AccentDark}}" />
+                                            <Setter Property="StrokeThickness" Value="2.5" />
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Border Grid.Column="0" WidthRequest="22" HeightRequest="22" VerticalOptions="Center"
+                                                StrokeThickness="2"
+                                                Stroke="{AppThemeBinding Light={StaticResource OnSurfaceMutedLight}, Dark={StaticResource OnSurfaceMutedDark}}">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="5" />
+                                            </Border.StrokeShape>
+                                            <Label Text="✓" FontAttributes="Bold" FontSize="15"
+                                                   HorizontalOptions="Center" VerticalOptions="Center"
+                                                   IsVisible="{Binding IsSelected}"
+                                                   TextColor="{AppThemeBinding Light={StaticResource AccentLight}, Dark={StaticResource AccentDark}}" />
+                                        </Border>
+                                        <Label Grid.Column="1" Text="{Binding Text}" Style="{StaticResource Body}" VerticalOptions="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <!-- True / False: two large tiles. -->
+            <DataTemplate x:Key="TrueFalseTemplate" x:DataType="vm:TrueFalsePresenter">
+                <VerticalStackLayout Spacing="10">
+                    <Border Style="{StaticResource OptionTile}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ChooseTrueCommand}" />
+                        </Border.GestureRecognizers>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsTrueSelected}" Value="True">
+                                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource AccentLight}, Dark={StaticResource AccentDark}}" />
+                                <Setter Property="StrokeThickness" Value="2.5" />
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Label Text="True" Style="{StaticResource Body}" FontAttributes="Bold" />
+                    </Border>
+                    <Border Style="{StaticResource OptionTile}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ChooseFalseCommand}" />
+                        </Border.GestureRecognizers>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsFalseSelected}" Value="True">
+                                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource AccentLight}, Dark={StaticResource AccentDark}}" />
+                                <Setter Property="StrokeThickness" Value="2.5" />
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Label Text="False" Style="{StaticResource Body}" FontAttributes="Bold" />
+                    </Border>
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <!-- Short answer: single line entry. -->
+            <DataTemplate x:Key="ShortAnswerTemplate" x:DataType="vm:ShortAnswerPresenter">
+                <Border Style="{StaticResource FieldFrame}">
+                    <Entry Text="{Binding Text}" Placeholder="Type your answer" ReturnType="Done" />
+                </Border>
+            </DataTemplate>
+
+            <!-- Fill in the blank: one labelled entry per blank. -->
+            <DataTemplate x:Key="FillBlankTemplate" x:DataType="vm:FillBlankPresenter">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Blanks}" Spacing="12">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:BlankField">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding Label}" Style="{StaticResource FieldLabel}" />
+                                <Border Style="{StaticResource FieldFrame}">
+                                    <Entry Text="{Binding Text}" Placeholder="Answer" ReturnType="Next" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <!-- Matching: left item + a picker of the shuffled right options. -->
+            <DataTemplate x:Key="MatchingTemplate" x:DataType="vm:MatchingPresenter">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Rows}" Spacing="12">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MatchRow">
+                            <Border Style="{StaticResource Card}" Padding="12">
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="{Binding Left}" Style="{StaticResource Body}" FontAttributes="Bold" />
+                                    <Border Style="{StaticResource FieldFrame}" Padding="8,0">
+                                        <Picker Title="Choose a match"
+                                                ItemsSource="{Binding Options}"
+                                                SelectedItem="{Binding Selected}"
+                                                TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
+                                                TitleColor="{AppThemeBinding Light={StaticResource OnSurfaceMutedLight}, Dark={StaticResource OnSurfaceMutedDark}}"
+                                                MinimumHeightRequest="48" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <!-- Sequence: ordered items with up/down controls (accessible
+                 alternative to drag, per the gesture-alternative UX rule). -->
+            <DataTemplate x:Key="SequenceTemplate" x:DataType="vm:SequencePresenter">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Put these in the correct order." Style="{StaticResource Muted}" FontSize="13" />
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Items}" Spacing="8">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SequenceItem">
+                                <Border Style="{StaticResource OptionTile}" Padding="12,8">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
+                                        <Label Grid.Column="0" Text="{Binding Text}" Style="{StaticResource Body}" VerticalOptions="Center" />
+                                        <!-- Up -->
+                                        <Button Grid.Column="1" Text="▲" FontSize="16"
+                                                WidthRequest="48" HeightRequest="48" Padding="0"
+                                                BackgroundColor="Transparent"
+                                                TextColor="{AppThemeBinding Light={StaticResource PrimaryLight}, Dark={StaticResource PrimaryDark}}"
+                                                SemanticProperties.Description="Move item up"
+                                                Command="{Binding MoveUpCommand}" />
+                                        <!-- Down -->
+                                        <Button Grid.Column="2" Text="▼" FontSize="16"
+                                                WidthRequest="48" HeightRequest="48" Padding="0"
+                                                BackgroundColor="Transparent"
+                                                TextColor="{AppThemeBinding Light={StaticResource PrimaryLight}, Dark={StaticResource PrimaryDark}}"
+                                                SemanticProperties.Description="Move item down"
+                                                Command="{Binding MoveDownCommand}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <!-- Essay: multi-line editor; noted as manually reviewed. -->
+            <DataTemplate x:Key="EssayTemplate" x:DataType="vm:EssayPresenter">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="{Binding SuggestedWordLabel}" Style="{StaticResource Muted}" FontSize="13"
+                           IsVisible="{Binding HasSuggestedWordCount}" />
+                    <Border Style="{StaticResource FieldFrame}" Padding="12,8">
+                        <Editor Text="{Binding Text}" Placeholder="Write your response"
+                                AutoSize="TextChanges" MinimumHeightRequest="160"
+                                TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
+                                PlaceholderColor="{AppThemeBinding Light={StaticResource OnSurfaceMutedLight}, Dark={StaticResource OnSurfaceMutedDark}}"
+                                BackgroundColor="Transparent" />
+                    </Border>
+                    <Label Text="Essay answers are reviewed manually and are not scored automatically."
+                           Style="{StaticResource Muted}" FontSize="12" />
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <DataTemplate x:Key="FallbackTemplate" x:DataType="vm:QuestionPresenter">
+                <Label Text="This question type can't be shown in the player."
+                       Style="{StaticResource Muted}" />
+            </DataTemplate>
+
+            <!-- Selector wiring all eight templates. -->
+            <views:QuestionTemplateSelector
+                x:Key="QuestionSelector"
+                SingleChoice="{StaticResource SingleChoiceTemplate}"
+                MultiChoice="{StaticResource MultiChoiceTemplate}"
+                TrueFalse="{StaticResource TrueFalseTemplate}"
+                ShortAnswer="{StaticResource ShortAnswerTemplate}"
+                FillBlank="{StaticResource FillBlankTemplate}"
+                Matching="{StaticResource MatchingTemplate}"
+                Sequence="{StaticResource SequenceTemplate}"
+                Essay="{StaticResource EssayTemplate}"
+                Fallback="{StaticResource FallbackTemplate}" />
+
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Progress header -->
+        <VerticalStackLayout Grid.Row="0" Padding="20,12" Spacing="6"
+                             BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+            <Label Text="{Binding ProgressLabel}" Style="{StaticResource Muted}" />
+            <ProgressBar Progress="{Binding Progress}"
+                         ProgressColor="{AppThemeBinding Light={StaticResource AccentLight}, Dark={StaticResource AccentDark}}" />
+        </VerticalStackLayout>
+
+        <!-- Question body -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="16" MaximumWidthRequest="640" HorizontalOptions="Center"
+                                 BindingContext="{Binding Current}" x:DataType="vm:QuestionPresenter">
+
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="{Binding KindLabel}" Style="{StaticResource Muted}" FontSize="13" />
+                    <Label Text="•" Style="{StaticResource Muted}" FontSize="13" />
+                    <Label Text="{Binding PointsLabel}" Style="{StaticResource Muted}" FontSize="13" />
+                </HorizontalStackLayout>
+
+                <Label Text="{Binding Prompt}" Style="{StaticResource Title}" />
+
+                <Image Source="{Binding ImageBytes, Converter={StaticResource BytesToImage}}"
+                       IsVisible="{Binding HasImage}"
+                       Aspect="AspectFit" MaximumHeightRequest="260" HorizontalOptions="Start" />
+
+                <!-- The answer widget. A BindableLayout over a single-item source
+                     (the current presenter) lets the template selector pick the
+                     right per-type widget; a plain ContentView can't take a
+                     DataTemplateSelector, so this is the idiomatic single-item
+                     templated host. -->
+                <VerticalStackLayout
+                    BindableLayout.ItemsSource="{Binding SelfList}"
+                    BindableLayout.ItemTemplateSelector="{StaticResource QuestionSelector}" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Nav footer (safe-area aware bottom padding) -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12" Padding="20,12,20,24"
+              BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+            <Button Grid.Column="0" Text="Back" Style="{StaticResource SecondaryButton}"
+                    Command="{Binding PreviousCommand}" />
+            <Button Grid.Column="1" Text="Next" Style="{StaticResource SecondaryButton}"
+                    Command="{Binding NextCommand}"
+                    IsVisible="{Binding IsLast, Converter={StaticResource InverseBool}}" />
+            <Button Grid.Column="1" Text="Submit" Style="{StaticResource PrimaryButton}"
+                    Command="{Binding SubmitCommand}"
+                    IsVisible="{Binding IsLast}" />
+        </Grid>
+    </Grid>
+</ContentPage>

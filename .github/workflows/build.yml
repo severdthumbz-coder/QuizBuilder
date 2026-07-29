@@ -16,14 +16,21 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
+          # Install the .NET 8 SDK explicitly so the net8.0 targeting pack is
+          # present on the runner (avoids NETSDK1045 when the runner's default
+          # SDK is newer). global.json rolls forward, so a newer SDK is fine too.
           dotnet-version: '8.0.x'
 
+      # Restoring/building the Tests project pulls in Core via its project
+      # reference, so both platform-neutral projects are covered without naming
+      # two projects on one command (which MSBuild rejects: MSB1008) and without
+      # touching the Windows-only App on this Linux runner.
       - name: Restore
         run: dotnet restore QuizBuilder.Tests/QuizBuilder.Tests.csproj
-        
+
       - name: Build
         run: dotnet build QuizBuilder.Tests/QuizBuilder.Tests.csproj --configuration Release
-        
+
       - name: Test
         run: dotnet test QuizBuilder.Tests/QuizBuilder.Tests.csproj --configuration Release --no-build --verbosity normal
 
@@ -38,6 +45,9 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
+          # Install the .NET 8 SDK explicitly so the net8.0 targeting pack is
+          # present on the runner (avoids NETSDK1045 when the runner's default
+          # SDK is newer). global.json rolls forward, so a newer SDK is fine too.
           dotnet-version: '8.0.x'
 
       - name: Publish portable single-file exe

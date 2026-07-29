@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Android only, on purpose. The HANDOFF records that iOS needs a Mac to
+      build (Apple's rule, any framework) and is deferred; Android builds on
+      Windows alone. Adding net10.0-ios later is a one-line change here plus a
+      Platforms/iOS folder — the shared UI and the Core reference are already
+      iOS-ready because nothing in them is Android-specific.
+
+      MAUI 10 ships in lockstep with .NET 10, which is why Core was
+      multi-targeted to add net10.0 (see QuizBuilder.Core.csproj). This project
+      consumes Core's net10.0 target.
+    -->
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
+
+    <OutputType>Exe</OutputType>
+    <RootNamespace>QuizBuilder.Player</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Display name and identity. Reverse-DNS id matches the desktop's origin. -->
+    <ApplicationTitle>Quiz Player</ApplicationTitle>
+    <ApplicationId>com.severdthumbz.quizplayer</ApplicationId>
+
+    <!--
+      Version surfaced two ways, as Android expects:
+        ApplicationDisplayVersion -> the human "0.1.0" (versionName)
+        ApplicationVersion        -> the monotonic integer build (versionCode),
+                                     which MUST increase for every Play upload.
+      Kept in step with the desktop's version.json arc; this is the player's
+      own 0.1.0 first cut.
+    -->
+    <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <!--
+      Android 7.0 (API 24) floor. The HANDOFF notes MAUI supports API 21+, but
+      24 is the practical modern floor (TLS 1.2 by default, current WebView, the
+      vast majority of active devices) and avoids shipping shims for versions
+      almost nobody runs. Raise later if a newer API is needed; never lower it
+      silently, as that changes which devices can install.
+    -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <!--
+    Release builds trim and AOT-compile for a smaller, faster APK/AAB. Debug
+    builds skip this so the fast inner loop stays fast, matching the "default to
+    debug, opt into release" story in the build scripts.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidPackageFormats>apk;aab</AndroidPackageFormats>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <!-- Debug installs directly via a debug-signed APK; no keystore needed. -->
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- App icon and splash are generated from these vector sources by the
+         MAUI build; see Resources/AppIcon and Resources/Splash. -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#1B3A5B" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#1B3A5B" BaseSize="128,128" />
+
+    <!-- Bundled fonts. OpenSans is MAUI's default pairing; kept for body text. -->
+    <MauiFont Include="Resources\Fonts\*" />
+
+    <MauiImage Include="Resources\Images\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The whole point of the mobile player: reuse the SAME grading and .qbx
+      logic as the desktop. Core is multi-targeted (net8.0;net10.0); this
+      project's net10.0-android TFM resolves Core's net10.0 output. The two
+      apps therefore agree on scoring BY CONSTRUCTION, not by re-implementation.
+    -->
+    <ProjectReference Include="..\QuizBuilder.Core\QuizBuilder.Core.csproj" />
+  </ItemGroup>
+
+</Project>

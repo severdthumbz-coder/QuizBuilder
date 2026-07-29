@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuizBuilder.Player.Views.IdentityPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    x:DataType="vm:IdentityViewModel"
+    Title="Quiz Player"
+    Shell.NavBarIsVisible="False">
+
+    <ScrollView>
+        <!-- Safe-area padding at top/bottom via the outer VerticalStackLayout
+             margin; content is centered and capped in width for tablet comfort. -->
+        <Grid RowDefinitions="*,Auto,*" Padding="24,0">
+            <VerticalStackLayout
+                Grid.Row="1"
+                Spacing="8"
+                MaximumWidthRequest="480"
+                HorizontalOptions="Center">
+
+                <!-- Brand mark -->
+                <Border
+                    HeightRequest="72"
+                    WidthRequest="72"
+                    HorizontalOptions="Center"
+                    Margin="0,0,0,8"
+                    StrokeThickness="0"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource PrimaryLight}, Dark={StaticResource SurfaceDark}}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="20" />
+                    </Border.StrokeShape>
+                    <Label
+                        Text="QP"
+                        FontSize="30"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource White}"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center" />
+                </Border>
+
+                <Label Text="Welcome" Style="{StaticResource Headline}" HorizontalOptions="Center" />
+                <Label
+                    Text="Enter your details to begin. Your results can be emailed to you or your instructor when you finish."
+                    Style="{StaticResource Muted}"
+                    HorizontalTextAlignment="Center"
+                    Margin="0,0,0,16" />
+
+                <!-- First name -->
+                <Label Text="First name" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldFrame}">
+                    <Entry
+                        x:Name="FirstNameEntry"
+                        Text="{Binding FirstName}"
+                        Placeholder="e.g. Alex"
+                        ReturnType="Next"
+                        Unfocused="OnFirstNameUnfocused" />
+                </Border>
+                <Label
+                    Text="First name is required."
+                    Style="{StaticResource ErrorText}"
+                    IsVisible="{Binding FirstNameHasError}" />
+
+                <!-- Last name -->
+                <Label Text="Last name" Style="{StaticResource FieldLabel}" Margin="0,12,0,4" />
+                <Border Style="{StaticResource FieldFrame}">
+                    <Entry
+                        Text="{Binding LastName}"
+                        Placeholder="e.g. Rivera"
+                        ReturnType="Next"
+                        Unfocused="OnLastNameUnfocused" />
+                </Border>
+                <Label
+                    Text="Last name is required."
+                    Style="{StaticResource ErrorText}"
+                    IsVisible="{Binding LastNameHasError}" />
+
+                <!-- Email -->
+                <Label Text="Email address" Style="{StaticResource FieldLabel}" Margin="0,12,0,4" />
+                <Border Style="{StaticResource FieldFrame}">
+                    <Entry
+                        Text="{Binding Email}"
+                        Placeholder="you@example.com"
+                        Keyboard="Email"
+                        ReturnType="Done"
+                        Unfocused="OnEmailUnfocused" />
+                </Border>
+                <Label
+                    Text="{Binding EmailErrorText}"
+                    Style="{StaticResource ErrorText}"
+                    IsVisible="{Binding EmailHasError}" />
+                <Label
+                    Text="Results will be sent to this address when you email them."
+                    Style="{StaticResource Muted}"
+                    FontSize="12"
+                    Margin="0,4,0,0" />
+
+                <!-- Primary CTA -->
+                <Button
+                    Text="Continue"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding ContinueCommand}"
+                    Margin="0,24,0,0" />
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
+</ContentPage>

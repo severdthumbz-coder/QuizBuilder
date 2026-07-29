@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="QuizBuilder.Player.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:QuizBuilder.Player.Views"
+    Shell.FlyoutBehavior="Disabled"
+    Title="Quiz Player">
+
+    <!--
+      A single-stack flow, not a tab bar: the player is linear (identify ->
+      import -> take -> results), so a flyout or bottom tabs would offer
+      navigation the flow doesn't have. The identity screen is the root; every
+      other page is pushed onto it and registered as a route in code-behind so
+      GoToAsync can reach it.
+    -->
+    <ShellContent
+        Title="Quiz Player"
+        ContentTemplate="{DataTemplate views:IdentityPage}"
+        Route="identity" />
+
+</Shell>

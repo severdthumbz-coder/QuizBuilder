@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true"></application>
+
+	<!--
+	  INTERNET is required by the native email composer only indirectly (the
+	  mail app it hands off to needs it); the player itself makes no network
+	  calls. READ_EXTERNAL_STORAGE is scoped: on API 33+ Android uses granular
+	  media permissions and the document picker grants per-file access via SAF,
+	  so no broad storage permission is requested. Kept minimal on purpose — a
+	  read-only offline player should ask for as little as possible.
+	-->
+	<uses-permission android:name="android.permission.INTERNET" />
+
+	<!--
+	  Lets the app resolve a mail client for the "email my results" composer.
+	  Without a <queries> entry, Android 11+ package visibility rules would hide
+	  installed mail apps and Email.ComposeAsync would report "no app found"
+	  even when one exists.
+	-->
+	<queries>
+		<intent>
+			<action android:name="android.intent.action.SENDTO" />
+			<data android:scheme="mailto" />
+		</intent>
+	</queries>
+</manifest>

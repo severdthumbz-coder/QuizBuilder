@@ -1,24 +1,42 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!--
+      Multi-targeted so the SAME source serves two hosts from one build:
+        net8.0   — the WPF desktop app and the xUnit test project (unchanged).
+        net10.0  — the .NET MAUI mobile player (QuizBuilder.Player), which
+                    references Core directly and needs a net10 TFM to satisfy
+                    MAUI 10's platform TFMs (net10.0-android, net10.0-ios).
+
+      This is the deliberate, deferred move recorded in HANDOFF.md: stay on net8
+      for the desktop, add net10 only when MAUI work begins, and drop net8 once
+      MAUI is stable (before net8 EOL, Nov 2026). A prior audit found Core is
+      multi-target-ready with NO code migration — no WPF/Drawing/Win32, no
+      removed APIs, single-file-safe reflection. The one Windows-only dependency
+      (DPAPI, via ProtectedDataShim) is reached through a swappable delegate and
+      guarded by OperatingSystem.IsWindows(), so it compiles and degrades
+      cleanly on net10 too.
+
+      Deliberately NOT net8.0-windows / net10.0-windows. Core holds the domain
+      model, settings and .qbx logic, none of which need WPF. Keeping it
+      platform-neutral means the unit tests run on a plain ubuntu-latest CI
+      runner rather than requiring a Windows agent for every push.
+    -->
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>12.0</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-
-    <!--
-      Deliberately NOT net8.0-windows. Core holds the domain model, settings
-      and .qbx logic, none of which need WPF. Keeping it platform-neutral means
-      the unit tests run on a plain ubuntu-latest CI runner rather than
-      requiring a Windows agent for every push.
-
-      The one Windows-only dependency (DPAPI, via ProtectedDataShim) is reached
-      through a swappable delegate and guarded by OperatingSystem.IsWindows().
-    -->
   </PropertyGroup>
 
-  <ItemGroup>
+  <!--
+    Package versions are pinned per-TFM so the net8 desktop build is byte-for-byte
+    unchanged while net10 pulls the matching-major assemblies. Both packages
+    publish for 8.x and 10.x; letting each TFM take its own major avoids a
+    net10 build resolving an 8.0 assembly (which triggers a downgrade/mismatch
+    warning) and vice versa.
+  -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <!--
       Provides System.Security.Cryptography.ProtectedData on net8.0. The API
       throws PlatformNotSupportedException off Windows, which ProtectedDataShim
@@ -29,6 +47,19 @@
     <!-- Required by CoreServiceRegistration. Abstractions only: Core registers
          services but never builds the container; that is App's job. -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <!--
+      Same two packages, net10 majors. ProtectedData is still referenced only
+      for the DPAPI shim; the MAUI player never selects machine-bound mode, so
+      the type is present but its Windows path is never taken (see
+      MobileReadPathContractTests). Abstractions is needed because
+      CoreServiceRegistration is compiled for every TFM, even though the mobile
+      player constructs its three services directly rather than via the container.
+    -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>

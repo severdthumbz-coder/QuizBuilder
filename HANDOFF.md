@@ -553,6 +553,27 @@ All 7 checks clean:
 
 ## 13. NEXT STEP: MAUI companion app (Android + iPhone)
 
+> **STATUS UPDATE (v0.26.0 — Android player IMPLEMENTED).**
+> The Android read-only player now exists as `QuizBuilder.Player`
+> (`net10.0-android`, MAUI 10). It imports a `.qbx`, captures the taker's first
+> name / last name / email, presents all eight question types touch-first,
+> grades via Core, and emails a formatted result report to the entered address
+> through the device's native mail composer. The three planned blockers below
+> are resolved (see the "How the blockers were resolved" note at the end of this
+> section). iOS remains deferred (needs a Mac). What follows is the original
+> plan, kept for reference and for the iOS work still to come.
+>
+> **Build it:** `build-android.bat` (Debug APK, installs directly) or
+> `build-android.bat release` (signed APK + AAB when `QB_KEYSTORE*` env vars are
+> set). PowerShell entry point is `build-android.ps1`. Requires the
+> `maui-android` workload: `dotnet workload install maui-android`.
+>
+> **Not yet verified by a real build** — written without a local .NET 10 /
+> Android toolchain, so the first Windows build is the real gate, exactly as the
+> critical constraint in §2 demands. The Core→net10 multi-target and the
+> compose path are the two things to watch first; the compose path mirrors
+> `MobileReadPathContractTests`, which is already green on desktop CI.
+
 **Goal:** a read-only "player" app that imports a `.qbx` and lets the user take
 quizzes and flip flash cards on a phone.
 
@@ -650,6 +671,46 @@ re-implementation.
 constraint acknowledged: the assistant cannot build or run a MAUI app either, so
 the same write → verify-by-model → user-builds loop applies, with the added
 wrinkle that mobile UI is much harder to verify statically than pure logic.
+
+### How the three blockers were resolved (v0.26.0)
+
+1. **TFM alignment.** Core is now `<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`.
+   The two package refs (`ProtectedData`, `DI.Abstractions`) are TFM-conditional
+   so net8 stays byte-for-byte identical and net10 pulls matching-major
+   assemblies. Desktop App (`net8.0-windows`) and Tests (`net8.0`) reference Core
+   by project path and auto-resolve its net8 output — no change to them. The
+   player's `net10.0-android` resolves Core's net10 output. The `.sln` lists the
+   player with `ActiveCfg` but **no `Build.0`**, so `dotnet build` on the desktop
+   CI runner (no MAUI workload) skips it and stays green; an Android CI job with
+   the workload builds it explicitly.
+
+2. **Storage-path adaptation.** The player never lets Core write "beside the exe".
+   `QbxImporter` copies the imported `.qbx` into `FileSystem.AppDataDirectory`
+   (the app sandbox) and hands Core that path. Core's `QuizPackageService`
+   already reads from a supplied `filePath` and holds images in-memory
+   (`GetImage`), so nothing in Core needed the `overrideDirectory` seam for the
+   read-only player.
+
+3. **DPAPI / `TokenProtector`.** Sidestepped entirely. The player constructs only
+   `QuizPackageService`, `QuizCompiler`, and `QuizGrader` directly — the exact
+   trio in `MobileReadPathContractTests` — none of which touch `TokenProtector`,
+   `SettingsService`, or the DI graph that would pull in DPAPI. `ProtectedData`
+   is still referenced by Core (so it compiles) but its Windows path is never
+   taken on Android.
+
+**Mobile-new pieces actually written:** touch-first pages (identity → home/import
+→ take → results); a MAUI `BytesToImageSourceConverter` (the promised small
+per-host converter); file-import UX via `FilePicker` + Android VIEW/SEND intent
+filters (`IncomingFileHandler` + `PlatformUri` ContentResolver opener); eight
+per-type answer presenters behind a `DataTemplateSelector`; and a native-mail
+results composer (`ResultsEmailService`). Design tokens follow the UI/UX Pro Max
+rules (semantic light/dark brushes, 48dp targets, one CTA per screen, inline
+validate-on-blur). Flash-card review was **not** built this pass — the player
+covers quiz-taking only; study-card review is the obvious next mobile slice.
+
+**Still to do on mobile:** first green Android build (the real gate); wire an
+Android CI job that installs `maui-android` and runs `build-android.ps1`; iOS
+target (needs a Mac); flash-card review screen.
 
 ---
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="456" height="456" viewBox="0 0 456 456" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Foreground is drawn on the icon's safe zone. A rounded document with a
+       check, echoing "quiz taken / graded". Amber accent matches the app CTA. -->
+  <g transform="translate(148,140)">
+    <rect x="0" y="0" width="120" height="150" rx="16" fill="#FFFFFF"/>
+    <rect x="22" y="30" width="76" height="10" rx="5" fill="#CBD6E1"/>
+    <rect x="22" y="56" width="76" height="10" rx="5" fill="#CBD6E1"/>
+    <rect x="22" y="82" width="50" height="10" rx="5" fill="#CBD6E1"/>
+    <path d="M70 116 L86 132 L118 96" stroke="#C8791A" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+</svg>

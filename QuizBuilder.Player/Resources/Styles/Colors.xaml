@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!--
+      Semantic color tokens, defined ONCE here and referenced everywhere else.
+      No screen hard-codes a hex value (a UI/UX Pro Max anti-pattern). Every
+      token has a light and a dark counterpart so both themes are designed
+      together, and the light/dark AppThemeBinding lives on the token in
+      Styles.xaml — here we just name the raw values.
+
+      Palette: a calm academic blue, echoing the desktop app's default
+      "Academic" theme, with a warm amber accent for primary actions so the one
+      CTA per screen stands out against the blue chrome. Contrast pairs were
+      chosen to clear WCAG AA (4.5:1 for text) in BOTH modes.
+    -->
+
+    <!-- Brand / primary -->
+    <Color x:Key="PrimaryLight">#1B3A5B</Color>          <!-- deep academic blue -->
+    <Color x:Key="PrimaryDark">#7FB0D9</Color>           <!-- lightened for dark surfaces -->
+    <Color x:Key="OnPrimaryLight">#FFFFFF</Color>
+    <Color x:Key="OnPrimaryDark">#0A1622</Color>
+
+    <!-- Accent / call-to-action (amber) -->
+    <Color x:Key="AccentLight">#C8791A</Color>
+    <Color x:Key="AccentDark">#E5A84E</Color>
+    <Color x:Key="OnAccentLight">#FFFFFF</Color>
+    <Color x:Key="OnAccentDark">#241403</Color>
+
+    <!-- Backgrounds and surfaces -->
+    <Color x:Key="BackgroundLight">#F6F8FB</Color>
+    <Color x:Key="BackgroundDark">#0E141B</Color>
+    <Color x:Key="SurfaceLight">#FFFFFF</Color>
+    <Color x:Key="SurfaceDark">#1A2430</Color>
+    <Color x:Key="SurfaceVariantLight">#EAF0F6</Color>
+    <Color x:Key="SurfaceVariantDark">#243141</Color>
+
+    <!-- Text -->
+    <Color x:Key="OnSurfaceLight">#12222F</Color>         <!-- ~13:1 on SurfaceLight -->
+    <Color x:Key="OnSurfaceDark">#E7EEF5</Color>          <!-- ~12:1 on SurfaceDark -->
+    <Color x:Key="OnSurfaceMutedLight">#4C5D6B</Color>    <!-- secondary text, >=4.5:1 -->
+    <Color x:Key="OnSurfaceMutedDark">#A9BAC8</Color>     <!-- secondary text, >=3:1 -->
+
+    <!-- Borders / dividers (visible in BOTH themes) -->
+    <Color x:Key="OutlineLight">#CBD6E1</Color>
+    <Color x:Key="OutlineDark">#33465A</Color>
+
+    <!-- Semantic status -->
+    <Color x:Key="SuccessLight">#1B7A43</Color>
+    <Color x:Key="SuccessDark">#5FD08A</Color>
+    <Color x:Key="ErrorLight">#B3261E</Color>
+    <Color x:Key="ErrorDark">#F29C97</Color>
+    <Color x:Key="WarningLight">#8A6100</Color>
+    <Color x:Key="WarningDark">#E9C46A</Color>
+
+    <!-- Static greys occasionally needed by MAUI's built-in control templates. -->
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
+    <Color x:Key="Gray100">#E1E1E1</Color>
+    <Color x:Key="Gray200">#C8C8C8</Color>
+    <Color x:Key="Gray300">#ACACAC</Color>
+    <Color x:Key="Gray400">#919191</Color>
+    <Color x:Key="Gray500">#6E6E6E</Color>
+    <Color x:Key="Gray600">#404040</Color>
+    <Color x:Key="Gray900">#212121</Color>
+    <Color x:Key="Gray950">#141414</Color>
+
+</ResourceDictionary>
