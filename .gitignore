@@ -5,9 +5,3 @@ publish/
 
 # Transient: build.bat copies the user's settings here across a clean.
 .build-preserve/
-
-# Release archives / build zips
-*.zip
-
-# Release archives / build zips
-*.zip

@@ -731,6 +731,65 @@ overrides `OnBackButtonPressed` to confirm before leaving, and hides the Shell
 nav bar so there is no stray back arrow. (This is a stopgap; real pause/resume
 below supersedes it.)
 
+**⚠️ OPEN CI FAILURE — fix first in the next session.** After the v0.26.0 push,
+`core-tests` on ubuntu-latest is RED: 611/612 pass, and the one failure is
+`TokenProtectorTests.MachineBound_RoundTripsToken` →
+`PlatformNotSupportedException: No DPAPI on this platform`. This is a
+**test-isolation bug, not a product bug, and not caused by the MAUI work.**
+`MobileReadPathContractTests` installs a process-global DPAPI-shim test double
+(one that throws "No DPAPI on this platform" to prove the mobile path never
+calls DPAPI). That global leaks into `MachineBound_RoundTripsToken`, which
+genuinely needs DPAPI, and it throws. DPAPI is Windows-only, so this test never
+belonged on a Linux runner. Two valid fixes (pick one after reading both test
+files): (a) scope the shim override in `MobileReadPathContractTests` so it is
+reset in a finally/Dispose and cannot leak; or (b) guard
+`MachineBound_RoundTripsToken` to skip off-Windows (`OperatingSystem.IsWindows()`
+or `[SkippableFact]`) — (b) is likely the correct fix since the assertion is
+Windows-specific. The desktop `build.bat` test gate would also catch this
+locally on a non-Windows box, but on Windows the test passes, which is why it
+slipped through to CI. This existed latent before v0.26.0; the multi-target
+just changed test ordering enough to expose it.
+
+**Exact commands used to build and deploy to an Android emulator** (so the next
+session doesn't re-derive them):
+
+```powershell
+# One-time PATH setup so 'adb' resolves (platform-tools ships with the SDK):
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:LOCALAPPDATA\Android\Sdk\platform-tools", "User")
+# (reopen the shell afterwards)
+
+# Confirm the emulator is up and visible before install/push:
+adb devices          # want: emulator-5554   device
+
+# FAST DEV LOOP — build, deploy (both APK + assemblies), and launch in one step.
+# This is the reliable path; it handles Fast Deployment so the app actually runs:
+dotnet build .\QuizBuilder.Player\QuizBuilder.Player.csproj -t:Run -f net10.0-android -c Debug `
+  "-p:AndroidSdkDirectory=$env:LOCALAPPDATA\Android\Sdk" `
+  "-p:JavaSdkDirectory=C:\Program Files\Android\Android Studio\jbr"
+
+# STANDALONE APK — build a self-contained APK, then sideload it by hand.
+# build-android.ps1 already sets EmbedAssembliesIntoApk=true, so this APK runs
+# when installed directly (without it, a hand-installed debug APK aborts with
+# "No assemblies found … Fast Deployment"):
+.\build-android.bat
+adb install -r ".\QuizBuilder.Player\bin\Debug\net10.0-android\com.severdthumbz.quizplayer-Signed.apk"
+
+# Push a .qbx onto the emulator so the in-app file picker (Downloads) can see it:
+adb push "C:\path\to\Some Quiz.qbx" /sdcard/Download/
+
+# When the app crashes on launch, capture the managed exception:
+adb logcat -c        # clear, then reproduce the crash, then:
+adb logcat -d > crash.txt
+Select-String -Path crash.txt -Pattern "AndroidRuntime|Unhandled managed|at QuizBuilder" | Select-Object -First 40
+```
+
+The emulator itself needs the **Windows Hypervisor Platform** enabled (Device
+Manager shows a red "Enable" banner otherwise) and a **reboot**; prefer a
+**stable API 34/35 image** over a preview (the machine had an API 37 "CinnamonBun"
+preview image, which mixes app bugs with preview-OS bugs). The emulator usually
+has **no mail app**, so the email-results composer will report "no mail app" —
+test that feature on a real phone.
+
 ### NEXT MOBILE SESSION: tier-1 offline features (decided, not yet built)
 
 Four things were requested after the first run. The back-button bug is done. The
