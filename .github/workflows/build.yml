@@ -12,9 +12,9 @@ jobs:
   core-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           # Install the .NET 8 SDK explicitly so the net8.0 targeting pack is
           # present on the runner (avoids NETSDK1045 when the runner's default
@@ -41,9 +41,9 @@ jobs:
     runs-on: windows-latest
     needs: core-tests
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           # Install the .NET 8 SDK explicitly so the net8.0 targeting pack is
           # present on the runner (avoids NETSDK1045 when the runner's default
@@ -82,7 +82,7 @@ jobs:
       # JDKs (the XA0030 error we hit locally on JDK 25). Pinning 21 here keeps
       # CI on the exact JDK the local build script also selects.
       - name: Setup JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: microsoft
           java-version: '21'
