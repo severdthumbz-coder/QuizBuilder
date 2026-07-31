@@ -210,13 +210,44 @@ else {
 }
 
 # ----------------------------------------------------------------------------
-#  Java SDK (JDK): the Android build compiles Java glue and needs a JDK 17.
-#  Like the Android SDK, the MAUI workload does not supply it -- but Android
-#  Studio bundles one (its JetBrains Runtime, a full JDK), so on most machines
-#  it is already present and we just need to point the build at it. We detect
-#  the usual homes and pass -p:JavaSdkDirectory explicitly; only if none is
-#  found do we ask the user to install one.
+#  Java SDK (JDK): the Android build compiles Java glue and needs a JDK in the
+#  range the installed Android SDK supports. For Microsoft.Android.Sdk 35-36
+#  that is JDK 17-21; a too-new JDK (e.g. 24/25) is REJECTED by the Android
+#  tooling with error XA0030, even though `java.exe` runs fine. So it is not
+#  enough to find *a* JDK -- we must find a COMPATIBLE one and pass it
+#  explicitly via -p:JavaSdkDirectory, or MSBuild falls back to JAVA_HOME/PATH
+#  (which is exactly how a stray JDK 25 slips in).
+#
+#  Android Studio bundles a compatible JBR, so on most machines one is already
+#  present; we just have to prefer it over an incompatible JAVA_HOME. We probe
+#  each candidate's real version and pick the first in range, newest allowed
+#  first. JAVA_HOME is still considered, but no longer blindly trusted.
 # ----------------------------------------------------------------------------
+
+# Supported major-version window. Min is a hard floor (older fails XA0031);
+# max is the highest the current Android SDK tooling accepts. Bump MaxJdkMajor
+# when a newer Android SDK starts supporting a newer JDK.
+$MinJdkMajor = 17
+$MaxJdkMajor = 21
+
+# Returns the JDK major version for a JDK home, or $null if it cannot be read.
+function Get-JdkMajor([string]$jdkHome) {
+    $javaExe = Join-Path $jdkHome 'bin\java.exe'
+    if (-not (Test-Path $javaExe)) { return $null }
+    try {
+        # `java -version` writes to stderr; capture both streams.
+        $out = & $javaExe '-version' 2>&1 | Out-String
+    } catch { return $null }
+    # Matches: version "21.0.2"  OR  version "1.8.0_301" (old scheme).
+    if ($out -match 'version "(\d+)(?:\.(\d+))?') {
+        $a = [int]$Matches[1]
+        # Legacy 1.x naming: "1.8" means 8.
+        if ($a -eq 1 -and $Matches[2]) { return [int]$Matches[2] }
+        return $a
+    }
+    return $null
+}
+
 $javaSdkArgs = @()
 $jdkCandidates = @()
 if ($env:JAVA_HOME) { $jdkCandidates += $env:JAVA_HOME }
@@ -240,28 +271,45 @@ if ($androidSdk) {
     if (Test-Path $wljdk) { $jdkCandidates += $wljdk }
 }
 
+# Walk candidates, probing versions. Prefer an in-range JDK; remember the best
+# in-range (highest allowed) and also note any out-of-range finds so the error
+# message can be specific ("found 25, need <= 21") instead of "none found".
 $javaSdk = $null
+$bestMajor = -1
+$rejected = @()
 foreach ($cand in ($jdkCandidates | Where-Object { $_ } | Select-Object -Unique)) {
-    # A usable JDK has bin\java.exe.
-    if (Test-Path (Join-Path $cand 'bin\java.exe')) {
-        $javaSdk = $cand
-        break
+    $major = Get-JdkMajor $cand
+    if ($null -eq $major) { continue }
+    if ($major -ge $MinJdkMajor -and $major -le $MaxJdkMajor) {
+        # In range. Keep the highest allowed major we see.
+        if ($major -gt $bestMajor) { $bestMajor = $major; $javaSdk = $cand }
+    }
+    else {
+        $rejected += "$cand (JDK $major)"
     }
 }
 
 if ($javaSdk) {
-    Write-Host "  Java SDK (JDK)  : $javaSdk"
+    Write-Host "  Java SDK (JDK)  : $javaSdk (JDK $bestMajor)"
     $javaSdkArgs = @("-p:JavaSdkDirectory=$javaSdk")
 }
 else {
     Write-Host ''
-    Write-Host "  Java SDK (JDK)  : NOT FOUND." -ForegroundColor Yellow
-    Write-Host "  The Android build needs a JDK 17. If you installed Android Studio it" -ForegroundColor Yellow
-    Write-Host "  bundles one at '...\Android\Android Studio\jbr' -- if that path exists," -ForegroundColor Yellow
-    Write-Host "  set JAVA_HOME to it and re-run. Otherwise install the Microsoft build of" -ForegroundColor Yellow
-    Write-Host "  OpenJDK 17: https://aka.ms/download-jdk/microsoft-jdk-17-windows-x64.msi" -ForegroundColor Yellow
-    Write-Host "  then re-run this script (it self-registers and will be detected)." -ForegroundColor Yellow
-    Fail 'Java SDK (JDK) not found (XA5300 would follow). See the note above.'
+    Write-Host "  Java SDK (JDK)  : no COMPATIBLE JDK found (need $MinJdkMajor-$MaxJdkMajor)." -ForegroundColor Yellow
+    if ($rejected.Count -gt 0) {
+        Write-Host "  Found, but out of range for the Android SDK:" -ForegroundColor Yellow
+        foreach ($r in $rejected) { Write-Host "    - $r" -ForegroundColor Yellow }
+        Write-Host "  A too-new JDK is the XA0030 error. Android Studio bundles a compatible" -ForegroundColor Yellow
+        Write-Host "  JBR at '...\Android\Android Studio\jbr' -- set JAVA_HOME to it and re-run," -ForegroundColor Yellow
+        Write-Host "  or install the Microsoft build of OpenJDK 21:" -ForegroundColor Yellow
+    }
+    else {
+        Write-Host "  If you installed Android Studio it bundles one at" -ForegroundColor Yellow
+        Write-Host "  '...\Android\Android Studio\jbr' -- set JAVA_HOME to it and re-run," -ForegroundColor Yellow
+        Write-Host "  or install the Microsoft build of OpenJDK 21:" -ForegroundColor Yellow
+    }
+    Write-Host "  https://aka.ms/download-jdk/microsoft-jdk-21-windows-x64.msi" -ForegroundColor Yellow
+    Fail 'No compatible Java SDK (JDK) found. See the note above.'
 }
 
 # ----------------------------------------------------------------------------
