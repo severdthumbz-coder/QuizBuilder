@@ -80,6 +80,16 @@ public sealed class QbxImporter : IQbxImporter
             // bleeding into a new one.
             var package = new QuizPackageService();
             var result = await package.LoadAsync(localPath, ct);
+
+            // LoadAsync reads the whole .qbx (quiz + images) into memory and
+            // closes the file before returning, so once we are here the file on
+            // disk is no longer needed by anything. Every earlier import copy is
+            // therefore dead weight -- without this, each import (even re-opening
+            // the same quiz) left another import_*.qbx in the sandbox forever.
+            // Only prune AFTER a successful load, so a failed import never
+            // deletes the copy backing the quiz the user still has open.
+            PruneStaleImports(keep: localPath);
+
             return ImportOutcome.Ok(package, result);
         }
         catch (QuizPackageException ex)
@@ -95,6 +105,52 @@ public sealed class QbxImporter : IQbxImporter
         catch (Exception ex)
         {
             return ImportOutcome.Fail($"Couldn't read the quiz. {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Removes previously-imported <c>import_*.qbx</c> copies from the sandbox,
+    /// keeping only the file just loaded. Scoped strictly to our own import
+    /// files by name, so it can never touch history.json, paused-attempts.json,
+    /// or anything else living in the same directory. Best-effort: a file that
+    /// cannot be deleted (locked, already gone) is skipped, never fatal -- this
+    /// is housekeeping and must not turn a good import into a failure.
+    /// </summary>
+    private void PruneStaleImports(string keep)
+    {
+        string keepName;
+        try
+        {
+            keepName = Path.GetFileName(keep);
+        }
+        catch
+        {
+            return;
+        }
+
+        string[] files;
+        try
+        {
+            files = Directory.EnumerateFiles(SandboxDir, "import_*.qbx").ToArray();
+        }
+        catch
+        {
+            return; // Cannot list the directory; leave everything as-is.
+        }
+
+        foreach (var file in files)
+        {
+            if (string.Equals(Path.GetFileName(file), keepName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            try
+            {
+                File.Delete(file);
+            }
+            catch
+            {
+                // Locked or vanished; not our problem to force. Skip it.
+            }
         }
     }
 

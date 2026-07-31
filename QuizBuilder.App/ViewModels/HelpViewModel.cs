@@ -112,11 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
-        new VersionEntry("0.26.0", 10, "2026-07-30", new[]
+        new VersionEntry("0.26.0", 11, "2026-07-30", new[]
         {
-            "Mobile player: the quiz description now shows as formatted text instead of raw HTML tags",
-            "Mobile player: paused attempts can be deleted individually with a trash button, not just resumed",
-            "Mobile player: history and paused attempts are now kept separate per person — signing in with a different email gives that person their own history and paused sittings on a shared device",
+            "Mobile player: importing a quiz now clears out old copies of previously-imported quizzes, so opening quizzes over time no longer quietly uses up storage",
+            "Mobile player: quiz description shows as formatted text, not raw HTML; paused attempts can be deleted; history and paused attempts are kept separate per person",
             "Android build script: picks a JDK the Android SDK supports (17–21)",
             "GitHub tab: paste the APK download link to get a scannable QR for installing the Android player",
         }),
