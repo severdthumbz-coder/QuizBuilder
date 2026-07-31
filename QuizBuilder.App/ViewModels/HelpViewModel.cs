@@ -112,11 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
-        new VersionEntry("0.26.0", 12, "2026-07-30", new[]
+        new VersionEntry("0.26.0", 13, "2026-07-30", new[]
         {
-            "Mobile player: quizzes you open are now saved in a library — pick one from the list instead of importing the file every time, and delete ones you no longer need (with the option to keep or wipe their results)",
-            "Mobile player: importing the same quiz again updates its library entry instead of making a duplicate, keeping its history and paused attempts attached",
-            "Mobile player: description shows as formatted text; paused attempts deletable; history and paused kept separate per person",
+            "Build/CI: the Android player is now compiled automatically on every push, so a mobile build break is caught in CI instead of only when building by hand",
+            "Mobile player: quizzes are saved in a library you pick from; description shows as formatted text; paused attempts deletable; history/paused kept separate per person",
             "Android build script picks a supported JDK (17–21); GitHub tab generates an APK download QR",
         }),
         new VersionEntry("0.25.0", 1, "2026-07-24", new[]

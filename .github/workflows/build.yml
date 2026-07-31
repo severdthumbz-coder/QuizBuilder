@@ -57,3 +57,49 @@ jobs:
           -r win-x64
           --self-contained true
           -p:PublishSingleFile=true
+
+  # The MAUI Android player. Gated like the desktop app so a mobile compile
+  # break is caught on push instead of only when the maintainer builds locally.
+  # Runs on Windows because the Android MAUI workload does not install cleanly
+  # on the Linux runner. This is a Debug build on purpose: the goal is "does it
+  # still compile", not producing a signed, distributable artifact -- so no
+  # keystore secret is needed and the job stays self-contained.
+  android-build:
+    runs-on: windows-latest
+    needs: core-tests
+    steps:
+      - uses: actions/checkout@v5
+
+      # Take the SDK from global.json rather than hardcoding a version here, so
+      # this job always matches the .NET 10 pin the player requires (MAUI 10
+      # rides .NET 10) without a second place to keep in sync.
+      - name: Setup .NET (from global.json)
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # JDK 21: the Android SDK tooling used by net10.0-android rejects newer
+      # JDKs (the XA0030 error we hit locally on JDK 25). Pinning 21 here keeps
+      # CI on the exact JDK the local build script also selects.
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: '21'
+
+      # Installs both the android and maui workloads. --ignore-failed-sources
+      # keeps a transient NuGet source hiccup from failing the whole install.
+      - name: Install MAUI Android workload
+        run: dotnet workload install android maui --ignore-failed-sources
+
+      - name: Restore
+        run: dotnet restore QuizBuilder.Player/QuizBuilder.Player.csproj
+
+      # Debug build, no signing. Compiling the player also compiles Core through
+      # its project reference, so a break in either surfaces here.
+      - name: Build Android (Debug)
+        run: >
+          dotnet build QuizBuilder.Player/QuizBuilder.Player.csproj
+          --configuration Debug
+          -f net10.0-android
+          --no-restore
