@@ -93,8 +93,9 @@ public partial class ResultsViewModel : ObservableObject
     private async Task TakeAnotherAsync()
     {
         _session.ClearQuiz();
-        // Stack is identity -> home -> take -> results. Two pops lands on home;
-        // identity is retained so the next quiz reuses the same taker details.
+        // Stack is identity -> library -> home -> take -> results. Two pops
+        // (results, take) lands on home, so "take another" returns to this
+        // quiz's screen with the same taker retained.
         await Shell.Current.GoToAsync("../..");
     }
 
@@ -102,7 +103,9 @@ public partial class ResultsViewModel : ObservableObject
     private async Task DoneAsync()
     {
         _session.ClearQuiz();
-        // Pop all the way back to the identity root: results, take, home.
+        // Stack is identity -> library -> home -> take -> results. Three pops
+        // (results, take, home) lands on the library, so "Done" returns to the
+        // quiz list -- the natural home base now that quizzes are a collection.
         await Shell.Current.GoToAsync("../../..");
     }
 }

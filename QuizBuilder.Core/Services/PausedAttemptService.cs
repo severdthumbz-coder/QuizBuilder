@@ -82,6 +82,17 @@ public sealed class PausedAttemptService : IPausedAttemptService
         }
     }
 
+    public void ClearForQuiz(Guid quizId)
+    {
+        var removed = _attempts.RemoveAll(a => a.QuizId == quizId) > 0;
+
+        if (removed)
+        {
+            Persist();
+            PausedAttemptsChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     public void Load()
     {
         if (!File.Exists(_path))

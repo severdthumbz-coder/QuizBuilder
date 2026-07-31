@@ -107,6 +107,9 @@ public interface IPausedAttemptService
     /// <summary>Removes a paused sitting -- because it was resumed and finished, or discarded.</summary>
     void Remove(Guid attemptId);
 
+    /// <summary>Removes every paused sitting for a quiz (e.g. the quiz was deleted).</summary>
+    void ClearForQuiz(Guid quizId);
+
     void Load();
 
     event EventHandler? PausedAttemptsChanged;

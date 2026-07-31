@@ -28,6 +28,7 @@ public static class MauiProgram
         // The session is the shared spine every screen reads, so it is a
         // singleton. The importer and email services are stateless helpers.
         builder.Services.AddSingleton<QuizSessionService>();
+        builder.Services.AddSingleton<QuizLibraryService>();
         builder.Services.AddSingleton<IQbxImporter, QbxImporter>();
         builder.Services.AddSingleton<IResultsEmailService, ResultsEmailService>();
 
@@ -47,6 +48,7 @@ public static class MauiProgram
 
         // --- View models (transient: a fresh VM per navigation) ---
         builder.Services.AddTransient<IdentityViewModel>();
+        builder.Services.AddTransient<LibraryViewModel>();
         builder.Services.AddTransient<HomeViewModel>();
         builder.Services.AddTransient<TakeViewModel>();
         builder.Services.AddTransient<ResultsViewModel>();
@@ -56,6 +58,7 @@ public static class MauiProgram
 
         // --- Pages (transient, resolved with their VM injected) ---
         builder.Services.AddTransient<IdentityPage>();
+        builder.Services.AddTransient<LibraryPage>();
         builder.Services.AddTransient<HomePage>();
         builder.Services.AddTransient<TakePage>();
         builder.Services.AddTransient<ResultsPage>();
@@ -75,6 +78,7 @@ public static class MauiProgram
         // than throwing here, where a throw would abort app startup.
         app.Services.GetRequiredService<IAttemptHistoryService>().Load();
         app.Services.GetRequiredService<IPausedAttemptService>().Load();
+        app.Services.GetRequiredService<QuizLibraryService>().Load();
 
         return app;
     }

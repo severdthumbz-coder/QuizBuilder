@@ -81,6 +81,6 @@ public partial class IdentityViewModel : ObservableObject
             Email = Email.Trim(),
         });
 
-        await Shell.Current.GoToAsync("home");
+        await Shell.Current.GoToAsync("library");
     }
 }

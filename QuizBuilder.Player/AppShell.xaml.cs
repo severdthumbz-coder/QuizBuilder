@@ -11,6 +11,7 @@ public partial class AppShell : Shell
         // Routes for every page reachable by GoToAsync. The identity page is
         // the root ShellContent above and needs no registration; these are the
         // pushed pages.
+        Routing.RegisterRoute("library", typeof(LibraryPage));
         Routing.RegisterRoute("home", typeof(HomePage));
         Routing.RegisterRoute("take", typeof(TakePage));
         Routing.RegisterRoute("results", typeof(ResultsPage));

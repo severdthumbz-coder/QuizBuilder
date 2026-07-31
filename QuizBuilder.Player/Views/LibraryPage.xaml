@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuizBuilder.Player.Views.LibraryPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    x:Name="Page"
+    x:DataType="vm:LibraryViewModel"
+    Title="Your quizzes">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16"
+                             MaximumWidthRequest="640" HorizontalOptions="Center">
+
+            <!-- Import a new quiz -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Open a quiz" Style="{StaticResource Subtitle}" />
+                    <Label Text="Choose a .qbx quiz file exported from Quiz Builder, or open one from another app's share menu."
+                           Style="{StaticResource Muted}" />
+                    <Button Text="Choose file"
+                            Style="{StaticResource PrimaryButton}"
+                            Command="{Binding PickFileCommand}"
+                            Margin="0,4,0,0" />
+                    <Label Text="{Binding StatusMessage}"
+                           Style="{StaticResource Muted}"
+                           IsVisible="{Binding StatusMessage, Converter={StaticResource NotEmpty}}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Saved quizzes -->
+            <Label Text="Saved quizzes" Style="{StaticResource Subtitle}"
+                   IsVisible="{Binding IsEmpty, Converter={StaticResource InverseBool}}" />
+
+            <Border Style="{StaticResource Card}" IsVisible="{Binding IsEmpty}">
+                <Label Text="Quizzes you open are saved here so you can return to them without importing again."
+                       Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+            </Border>
+
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Quizzes}" Spacing="10"
+                                 IsVisible="{Binding IsEmpty, Converter={StaticResource InverseBool}}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LibraryRow">
+                        <Border Style="{StaticResource Card}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={x:Reference Page}, Path=BindingContext.OpenCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="{Binding Title}" Style="{StaticResource Body}" FontAttributes="Bold" />
+                                    <Label Text="{Binding Subtitle}" Style="{StaticResource Muted}" FontSize="13" />
+                                </VerticalStackLayout>
+                                <Button Grid.Column="1" Text="🗑"
+                                        Style="{StaticResource SecondaryButton}"
+                                        Padding="10,0"
+                                        SemanticProperties.Description="Delete quiz"
+                                        Command="{Binding Source={x:Reference Page}, Path=BindingContext.DeleteCommand}"
+                                        CommandParameter="{Binding .}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
