@@ -45,6 +45,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <!--
+      QRCoder renders the mobile-app download link on the GitHub tab as a
+      scannable QR. We use its PngByteQRCode renderer, which emits a PNG byte[]
+      with no System.Drawing/GDI dependency, so it is safe under net8.0-windows
+      and needs no extra native bits at publish time.
+    -->
+    <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
   <ItemGroup>

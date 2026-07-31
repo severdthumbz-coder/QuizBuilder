@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    x:Name="Page"
     x:DataType="vm:HomeViewModel"
     Title="Your quiz">
 
@@ -71,6 +72,46 @@
                         Style="{StaticResource PrimaryButton}"
                         Command="{Binding StartCommand}"
                         Margin="0,4,0,0" />
+
+                    <Button
+                        Text="Review as study cards"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding ReviewCommand}" />
+
+                    <Button
+                        Text="View history"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding HistoryCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Paused attempts: resume a sitting saved partway -->
+            <Border Style="{StaticResource Card}" IsVisible="{Binding HasPausedAttempts}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Paused attempts" Style="{StaticResource Subtitle}" />
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding PausedAttempts}" Spacing="10">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PausedRow">
+                                <Border
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                                    Padding="12" StrokeThickness="0">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10" />
+                                    </Border.StrokeShape>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                            <Label Text="{Binding SavedAt}" Style="{StaticResource Body}" FontAttributes="Bold" />
+                                            <Label Text="{Binding Progress}" Style="{StaticResource Muted}" FontSize="13" />
+                                        </VerticalStackLayout>
+                                        <Button Grid.Column="1" Text="Resume"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Command="{Binding Source={x:Reference Page}, Path=BindingContext.ResumeCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 

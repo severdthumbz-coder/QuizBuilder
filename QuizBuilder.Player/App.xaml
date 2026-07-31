@@ -15,6 +15,7 @@
             <svc:NotEmptyConverter x:Key="NotEmpty" />
             <svc:InverseBoolConverter x:Key="InverseBool" />
             <svc:BytesToImageSourceConverter x:Key="BytesToImage" />
+            <svc:HasBytesConverter x:Key="HasBytes" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

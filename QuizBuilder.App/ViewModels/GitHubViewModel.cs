@@ -1,3 +1,4 @@
+using QRCoder;
 using QuizBuilder.Core.Interfaces;
 
 namespace QuizBuilder.App.ViewModels;
@@ -27,6 +28,8 @@ public sealed class GitHubViewModel : ViewModelBase
     private string _status = string.Empty;
     private bool _isBusy;
     private string? _lastPublishedUrl;
+    private string _apkLinkText = string.Empty;
+    private byte[]? _qrPng;
 
     public GitHubViewModel(
         IGitHubService gitHub,
@@ -48,10 +51,15 @@ public sealed class GitHubViewModel : ViewModelBase
         _repositoryText = stored.RepositoryUrl ?? string.Empty;
         _branch = string.IsNullOrWhiteSpace(stored.DefaultBranch) ? "main" : stored.DefaultBranch;
         _lastPublishedUrl = stored.PublishedPagesUrl;
+        _apkLinkText = stored.ApkDownloadUrl ?? string.Empty;
 
         OpenPublishedCommand = new RelayCommand(
             () => { /* handled by the view: opening a browser is not a ViewModel's job */ },
             () => !string.IsNullOrWhiteSpace(_lastPublishedUrl));
+
+        // Render whatever link was stored, so the QR is present the moment the
+        // tab opens rather than only after an edit.
+        RegenerateQr();
     }
 
     public RelayCommand OpenPublishedCommand { get; }
@@ -164,6 +172,133 @@ public sealed class GitHubViewModel : ViewModelBase
     }
 
     public bool HasPublishedUrl => !string.IsNullOrWhiteSpace(_lastPublishedUrl);
+
+    // --- Mobile app QR ------------------------------------------------------
+
+    /// <summary>
+    /// The link a phone should open to download the mobile player's APK
+    /// (typically a GitHub release asset). Editing it re-renders the QR live and
+    /// persists the link, so it survives a restart. Whitespace clears the QR.
+    /// </summary>
+    public string ApkLinkText
+    {
+        get => _apkLinkText;
+        set
+        {
+            if (_apkLinkText == value) return;
+
+            _apkLinkText = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ApkLinkHint));
+            OnPropertyChanged(nameof(ApkLinkIsValid));
+
+            RegenerateQr();
+            PersistApkLink();
+
+            RelayCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    /// <summary>
+    /// A link is "valid enough to encode" when it is a well-formed absolute
+    /// http/https URL. QR itself will encode any text, but a bad link produces a
+    /// code that goes nowhere, so we gate rendering on this and say why.
+    /// </summary>
+    public bool ApkLinkIsValid => TryNormalizeApkLink(_apkLinkText, out _);
+
+    /// <summary>Live feedback, in the same spirit as RepositoryHint: silent when
+    /// empty, guidance when wrong, confirmation when right.</summary>
+    public string ApkLinkHint
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_apkLinkText)) return string.Empty;
+
+            return TryNormalizeApkLink(_apkLinkText, out _)
+                ? "Scan this with a phone to download the app."
+                : "Enter a full link starting with http:// or https://.";
+        }
+    }
+
+    /// <summary>
+    /// The QR as PNG bytes, or null when there is no valid link. The view binds
+    /// this to an Image via a bytes-to-BitmapImage step; keeping it as bytes
+    /// keeps the ViewModel free of any WPF imaging type.
+    /// </summary>
+    public byte[]? QrPng
+    {
+        get => _qrPng;
+        private set
+        {
+            _qrPng = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasQr));
+        }
+    }
+
+    public bool HasQr => _qrPng is { Length: > 0 };
+
+    /// <summary>The normalized link the copy/save actions should act on, or null.</summary>
+    public string? NormalizedApkLink =>
+        TryNormalizeApkLink(_apkLinkText, out var url) ? url : null;
+
+    private void RegenerateQr()
+    {
+        if (!TryNormalizeApkLink(_apkLinkText, out var url))
+        {
+            QrPng = null;
+            return;
+        }
+
+        try
+        {
+            // ECC level M: a balance of resilience and density that scans well
+            // off a screen. PngByteQRCode has no System.Drawing dependency, so
+            // this is safe under net8.0-windows with nothing extra at publish.
+            using var generator = new QRCodeGenerator();
+            using var data = generator.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
+            using var png = new PngByteQRCode(data);
+
+            // 20 px per module: crisp at typical tab sizes without a huge bitmap.
+            QrPng = png.GetGraphic(20);
+        }
+        catch
+        {
+            // Encoding should not fail for a valid URL, but a QR that cannot be
+            // drawn must not take the tab down -- just show nothing.
+            QrPng = null;
+        }
+    }
+
+    private void PersistApkLink()
+    {
+        var stored = _settings.Current.GitHub;
+        var trimmed = string.IsNullOrWhiteSpace(_apkLinkText) ? null : _apkLinkText.Trim();
+
+        if (stored.ApkDownloadUrl == trimmed) return;
+
+        stored.ApkDownloadUrl = trimmed;
+        _settings.Save();
+    }
+
+    /// <summary>
+    /// Accepts a link only if it is an absolute http/https URL. Returns the
+    /// trimmed, normalized string. Anything else (a bare domain, a file path,
+    /// empty) is rejected so the QR never encodes something that will not open.
+    /// </summary>
+    private static bool TryNormalizeApkLink(string? text, out string url)
+    {
+        url = string.Empty;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+
+        var candidate = text.Trim();
+
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri)) return false;
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) return false;
+
+        url = uri.AbsoluteUri;
+        return true;
+    }
 
     /// <summary>True when a token is stored and readable.</summary>
     public bool HasStoredToken => !string.IsNullOrWhiteSpace(SafeGetToken());

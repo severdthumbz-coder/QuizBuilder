@@ -112,6 +112,15 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 8, "2026-07-29", new[]
+        {
+            "GitHub tab: paste the mobile app's APK download link and a QR code is generated as you type — anyone can scan it to install the Android player. Copy the link or save the QR as an image.",
+            "Mobile player: pressing back during a quiz now offers to pause and save it, rather than only leave or stay — so a stray back tap can't lose your progress",
+            "Mobile player: pause a quiz partway and resume it later from the home screen",
+            "Mobile player: past attempts are saved on the device — a History screen with per-question detail",
+            "Mobile player: Study Cards review mode — flip through questions and study cards, with shuffle",
+            "Reliability: token-protection tests made immune to a rare test-run race",
+        }),
         new VersionEntry("0.25.0", 1, "2026-07-24", new[]
         {
             "New Sequence question type: the taker drags items into the correct order",

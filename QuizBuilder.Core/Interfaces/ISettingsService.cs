@@ -305,6 +305,15 @@ public sealed class GitHubSettings
 
     public string? LastCommitHash { get; set; }
     public string? PublishedPagesUrl { get; set; }
+
+    /// <summary>
+    /// A link to the mobile player's downloadable APK (typically a GitHub
+    /// release asset). Purely a convenience the GitHub tab turns into a
+    /// scannable QR so a phone can fetch the app; it is never used to publish
+    /// anything. Optional and free-text, so old settings files without it load
+    /// unchanged (plain get/set, no required, matching the rest of this model).
+    /// </summary>
+    public string? ApkDownloadUrl { get; set; }
 }
 
 public sealed class ShellSettings

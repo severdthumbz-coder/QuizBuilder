@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuizBuilder.Player.Views.StudyCardsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    x:DataType="vm:StudyCardsViewModel"
+    Title="Study cards">
+
+    <Grid Padding="20" RowDefinitions="Auto,*,Auto" RowSpacing="16"
+          MaximumWidthRequest="640" HorizontalOptions="Center">
+
+        <!-- Source toggle: only when both quiz questions and study cards exist -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" IsVisible="{Binding CanChooseSource}">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Review" Style="{StaticResource FieldLabel}" />
+                <HorizontalStackLayout Spacing="8">
+                    <Button Text="Both"
+                            Command="{Binding SetSourceCommand}" CommandParameter="both"
+                            Style="{StaticResource SecondaryButton}" />
+                    <Button Text="Questions"
+                            Command="{Binding SetSourceCommand}" CommandParameter="quiz"
+                            Style="{StaticResource SecondaryButton}" />
+                    <Button Text="Study cards"
+                            Command="{Binding SetSourceCommand}" CommandParameter="cards"
+                            Style="{StaticResource SecondaryButton}" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- The card. Tapping anywhere on it flips it. -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" IsVisible="{Binding HasCards}"
+                VerticalOptions="Fill">
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding FlipCommand}" />
+            </Border.GestureRecognizers>
+
+            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+
+                <!-- Face + type labels -->
+                <HorizontalStackLayout Grid.Row="0" Spacing="10">
+                    <Label Text="{Binding FaceLabel}" Style="{StaticResource FieldLabel}" />
+                    <Label Text="{Binding TypeLabel}" Style="{StaticResource Muted}" FontSize="12"
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Face content: image (if any) above the text, both centred -->
+                <ScrollView Grid.Row="1" VerticalOptions="Center">
+                    <VerticalStackLayout Spacing="14">
+                        <Image Source="{Binding FaceImage, Converter={StaticResource BytesToImage}}"
+                               Aspect="AspectFit"
+                               MaximumHeightRequest="220"
+                               IsVisible="{Binding FaceImage, Converter={StaticResource HasBytes}}" />
+                        <Label Text="{Binding FaceText}"
+                               Style="{StaticResource Headline}"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <Label Grid.Row="2" Text="Tap the card to flip" Style="{StaticResource Muted}"
+                       FontSize="12" HorizontalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Empty state -->
+        <Border Grid.Row="1" Style="{StaticResource Card}"
+                IsVisible="{Binding HasCards, Converter={StaticResource InverseBool}}"
+                VerticalOptions="Center">
+            <Label Text="There is nothing to review for this selection."
+                   Style="{StaticResource Body}" HorizontalTextAlignment="Center" />
+        </Border>
+
+        <!-- Controls -->
+        <VerticalStackLayout Grid.Row="2" Spacing="10" IsVisible="{Binding HasCards}">
+            <Button Text="{Binding FlipButtonText}"
+                    Command="{Binding FlipCommand}"
+                    Style="{StaticResource PrimaryButton}" />
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <Button Grid.Column="0" Text="Previous"
+                        Command="{Binding PreviousCommand}"
+                        IsEnabled="{Binding CanGoPrevious}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Label Grid.Column="1" Text="{Binding ProgressLabel}"
+                       Style="{StaticResource Muted}"
+                       VerticalOptions="Center" HorizontalTextAlignment="Center" />
+                <Button Grid.Column="2" Text="Next"
+                        Command="{Binding NextCommand}"
+                        IsEnabled="{Binding CanGoNext}"
+                        Style="{StaticResource SecondaryButton}" />
+            </Grid>
+
+            <Button Text="Shuffle"
+                    Command="{Binding ShuffleCommand}"
+                    IsEnabled="{Binding CanShuffle}"
+                    Style="{StaticResource SecondaryButton}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuizBuilder.Player.Views.AttemptDetailPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    x:DataType="vm:AttemptDetailViewModel"
+    Title="Attempt">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16"
+                             MaximumWidthRequest="640" HorizontalOptions="Center">
+
+            <!-- Summary header -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding QuizTitle}" Style="{StaticResource Title}" />
+                    <Label Text="{Binding TakenAt}" Style="{StaticResource Muted}" />
+
+                    <Label Text="{Binding ScoreHeadline}" Style="{StaticResource Headline}"
+                           Margin="0,6,0,0" />
+                    <Label Text="{Binding ScoreDetail}" Style="{StaticResource Body}" />
+
+                    <Label Text="{Binding PassFailText}"
+                           IsVisible="{Binding HasPassFail}"
+                           FontAttributes="Bold" FontSize="16" Margin="0,4,0,0"
+                           TextColor="{AppThemeBinding Light={StaticResource SuccessLight}, Dark={StaticResource SuccessDark}}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsFail}" Value="True">
+                                <Setter Property="TextColor"
+                                        Value="{AppThemeBinding Light={StaticResource ErrorLight}, Dark={StaticResource ErrorDark}}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+
+                    <Border
+                        IsVisible="{Binding ReviewNote, Converter={StaticResource NotEmpty}}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                        Padding="12" StrokeThickness="0" Margin="0,4,0,0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10" />
+                        </Border.StrokeShape>
+                        <Label Text="{Binding ReviewNote}" Style="{StaticResource Muted}" FontSize="13" />
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Questions" Style="{StaticResource Subtitle}" />
+
+            <!-- Per-question breakdown -->
+            <CollectionView ItemsSource="{Binding Questions}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AttemptQuestionRow">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                            <VerticalStackLayout Spacing="6">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                    <Label Grid.Column="0" Text="{Binding Number, StringFormat='Q{0}'}"
+                                           Style="{StaticResource Muted}" FontAttributes="Bold" />
+                                    <Label Grid.Column="2" Text="{Binding Points}"
+                                           Style="{StaticResource Muted}" FontSize="12" />
+                                </Grid>
+
+                                <Label Text="{Binding Prompt}" Style="{StaticResource Body}" />
+
+                                <Label Text="{Binding Status}"
+                                       IsVisible="{Binding HasStatus}"
+                                       FontAttributes="Bold" FontSize="13"
+                                       TextColor="{AppThemeBinding Light={StaticResource SuccessLight}, Dark={StaticResource SuccessDark}}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsIncorrect}" Value="True">
+                                            <Setter Property="TextColor"
+                                                    Value="{AppThemeBinding Light={StaticResource ErrorLight}, Dark={StaticResource ErrorDark}}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsReview}" Value="True">
+                                            <Setter Property="TextColor"
+                                                    Value="{AppThemeBinding Light={StaticResource OnSurfaceMutedLight}, Dark={StaticResource OnSurfaceMutedDark}}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+
+                                <HorizontalStackLayout Spacing="6">
+                                    <Label Text="Your answer:" Style="{StaticResource Muted}" FontSize="13" />
+                                    <Label Text="{Binding GivenAnswer}" Style="{StaticResource Body}" FontSize="13" />
+                                </HorizontalStackLayout>
+
+                                <HorizontalStackLayout Spacing="6" IsVisible="{Binding HasCorrectAnswer}">
+                                    <Label Text="Correct answer:" Style="{StaticResource Muted}" FontSize="13" />
+                                    <Label Text="{Binding CorrectAnswer}" Style="{StaticResource Body}" FontSize="13" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

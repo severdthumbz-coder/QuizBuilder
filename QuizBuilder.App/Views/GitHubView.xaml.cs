@@ -75,4 +75,54 @@ public partial class GitHubView : UserControl
                 MessageBoxImage.Warning);
         }
     }
+
+    private void OnCopyApkLinkClick(object sender, RoutedEventArgs e)
+    {
+        var link = _viewModel.NormalizedApkLink;
+        if (string.IsNullOrWhiteSpace(link)) return;
+
+        try
+        {
+            Clipboard.SetText(link);
+        }
+        catch (Exception ex)
+        {
+            // The clipboard can be transiently locked by another app; a failed
+            // copy is a minor annoyance, not worth more than a quiet note.
+            MessageBox.Show(
+                $"Could not copy the link: {ex.Message}",
+                "Copy link",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void OnSaveQrClick(object sender, RoutedEventArgs e)
+    {
+        var png = _viewModel.QrPng;
+        if (png is not { Length: > 0 }) return;
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Save QR image",
+            Filter = "PNG image (*.png)|*.png",
+            DefaultExt = ".png",
+            FileName = "quiz-app-qr.png",
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            System.IO.File.WriteAllBytes(dialog.FileName, png);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Could not save the image: {ex.Message}",
+                "Save QR image",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
 }

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuizBuilder.Player.Views.HistoryPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    x:Name="Page"
+    x:DataType="vm:HistoryViewModel"
+    Title="History">
+
+    <Grid Padding="20" RowDefinitions="*,Auto" RowSpacing="12"
+          MaximumWidthRequest="640" HorizontalOptions="Center">
+
+        <!-- Empty state -->
+        <Border Grid.Row="0" Style="{StaticResource Card}"
+                IsVisible="{Binding IsEmpty}" VerticalOptions="Start">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="No attempts yet" Style="{StaticResource Subtitle}" />
+                <Label Text="Take this quiz and your past sittings will appear here."
+                       Style="{StaticResource Muted}" />
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Attempt list -->
+        <CollectionView Grid.Row="0"
+                        ItemsSource="{Binding Attempts}"
+                        IsVisible="{Binding IsEmpty, Converter={StaticResource InverseBool}}"
+                        SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:AttemptRow">
+                    <SwipeView>
+                        <SwipeView.RightItems>
+                            <SwipeItems>
+                                <SwipeItem Text="Delete"
+                                           BackgroundColor="{AppThemeBinding Light={StaticResource ErrorLight}, Dark={StaticResource ErrorDark}}"
+                                           Command="{Binding Source={x:Reference Page}, Path=BindingContext.DeleteCommand}"
+                                           CommandParameter="{Binding .}" />
+                            </SwipeItems>
+                        </SwipeView.RightItems>
+
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={x:Reference Page}, Path=BindingContext.OpenCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                                <Label Grid.Row="0" Grid.Column="0"
+                                       Text="{Binding TakenAt}" Style="{StaticResource Body}"
+                                       FontAttributes="Bold" />
+                                <Label Grid.Row="1" Grid.Column="0"
+                                       Text="{Binding Score}" Style="{StaticResource Muted}" />
+
+                                <Label Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
+                                       Text="{Binding PassFail}"
+                                       IsVisible="{Binding HasPassFail}"
+                                       VerticalOptions="Center"
+                                       FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light={StaticResource SuccessLight}, Dark={StaticResource SuccessDark}}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsFail}" Value="True">
+                                            <Setter Property="TextColor"
+                                                    Value="{AppThemeBinding Light={StaticResource ErrorLight}, Dark={StaticResource ErrorDark}}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                            </Grid>
+                        </Border>
+                    </SwipeView>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Clear all -->
+        <Button Grid.Row="1" Text="Clear all history"
+                Command="{Binding ClearAllCommand}"
+                IsVisible="{Binding IsEmpty, Converter={StaticResource InverseBool}}"
+                Style="{StaticResource SecondaryButton}" />
+    </Grid>
+</ContentPage>

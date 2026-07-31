@@ -12,7 +12,14 @@ namespace QuizBuilder.Tests;
 ///
 /// MachineBound is covered by swapping ProtectedDataShim's delegates, so these
 /// run on any OS. That is the whole reason the shim exists.
+///
+/// Because those delegates are process-global, this class shares a collection
+/// with every other shim-mutating class (see <see cref="ProtectedDataShimCollection"/>)
+/// so xUnit never runs them in parallel -- otherwise another class's shim could
+/// be active while MachineBound_RoundTripsToken calls through it, which is the
+/// intermittent-red-CI race this collection removes.
 /// </summary>
+[Collection(ProtectedDataShimCollection.Name)]
 public class TokenProtectorTests : IDisposable
 {
     private const string Token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";

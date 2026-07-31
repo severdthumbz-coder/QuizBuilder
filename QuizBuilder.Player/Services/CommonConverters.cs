@@ -21,3 +21,15 @@ public sealed class InverseBoolConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is bool b ? !b : false;
 }
+
+/// <summary>True when a byte[] is present and non-empty; used to show/hide an
+/// optional image whose bytes are resolved from the package. NotEmptyConverter
+/// only understands strings, so image visibility needs its own test.</summary>
+public sealed class HasBytesConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is byte[] { Length: > 0 };
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

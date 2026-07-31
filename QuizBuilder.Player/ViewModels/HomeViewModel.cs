@@ -1,5 +1,8 @@
+using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QuizBuilder.Core.Interfaces;
 using QuizBuilder.Player.Services;
 
 namespace QuizBuilder.Player.ViewModels;
@@ -58,6 +61,13 @@ public partial class HomeViewModel : ObservableObject
 
     public bool HasQuiz => !string.IsNullOrEmpty(QuizTitle);
 
+    /// <summary>Paused sittings for the loaded quiz, shown as resumable rows.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPausedAttempts))]
+    private ObservableCollection<PausedRow> _pausedAttempts = new();
+
+    public bool HasPausedAttempts => PausedAttempts.Count > 0;
+
     public string WelcomeLine =>
         _session.Identity is { } id ? $"Signed in as {id.FullName}" : string.Empty;
 
@@ -73,6 +83,14 @@ public partial class HomeViewModel : ObservableObject
                 ? string.Join("\n", loaded.Warnings)
                 : null;
         }
+
+        // Rebuilt on every refresh (which Attach triggers on each appearance),
+        // so returning from a pause shows the new entry and finishing a resumed
+        // sitting drops it. Reading the service each time keeps this in step
+        // with the store without a change subscription.
+        PausedAttempts = new ObservableCollection<PausedRow>(
+            _session.PausedForCurrentQuiz().Select(a => new PausedRow(a)));
+        OnPropertyChanged(nameof(HasPausedAttempts));
     }
 
     [RelayCommand]
@@ -152,4 +170,63 @@ public partial class HomeViewModel : ObservableObject
         _session.StartTake();
         await Shell.Current.GoToAsync("take");
     }
+
+    [RelayCommand]
+    private async Task ReviewAsync()
+    {
+        if (!HasQuiz)
+        {
+            StatusMessage = "Load a quiz first.";
+            return;
+        }
+
+        // Study cards need no compiled paper -- the deck is built straight from
+        // the document -- so there is nothing to validate here beyond a loaded
+        // quiz. An empty selection is handled on the review screen itself.
+        await Shell.Current.GoToAsync("studycards");
+    }
+
+    [RelayCommand]
+    private async Task HistoryAsync()
+    {
+        if (!HasQuiz)
+        {
+            StatusMessage = "Load a quiz first.";
+            return;
+        }
+
+        await Shell.Current.GoToAsync("history");
+    }
+
+    [RelayCommand]
+    private async Task ResumeAsync(PausedRow? row)
+    {
+        if (row is null || !HasQuiz) return;
+
+        _session.ResumeFrom(row.Attempt);
+        await Shell.Current.GoToAsync("take");
+    }
+}
+
+/// <summary>One resumable paused sitting, formatted for a Home list row.</summary>
+public sealed class PausedRow
+{
+    public PausedRow(PausedAttempt attempt)
+    {
+        Attempt = attempt;
+
+        SavedAt = attempt.SavedAt.LocalDateTime
+            .ToString("d MMM yyyy, h:mm tt", CultureInfo.CurrentCulture);
+
+        // How far in they got: answered questions over total, from the snapshot
+        // itself so it needs no live paper. An answer counts when it is not empty.
+        var questions = attempt.Sections.SelectMany(s => s.Questions).ToList();
+        var answered = questions.Count(q => !q.Answer.IsEmpty);
+        Progress = $"{answered} of {questions.Count} answered";
+    }
+
+    public PausedAttempt Attempt { get; }
+    public Guid Id => Attempt.Id;
+    public string SavedAt { get; }
+    public string Progress { get; }
 }

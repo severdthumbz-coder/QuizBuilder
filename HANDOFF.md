@@ -1,137 +1,241 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.25.0 build 1 (stage `sequence-question`)
-**Status:** Builds green on Windows. Live on GitHub with green CI (both jobs).
-**Deliverable:** `/mnt/user-data/outputs/QuizBuilder_v25.zip`
+**Last shipped:** v0.26.0 build 6 (stage `maui-android-player`)
+**Status:** Desktop builds green on Windows. **Android player builds green and
+runs on-device (emulator)** — build 4 confirmed green by the Windows builder;
+builds 5–6 add features on top and are **structurally verified but awaiting a
+Windows/emulator build confirmation** (see §0). Live on GitHub with **green CI
+(both jobs).**
+**Deliverable:** `/mnt/user-data/outputs/QuizBuilder_v0.26.0.6.zip`
 
 This document exists so a new chat can resume without re-reading the whole
-history. Read §0 first for current state, then the rest as reference.
+history. Read §0 first for current state, then the rest as reference. The
+detailed MAUI/mobile status, the exact build/deploy commands, the (now-fixed) CI
+note, and the tier-1 feature status are all in **§13**.
 
 ---
 
 ## 0. CURRENT STATE & RECENT WINS (read this first)
 
-### Where the project is right now
-- **Version 0.25.0** — the **Sequence question type** is complete, shipped, and
-  verified in real CI. The app now has **8 question types** (see §5).
-- **On GitHub for the first time.** Repo: `severdthumbz-coder/QuizBuilder`,
-  branch `main`. The push-first workflow (add/commit/push → wait for the green
-  checkmark → build locally) is now live for this project, matching the user's
-  other repos (Video Metadata Editor, TimerSuite, FileOrganizer).
-- **CI is green on both jobs** (`.github/workflows/build.yml`):
-  - `core-tests` (ubuntu) — restores/builds/tests the Tests project (Core comes
-    via project reference); runs the full xUnit suite with the *real* runner.
-  - `app-build` (windows) — publishes the WPF app as a self-contained
-    single-file exe. Previously never run; **now confirmed working.**
+### What changed after build 2 (builds 3–6, this session)
+Truthful status, because verification level differs by item:
+- **Build 3 — CI test-isolation fix (DONE, and this is the real fix).** The
+  latent DPAPI flake is fixed deterministically by putting every test that
+  mutates the process-global `ProtectedDataShim` delegates into ONE xUnit
+  collection (`ProtectedDataShimCollection`), so `TokenProtectorTests` and
+  `MobileReadPathContractTests` never run in parallel. Root cause was parallelism
+  (xUnit's unit of parallelization is the collection; classes default to separate
+  collections and run concurrently), NOT ordering as the old note guessed. The
+  MachineBound test keeps its Linux coverage (it runs via its own XOR shim). This
+  supersedes the two candidate fixes the old §13 listed — do not "skip
+  off-Windows"; the collection fix is better and is in place.
+- **Build 3 — Android script gained `-Launch` and `-Device`.** `build-android.bat
+  launch` installs then launches the app; `device=<serial>` (→ `-Device`) targets
+  one adb device when several are attached. Auto-detects a single device. Launch
+  uses `adb shell monkey -p <pkg> -c android.intent.category.LAUNCHER 1` so the
+  generated activity name is never hardcoded.
+- **Build 4 — Study Cards review (mobile). CONFIRMED GREEN on Windows.** Flips
+  through the quiz as flash cards via Core's `FlashDeck`; source toggle
+  (Questions / Study cards / Both) appears only when both exist; tap-to-flip,
+  prev/next, shuffle. Home button "Review as study cards".
+- **Build 5 — Attempt history (mobile). Structurally verified; awaiting build
+  confirmation.** Every finished attempt is recorded to `history.json` in the app
+  sandbox (the storage-path blocker, resolved via the `overrideDirectory` seam →
+  `FileSystem.AppDataDirectory`). Home "View history" → list newest-first with
+  score + PASS/FAIL → tap for the full per-question breakdown. Swipe-to-delete,
+  clear-all, both confirmed.
+- **Build 6 — Pause / resume (mobile). Structurally verified; awaiting build
+  confirmation.** "Pause & save" on the take screen snapshots the exact paper and
+  answers into a `PausedAttempt` (sandbox `paused-attempts.json`); Home shows a
+  "Paused attempts" card to resume; finishing a resumed sitting clears its
+  snapshot; re-pausing updates one entry. The back button now offers **Pause &
+  save / Leave without saving / Keep going** (three-way action sheet), completing
+  the §13 "pause instead of leaving" item.
 
-### The Sequence question type (the headline feature of this arc)
-A taker drags items into the correct order; scoring is **adjacent-pair partial
-credit** (each correctly-ordered neighbouring pair earns a share of the points,
-so one misplaced item does not fail the whole question).
-- **Model:** `SequenceQuestion` with `Items` in correct order (the answer key).
-- **Presentation:** the shuffle the taker sees is a *projection* on the compiled
-  question — `CompiledQuestion.SequencePresentation` (a permutation of item
-  indices). The model's `Items` are never reordered. Mirrors how
-  `MatchingOptions` works. Guard: **never the identity permutation for n≥2** when
-  randomising (Fisher-Yates with a rotate-by-one fallback). With randomisation
-  off, presents in correct order (author's choice, like fixed-order matching).
-- **Wired end-to-end (all 8 App integration points + Core):** grader, compiler,
-  HTML/Word/Excel/self-grading-web exporters, Excel import, preview, editor VM +
-  DataTemplate (with move up/down), take-view drag UI (reuses the existing
-  `ListReorderDropTarget`, so the drag-down off-by-one fix is inherited),
-  picker, `CreateQuestion`, editor factory, settings default-points row, and
-  **pause/resume persistence** (`SequencePresentation` is saved in the paused
-  snapshot and restored — without it a resumed sequence would show the answer).
-- **Design decisions locked in:** min 2 items (editor seeds 3 empty rows);
-  RandomizeAnswerOrder off → present correct order; an untouched sequence counts
-  as **unanswered → scores 0** (consistent with every other type).
+**"Structurally verified" means:** XAML well-formed, every binding resolves to a
+real VM/row member (incl. source-generated `[ObservableProperty]` names), every
+Core call and object-initializer cross-checked against Core source (signatures,
+enum values, no missed `required` members), the 12-check `validate.py` green on
+both the working tree and the re-unzipped shipped zip. It does NOT mean the MAUI
+project was compiled — there is no MAUI toolchain in the AI sandbox (no NuGet
+restore, no `maui-android` workload). The desktop/Core changes ride the same
+`validate.py` the desktop always used. **First action for the next session:
+confirm builds 5–6 compile and run on the emulator (`build-android.bat launch`),
+then update this section to "confirmed green."**
 
-### Format version bump — IMPORTANT
-`.qbx` `FormatVersion` is now **2** (was 1). The load gate rejects files
-*newer* than the build understands, so a v0.25 file will not open in v0.24 or
-earlier — even a quiz with no sequence question. This is the deliberate
-unconditional-bump tradeoff. A v1 file still opens in v0.25 (proven, see below).
+### Tier-1 mobile backlog is COMPLETE
+Study Cards → history → pause/resume were the three decided tier-1 features
+(§13). All three are built (builds 4–6). The old §13 "decided, not yet built"
+wording is superseded by the per-build status above.
 
-### Test suite additions this arc (all run in CI with real xUnit)
-- `SequenceQuestionTests` — grader: all permutations, malformed input, results-
-  screen rendering via `AttemptRecordBuilder` (that builder had had **zero**
-  tests before; now covered).
-- `SequencePresentationTests` — compiler shuffle/guard, every exporter, Excel
-  round-trip, pause/resume presentation survival.
-- `PackageBackwardCompatTests` — a hand-built **v1 `.qbx` still opens** in the
-  v2 build, keeps its reported version (reading ≠ upgrading), preserves content
-  and images; a current save is stamped v2.
-- `MobileReadPathContractTests` — pins the exact Core slice the future MAUI
-  player depends on (load → compile → grade with **storage sandboxed** and
-  **DPAPI disabled**), so a Core change that breaks mobile fails on desktop CI.
+### On timed quizzes (finding from build 6 session)
+The player does NOT enforce a time limit, and this is correct, not a bug: the
+`.qbx`/`QuizDocument` has **no time-limit field**. `TimeLimitMinutes` lives only
+on `QuizSettings` (a desktop-local setting beside the exe) and is never
+serialized into the `.qbx`. So there is nothing in the file for the player to
+honor. Making timed quizzes portable is a real future item (**"option B"**): add
+`TimeLimitMinutes` (optional, for old-file compatibility) to `QuizDocument` so it
+authors into the `.qbx`, have the desktop write it and the player read+enforce it
+(the desktop `TakeQuizViewModel` has the full timer/auto-submit reference:
+`Stopwatch` clock, `Remaining() = TimeLimit − TotalElapsed`, auto-submit at zero
+with `timedOut: true`). Deferred by the product owner; captured here so it is not
+rediscovered from scratch.
 
-### GitHub hygiene note (learned the hard way)
-The first push accidentally committed ~40 build-snapshot zips (~814 MB). Fixed by
-un-tracking (`git rm --cached "*.zip"`), adding `*.zip` to `.gitignore`, and
-`git commit --amend` + `git push --force` on the single fresh commit (safe: solo
-repo, no other clones). Repo dropped from 814 MB to ~420 KB. **Build zips live in
-a sibling folder outside the repo now, never in the tree.** If build artifacts
-should be kept *with* the repo, the right home is GitHub **Releases**, not commits.
+### Where the project is right now (v0.26.0)
+- **Two apps now share one Core.** The original **WPF desktop app** (`net8.0`)
+  and a new **.NET MAUI Android player** (`net10.0-android`) both reference
+  `QuizBuilder.Core`, which is now **multi-targeted `net8.0;net10.0`**. Scoring,
+  the `.qbx` format, and the domain model are shared by construction — the mobile
+  player never re-implements grading.
+- **The Android player works end to end on a device.** Built, deployed to an
+  Android emulator, and run: identity capture (first/last name + email) → `.qbx`
+  import → take (all **8** question types, touch-first) → grade via Core →
+  results → **email results via the native mail composer**. The score matches the
+  desktop app because it is the *same Core grader*.
+- **Desktop app is unchanged and still green.** `dotnet build` on the solution
+  builds `QuizBuilder.Core` (both `net8.0` and `net10.0` slices),
+  `QuizBuilder.Tests` (`net8.0`), and `QuizBuilder.App` (`net8.0-windows`). The
+  MAUI project is in the `.sln` but has **no `Build.0`**, so a plain solution
+  build skips it (it needs the MAUI workload, which desktop/CI runners lack).
+- **CI is green on both jobs** (`.github/workflows/build.yml`): `core-tests`
+  (ubuntu, full xUnit suite, **611/612 currently — see the CI note in §13**) and
+  `app-build` (windows, publishes the self-contained WPF exe). The Android app is
+  **not** yet in CI (no Android job — that is a documented future step in §13).
+- **Repo:** `severdthumbz-coder/QuizBuilder`, branch `main`, working tree clean
+  and pushed as of this handoff. The push-first workflow (add/commit/push → wait
+  for the green checkmark → build locally) remains the gate.
 
-### MAUI readiness (the planned next chapter — see §13 for detail)
-All three documented blockers are de-risked:
-1. **TFM** — Core is `net8.0`; MAUI wants `net10.0`. **DECISION: stay on net8
-   now, multi-target `net8.0;net10.0` when MAUI begins, drop net8 after MAUI is
-   stable (before net8 EOL, Nov 2026).** A full audit found Core is
-   multi-target-ready with **no code migration** — no WPF/Drawing/Win32, no
-   removed APIs, reflection is single-file-safe.
-2. **Storage** — all four data services already take an `overrideDirectory`
-   seam; MAUI passes a sandbox path. Guarded by `MobileReadPathContractTests`.
-3. **DPAPI** — isolated behind `ProtectedDataShim`/`TokenProtector`; degrades to
-   a clean, catchable error off-Windows; None/Passphrase modes are cross-platform.
+### What this session did (v0.25 → v0.26)
+Built the entire MAUI Android player from nothing, got it compiling green, and
+ran it on a device. New project `QuizBuilder.Player` (`net10.0-android`, MAUI 10)
+with: touch-first pages (identity → home/import → take → results); eight
+per-type answer widgets behind a `DataTemplateSelector`; `.qbx` import via file
+picker + Android VIEW/SEND intents; a native-mail results composer; and a
+`build-android.ps1`/`.bat` pair that auto-detects the whole Android toolchain.
+Design follows the UI/UX Pro Max rules (semantic light/dark tokens, 48dp touch
+targets, one CTA per screen, inline validate-on-blur). See §13 for the full
+build story, the toolchain lessons, every fix applied, and the next-session plan.
+
+### The .NET 10 / MAUI build — how the Android app is built
+- **The MAUI player targets `net10.0-android`.** MAUI 10 ships in lockstep with
+  .NET 10, which is why Core gained a `net10.0` target. The player consumes
+  Core's `net10.0` slice; the desktop app consumes Core's `net8.0` slice. One
+  source, two hosts.
+- **`global.json` is pinned to a stable .NET 10 SDK** (`version: 10.0.100`,
+  `rollForward: latestFeature`, `allowPrerelease: false`). This is load-bearing:
+  the machine also has a **.NET 11 preview SDK**, and without the pin, roll-
+  forward jumps to 11 and `dotnet workload install maui-android` then pulls a
+  **mismatched net11 preview workload band** against a `net10.0-android` project.
+  The pin keeps everything on the stable net10 band. `dotnet --version` run from
+  the repo folder MUST print `10.0.x`, not 11 — that is the canary.
+- **Build the Android app with `build-android.bat`** (Debug APK, self-contained,
+  installs directly) or `build-android.bat release` (signed APK + AAB when the
+  `QB_KEYSTORE*` env vars are set). The `.bat` wraps `build-android.ps1`, which
+  is the single source of truth. The script checks the toolchain, sanity-builds
+  Core's net10 slice first (fast fail), then builds the app, and reports the APK
+  path. **Full command reference and the fast dev-loop (`dotnet build -t:Run`)
+  are in §13.**
+- **Required toolchain (all detected/handled by the script):** stable .NET 10
+  SDK; the **maui-android workload** (`dotnet workload install maui-android` —
+  separate from the SDK); the **Android SDK** (not bundled by the workload —
+  Android Studio's wizard installs it to `%LOCALAPPDATA%\Android\Sdk`); a **JDK**
+  (Android Studio bundles one at `…\Android Studio\jbr`); and the **API-36
+  platform** (`android.jar`, auto-installed by the script via
+  `InstallAndroidDependencies` on first run).
+
+### Format version (unchanged this arc)
+`.qbx` `FormatVersion` is **2** (bumped in v0.25 for the sequence type). A v1
+file still opens in v2 (reading ≠ upgrading). The mobile player reads v2 `.qbx`
+files through the same `QuizPackageService` the desktop uses.
 
 ### Immediate next-step options
-- **MAUI/Android player** — the big one. Start in a **fresh chat with this doc.**
-  First step there is literally `dotnet new maui` and reading the template's
-  `Platforms/Android` structure — do not pre-create folders.
-- **Android CI job** — a third workflow job producing an `.apk`/`.aab` as a
-  build **artifact** (not committed); needs the keystore as an encrypted secret.
-  Belongs *after* the MAUI project exists.
-- **CI housekeeping** — bump `actions/checkout` and `actions/setup-dotnet` off
-  the deprecated Node 20 (yellow warning only, not failing).
-- **More question types** — considered (iSpring comparison). Verdict: numeric and
-  dropdown-lists are low-cost/high-value if wanted; the drag family (hotspot,
-  drag-drop) is expensive and hits the least-verifiable surface; Likert = survey
-  mode, a different concept. **Reach (MAUI) was judged higher value than breadth.**
+- **First: confirm builds 5–6 on the emulator** (`build-android.bat launch`) and
+  flip their status above to "confirmed green." Build 4 is already confirmed.
+- **The CI test-isolation bug is FIXED** (build 3, collection-based). No longer a
+  next step; the old note below is retained in §13 only for history.
+- **Tier-1 mobile is COMPLETE** (Study Cards, history, pause/resume). Next
+  candidates, none yet started: an **Android CI job** (installs `maui-android`,
+  runs `build-android.ps1` — would remove the "structurally verified only"
+  caveat by gating mobile compiles automatically); the **iOS target** (needs a
+  Mac); replace the placeholder **app icon/monogram**; or desktop feature work
+  from §14 (highest-value: hotspot/numeric question types — note the
+  drag-and-drop *sequence* type already shipped in 0.25.0). **Timed quizzes
+  ("option B" above)** is the notable format-level item.
+- **CI/housekeeping:** an Android CI job (installs the workload, runs
+  `build-android.ps1`); bump `actions/checkout`/`setup-dotnet` off deprecated
+  Node 20; replace the placeholder app icon; test the email composer on a real
+  phone (emulators usually have no mail app); iOS target (needs a Mac).
+
+---
+
+## 0b. HISTORICAL: the Sequence question arc (v0.25, shipped)
+
+The prior arc added the **Sequence question type** (the 8th type). Kept here for
+reference since it is the most recent domain feature.
+
+A taker drags items into the correct order; scoring is **adjacent-pair partial
+credit** (each correctly-ordered neighbouring pair earns a share, so one
+misplaced item does not fail the whole question). Model: `SequenceQuestion` with
+`Items` in correct order (the answer key). Presentation: the shuffle the taker
+sees is a projection on the compiled question —
+`CompiledQuestion.SequencePresentation` (a permutation of item indices); the
+model's `Items` are never reordered (mirrors `MatchingOptions`). Guard: never
+the identity permutation for n≥2. Wired end-to-end across all App integration
+points, every exporter, Excel import, and **pause/resume persistence**
+(`SequencePresentation` is saved in the paused snapshot, or a resumed sequence
+would show the answer). An untouched sequence counts as unanswered → scores 0.
+
+Test suites from that arc (all in CI): `SequenceQuestionTests`,
+`SequencePresentationTests`, `PackageBackwardCompatTests` (a v1 `.qbx` still
+opens), and `MobileReadPathContractTests` (pins the Core slice the mobile player
+depends on — this is the suite involved in the current CI note; see §13).
 
 ---
 
 ## 1. What this is
 
-A portable Windows desktop **Quiz Builder**: WPF / .NET 8 / C# / MVVM. An author
-builds quizzes, takes them, and exports them. Everything is local — no cloud, no
-account, no LMS.
+Originally a portable Windows desktop **Quiz Builder** (WPF / .NET 8 / C# /
+MVVM); **as of v0.26 also a .NET MAUI Android player** that shares the same
+`QuizBuilder.Core`. An author builds quizzes, takes them, and exports them on
+desktop; a taker imports a `.qbx` and takes quizzes on Android. Everything is
+local — no cloud, no account, no LMS, on either platform.
 
-**Portability is a hard requirement, not a nice-to-have.** Settings and all
-stored data are written *beside the .exe* (never AppData, never the registry).
-The app publishes as a single self-contained file.
+**Portability is a hard requirement.** On desktop, settings and stored data are
+written *beside the .exe* (never AppData, never the registry); the app publishes
+as a single self-contained file. On mobile, the same Core services write into
+the **app sandbox** (`FileSystem.AppDataDirectory`) via their `overrideDirectory`
+constructor seam — the desktop's "beside the exe" rule has no meaning on a phone.
 
 ### How to build and run it
 
+**Desktop (WPF):**
 ```
 build.bat                 clean, build, test, publish, package
 build.bat --no-test       skip tests
 build.bat --no-publish    build + test only
 build.bat --quiet         don't prompt to launch at the end
 ```
-
-Requires the **.NET 8 SDK** (or a newer SDK *plus* the .NET 8 targeting pack —
-`global.json` rolls forward). The script checks both up front and gives a clear
-message instead of letting MSBuild emit NETSDK1045.
-
+Requires a **.NET 10 SDK** (the repo's `global.json` now pins `10.0.100`; a
+.NET 8 SDK also satisfies the desktop's `net8.0` targets, but the MAUI player
+REQUIRES .NET 10, so a net10 SDK is the one to have installed). The script
+checks the SDK up front and gives a clear message instead of NETSDK1045.
 Output: `publish\QuizBuilder vX.Y.Z.B.exe` — self-contained, single file.
-The user has been building on **.NET SDK 11.0.100-preview** successfully.
 
-**GitHub / CI is now the primary gate.** The user's workflow is: `git add/commit/
-push` to `main` → GitHub Actions runs `build.yml` (both jobs must go green) →
-*then* build locally. The green checkmark is the authoritative "it survives on a
-clean machine" signal; `build.bat` is the local confirmation. Check runs with
-`gh run list` / `gh run watch` / `gh run view <id> --log-failed`.
+**Android (MAUI):**
+```
+build-android.bat                 Debug APK (self-contained, installs directly)
+build-android.bat release         Release APK + AAB (needs QB_KEYSTORE* env vars)
+build-android.bat install         Debug APK, then adb-install to a connected device
+build-android.bat clean           clean first
+```
+Requires the **.NET 10 SDK**, the **maui-android workload**, the **Android SDK**,
+a **JDK**, and the **API-36 platform** — the script detects/installs all of these
+and prints what it found. See §0 above for the toolchain summary and §13 for the
+exact fast dev-loop command, the emulator setup, and every gotcha.
+
+**GitHub / CI is the primary gate.** Workflow: `git add/commit/push` to `main` →
+GitHub Actions runs `build.yml` (both jobs must go green) → then build locally.
+Check with `gh run list` / `gh run watch` / `gh run view <id> --log-failed`.
 
 ---
 
@@ -161,32 +265,72 @@ Do not promise a build is green. Only the user's Windows build proves that.
 
 ```
 QuizBuilder.sln
-├── QuizBuilder.Core/     net8.0        50 .cs   ← portable, WPF-free
-├── QuizBuilder.App/      net8.0-windows 37 .cs + 16 .xaml  ← WPF host
-├── QuizBuilder.Tests/    net8.0        35 .cs, 465 test methods (xUnit)
-├── build.bat             5-stage build, REFUSES to publish if tests fail
-├── version.json          single source of version truth
-├── global.json           pins SDK to .NET 8, rolls forward
+├── QuizBuilder.Core/     net8.0;net10.0   ← portable, WPF-free, MULTI-TARGETED
+├── QuizBuilder.App/      net8.0-windows    ← WPF desktop host (uses Core net8)
+├── QuizBuilder.Player/   net10.0-android   ← MAUI Android player (uses Core net10) [NEW v0.26]
+├── QuizBuilder.Tests/    net8.0            xUnit, 612 test methods
+├── build.bat             desktop: 5-stage build, REFUSES to publish if tests fail
+├── build-android.ps1     MAUI: toolchain-detecting Android build (SDK/JDK/platform) [NEW]
+├── build-android.bat     thin wrapper over build-android.ps1 [NEW]
+├── version.json          single source of version truth (now 0.26.0)
+├── global.json           pins SDK to STABLE .NET 10 (10.0.100) — see §0 [CHANGED]
 ├── Directory.Build.props
-├── tools/validate.py     12 static checks (see §8)
+├── tools/validate.py     12 static checks; XML check now covers .xml/.manifest [CHANGED]
 ├── assets/               icon.svg / icon.ico / make-icon.py
-└── .github/workflows/build.yml
+└── .github/workflows/build.yml   (2 jobs; no Android job yet)
 ```
+
+**The `.sln` lists `QuizBuilder.Player` with `ActiveCfg` but NO `Build.0`.** This
+is deliberate: a plain `dotnet build QuizBuilder.sln` (desktop, CI) skips the
+Android project, which needs the MAUI workload the desktop/CI runners lack. The
+IDE can still build the player on demand; `build-android.bat` builds it directly.
 
 ### Package references — HELD DELIBERATELY LOW
 
 | Project | TFM | Packages |
 |---|---|---|
-| Core | `net8.0` | **exactly 2**: `System.Security.Cryptography.ProtectedData`, `Microsoft.Extensions.DependencyInjection.Abstractions` |
+| Core | `net8.0;net10.0` | **exactly 2, per-TFM-conditional**: `System.Security.Cryptography.ProtectedData` (8.0.0 / 10.0.0), `Microsoft.Extensions.DependencyInjection.Abstractions` (8.0.2 / 10.0.0) |
 | App | `net8.0-windows` | `Microsoft.Extensions.DependencyInjection` |
+| Player | `net10.0-android` | `Microsoft.Maui.Controls`, `CommunityToolkit.Mvvm`, `Microsoft.Extensions.DependencyInjection`, `Microsoft.Extensions.Logging.Debug` |
 | Tests | `net8.0` | xUnit 2.9.2, Test.Sdk 17.11.1, runner.visualstudio 2.8.2, coverlet |
 
-**Core is at 2 package refs and must stay there.** No PDF/Word/Excel/image/git
-library. Instead:
-- PDF = browser print
-- .docx / .xlsx = written by hand via `System.IO.Compression`
-- GitHub = REST over `HttpClient`
-- Image dimensions = parsed by hand from PNG/GIF/JPEG byte headers
+**Core is still at 2 package refs and must stay there.** The multi-target made
+them TFM-conditional (net8 majors for net8, net10 majors for net10) so neither
+build resolves a mismatched-major assembly. No PDF/Word/Excel/image/git library.
+Instead: PDF = browser print; .docx/.xlsx = written by hand via
+`System.IO.Compression`; GitHub = REST over `HttpClient`; image dimensions =
+parsed by hand. **The Player's MAUI packages do NOT count against Core's limit —
+Core stays clean; the MAUI dependencies live only in the Player project.**
+
+### The MAUI player (`QuizBuilder.Player`) at a glance
+```
+QuizBuilder.Player/
+├── App.xaml(.cs)              merges Colors/Styles dicts; registers 3 converters
+├── AppShell.xaml(.cs)         single-stack flow; routes: home/take/results
+├── MauiProgram.cs             DI: session singleton, importer, email svc, VMs, pages
+├── Models/                    TakerIdentity, TakeSession
+├── Services/
+│   ├── QuizSessionService     THE SPINE: holds identity + loaded quiz + take state;
+│   │                          constructs QuizPackageService/QuizCompiler/QuizGrader
+│   │                          DIRECTLY (no DI graph, no DPAPI) — the exact sequence
+│   │                          pinned by MobileReadPathContractTests
+│   ├── QbxImporter            copies .qbx into FileSystem.AppDataDirectory, loads via Core
+│   ├── IncomingFileHandler    static bridge for Android VIEW/SEND "open with" intents
+│   ├── PlatformUri(.Android)  partial: content:// URI → stream via ContentResolver
+│   ├── ResultsEmailService    native mail composer, pre-filled results report
+│   ├── InputValidation        email/name validators (GeneratedRegex)
+│   ├── BytesToImageSourceConverter   the MAUI per-host image converter (Core stays imaging-free)
+│   └── CommonConverters       NotEmpty, InverseBool
+├── ViewModels/
+│   ├── IdentityViewModel      name+email, inline validate-on-blur
+│   ├── HomeViewModel          import + start (Start command UNGATED — see §10)
+│   ├── TakeViewModel          one-question-at-a-time nav + submit
+│   ├── ResultsViewModel       score + email + restart
+│   └── QuestionPresenters.cs  8 per-type presenter classes + SelfList host trick
+├── Views/                     Identity/Home/Take/Results pages + QuestionTemplateSelector
+├── Platforms/Android/         MainActivity (intent filters), MainApplication, manifest
+└── Resources/                 Colors.xaml, Styles.xaml, OpenSans font, icon/splash SVGs
+```
 
 ---
 
@@ -484,6 +628,18 @@ It calls `CommandManager.InvalidateRequerySuggested()`, which re-queries **every
 command. There is no per-command refresh. Call it once after a batch of state
 changes, not in a loop.
 
+### (MAUI) CommunityToolkit `[RelayCommand(CanExecute=…)]` caches — a mobile trap
+Different toolkit from the WPF one above. In `QuizBuilder.Player`, a generated
+`RelayCommand` caches its `CanExecute` result and only re-evaluates when
+`NotifyCanExecuteChanged` fires. If the `CanExecute` predicate depends on state
+that is set **during a one-time refresh** (e.g. `QuestionCount` set once at
+import), the initial evaluation can run while that state is still default, and
+the command latches disabled forever — this was the real "Start Quiz does
+nothing" bug. **Rule for the player: do not gate a command with a computed
+`CanExecute` over refresh-set state; drop the gate and validate inside the
+command body instead.** (Commands that gate on a property which changes *after*
+load, like the take-screen `Index`, are fine because the change fires the notify.)
+
 ### Deterministic newlines in Core
 `validate.py` check #12 **bans** `StringBuilder.AppendLine()` and
 `Environment.NewLine` in Core, because they emit `\r\n` on Windows and `\n`
@@ -731,24 +887,91 @@ overrides `OnBackButtonPressed` to confirm before leaving, and hides the Shell
 nav bar so there is no stray back arrow. (This is a stopgap; real pause/resume
 below supersedes it.)
 
-**⚠️ OPEN CI FAILURE — fix first in the next session.** After the v0.26.0 push,
-`core-tests` on ubuntu-latest is RED: 611/612 pass, and the one failure is
-`TokenProtectorTests.MachineBound_RoundTripsToken` →
-`PlatformNotSupportedException: No DPAPI on this platform`. This is a
-**test-isolation bug, not a product bug, and not caused by the MAUI work.**
-`MobileReadPathContractTests` installs a process-global DPAPI-shim test double
-(one that throws "No DPAPI on this platform" to prove the mobile path never
-calls DPAPI). That global leaks into `MachineBound_RoundTripsToken`, which
-genuinely needs DPAPI, and it throws. DPAPI is Windows-only, so this test never
-belonged on a Linux runner. Two valid fixes (pick one after reading both test
-files): (a) scope the shim override in `MobileReadPathContractTests` so it is
-reset in a finally/Dispose and cannot leak; or (b) guard
-`MachineBound_RoundTripsToken` to skip off-Windows (`OperatingSystem.IsWindows()`
-or `[SkippableFact]`) — (b) is likely the correct fix since the assertion is
-Windows-specific. The desktop `build.bat` test gate would also catch this
-locally on a non-Windows box, but on Windows the test passes, which is why it
-slipped through to CI. This existed latent before v0.26.0; the multi-target
-just changed test ordering enough to expose it.
+### Every fix applied this session (chronological — the build-up to a running app)
+
+Environment/toolchain (all now automated in `build-android.ps1`, so they are
+"solved" but recorded here because they WILL recur on a fresh machine):
+1. **SDK band mismatch.** Machine had only a .NET 11 preview SDK; `global.json`
+   rolled forward to it, so `maui-android` pulled a net11 preview workload band
+   against a `net10.0-android` project. **Fix:** installed the stable .NET 10 SDK
+   and pinned `global.json` to `10.0.100` (`rollForward: latestFeature`,
+   `allowPrerelease: false`). Canary: `dotnet --version` in the repo folder must
+   print `10.0.x`.
+2. **Concurrent-installer lock (`0x00000652`).** Running the SDK installer and
+   the workload install at once wedged Windows Installer. **Fix:** reboot, then
+   run installers one at a time.
+3. **Missing MAUI workload / Android SDK / JDK / API-36 platform** — four
+   separate "XA5300 / XA5207" failures, each a piece the workload does not
+   bundle. **Fix:** the script now detects the Android SDK
+   (`%LOCALAPPDATA%\Android\Sdk`), the JDK (Android Studio's `jbr`), and the
+   API-36 platform (auto-installs via `InstallAndroidDependencies`), passing
+   `AndroidSdkDirectory`/`JavaSdkDirectory` explicitly and accepting licences.
+4. **Brittle workload detection** in the script gave a false "not installed"
+   right after a successful install. **Fix:** read
+   `dotnet workload list --machine-readable` (JSON) with a text-scan fallback;
+   added a `-SkipWorkloadCheck` escape hatch.
+5. **Hand-installed debug APK crashed** with "No assemblies found … Fast
+   Deployment. Exiting." **Fix:** the debug build now sets
+   `-p:EmbedAssembliesIntoApk=true` so the APK is self-contained; alternatively
+   deploy with `dotnet build -t:Run` (see commands below).
+
+Code fixes (real compiler/runtime issues in the new player):
+6. **`--` inside XML comments** in `QuizBuilder.Core.csproj`, `Colors.xaml`, and
+   (missed on the first sweep) `AndroidManifest.xml` — illegal XML, breaks the
+   build. **Fix:** replaced with em-dashes; **widened `validate.py`'s XML check
+   to cover `.xml`/`.manifest`** so this class can never reach a build again.
+7. **CS8796** — value-returning partial method `PlatformUri.OpenReadPlatformAsync`
+   lacked an accessibility modifier. **Fix:** `private static partial` on both
+   halves.
+8. **CS0103** — `MainActivity` referenced `IncomingFileHandler` without
+   `using QuizBuilder.Player.Services;`. **Fix:** added the using.
+9. **CS0618** — `Page.DisplayAlert` is obsolete in MAUI 10. **Fix:** switched to
+   `DisplayAlertAsync`.
+10. **CS8604** — possible null `uri.ToString()` passed to `OfferAndroidUri`.
+    **Fix:** null-guard the string before the call.
+11. **Start Quiz button dead** (the on-device bug). The `[RelayCommand(CanExecute=
+    nameof(CanStart))]` gate cached its result from when `QuestionCount` was still
+    0 (before import completed), latching the button disabled. **Fix:** removed
+    the `CanExecute` gate entirely and validate *inside* `StartAsync` (immune to
+    notification timing, and it tells the user why if a quiz has no questions).
+    **General lesson for the next session:** avoid computed `CanExecute` that
+    depends on state set during a one-time refresh; validate in the command body.
+12. **Android back button destroyed the attempt** (see paragraph above).
+
+All code fixes are in the tree and the shipped `QuizBuilder_v26.zip`. The desktop
+build stayed green throughout (Core multi-target verified:
+`Core net8.0`, `Core net10.0`, `Tests net8.0`, `App net8.0-windows` all build).
+
+**✅ RESOLVED in build 3 — kept for history.** The fix landed and is NOT
+either candidate below; see §0 "Build 3 — CI test-isolation fix." Short version:
+the real cause was xUnit **parallelism** (the collection is the unit of
+parallelization; classes default to their own collection and run concurrently),
+not ordering. The fix puts every `ProtectedDataShim`-mutating class into one
+shared collection (`ProtectedDataShimCollection`) so they serialize and the
+throwing shim can never be active during `MachineBound_RoundTripsToken`. The
+MachineBound test keeps Linux coverage via its XOR shim (candidate (b), skipping
+off-Windows, would have thrown that coverage away — rejected). Original note
+follows for context.
+
+**⚠️ LATENT CI FLAKE — fix early in the next session.** CI (`core-tests`,
+ubuntu-latest) is **green as of the latest push (611–612/612 depending on test
+ordering)**, but there is a real **test-isolation bug** that makes one test
+non-deterministic: `TokenProtectorTests.MachineBound_RoundTripsToken` can fail
+with `PlatformNotSupportedException: No DPAPI on this platform`. It flaked RED on
+one push this session, then passed on the next with no code change — that is the
+tell. **Not a product bug, not caused by the MAUI work.**
+`MobileReadPathContractTests` installs a **process-global DPAPI-shim test
+double** (one that throws "No DPAPI on this platform" to prove the mobile path
+never calls DPAPI). Depending on xUnit's test ordering, that global can leak into
+`MachineBound_RoundTripsToken`, which genuinely needs DPAPI, and it throws. DPAPI
+is Windows-only, so this test never belonged on a Linux runner at all. Two valid
+fixes (read both test files first): (a) scope the shim override in
+`MobileReadPathContractTests` so it is reset in a finally/Dispose and cannot
+leak; or (b) guard `MachineBound_RoundTripsToken` to skip off-Windows
+(`OperatingSystem.IsWindows()` or `[SkippableFact]`) — **(b) is likely the
+correct fix** since the assertion is Windows-specific. Green today ≠ fixed;
+make it deterministic before it flakes on a push that matters. Existed latent
+before v0.26.0; the multi-target changed test ordering enough to expose it.
 
 **Exact commands used to build and deploy to an Android emulator** (so the next
 session doesn't re-derive them):
@@ -790,7 +1013,13 @@ preview image, which mixes app bugs with preview-OS bugs). The emulator usually
 has **no mail app**, so the email-results composer will report "no mail app" —
 test that feature on a real phone.
 
-### NEXT MOBILE SESSION: tier-1 offline features (decided, not yet built)
+### NEXT MOBILE SESSION: tier-1 offline features (✅ ALL BUILT — builds 4–6)
+
+**Status: complete.** All three below are built (Study Cards = build 4, confirmed
+green; history = build 5 and pause/resume = build 6, structurally verified,
+awaiting emulator confirmation — see §0). The back-button "pause instead of
+leaving" follow-on is also done (build 6). The original spec is kept below as the
+record of what was asked and how Core supported it.
 
 Four things were requested after the first run. The back-button bug is done. The
 other three are real features for a **fresh chat** (bring HANDOFF.md). The

@@ -104,4 +104,27 @@ public partial class TakeViewModel : ObservableObject
         _session.Submit();
         await Shell.Current.GoToAsync("results");
     }
+
+    [RelayCommand]
+    private Task PauseAsync() => PauseAndLeaveAsync();
+
+    /// <summary>
+    /// Snapshots the current sitting, tells the taker where to resume it, and
+    /// returns to Home. Public so the back-button handler can offer "pause
+    /// instead of leaving" without duplicating the save/navigate flow. Saving
+    /// cannot lose work: every answer is already in the shared answer set this
+    /// snapshot reads from.
+    /// </summary>
+    public async Task PauseAndLeaveAsync()
+    {
+        _session.PauseAndSave();
+
+        await Shell.Current.DisplayAlertAsync(
+            "Saved",
+            "Your progress is saved. You can resume this attempt from the home screen.",
+            "OK");
+
+        // Two pops: take -> home (identity stays the root, as elsewhere).
+        await Shell.Current.GoToAsync("..");
+    }
 }

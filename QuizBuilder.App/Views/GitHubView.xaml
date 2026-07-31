@@ -5,6 +5,7 @@
 
     <UserControl.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+        <conv:BytesToImageConverter x:Key="BytesToImage" />
 
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
@@ -211,6 +212,45 @@
                 <Run Text="Note:" FontWeight="Bold" />
                 <Run Text="a new Pages site can take a minute or two to appear the first time. If the link 404s, wait and refresh." />
             </TextBlock>
+
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="Mobile app QR" Style="{StaticResource Heading}" />
+                    <TextBlock Text="Paste the link to the Android app's APK download (for example a GitHub release asset). A QR code is generated as you type — anyone can scan it with a phone to install the mobile player."
+                               Style="{StaticResource Hint}" />
+
+                    <TextBlock Text="APK download link" Style="{StaticResource FieldLabel}" Margin="0,8,0,0" />
+                    <TextBox Text="{Binding ApkLinkText, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource Field}" />
+
+                    <TextBlock Text="{Binding ApkLinkHint}"
+                               Style="{StaticResource Hint}"
+                               Margin="0,4,0,0" />
+
+                    <!-- The QR itself, shown only once a valid link produces one -->
+                    <Border Background="White"
+                            HorizontalAlignment="Left"
+                            Padding="12" Margin="0,12,0,0"
+                            CornerRadius="{DynamicResource Radius.Md}"
+                            Visibility="{Binding HasQr, Converter={StaticResource BoolVis}}">
+                        <Image Source="{Binding QrPng, Converter={StaticResource BytesToImage}}"
+                               Width="200" Height="200"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor"
+                               SnapsToDevicePixels="True" />
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0"
+                                Visibility="{Binding HasQr, Converter={StaticResource BoolVis}}">
+                        <Button Content="Copy link"
+                                Click="OnCopyApkLinkClick"
+                                Style="{StaticResource Secondary}" />
+                        <Button Content="Save QR image..."
+                                Click="OnSaveQrClick"
+                                Margin="10,0,0,0"
+                                Style="{StaticResource Secondary}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

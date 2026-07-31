@@ -27,7 +27,17 @@ namespace QuizBuilder.Tests;
 /// DPAPI (token protection in a non-machine-bound mode), and the portability of
 /// the load/compile/grade path itself.
 /// </para>
+///
+/// <para>
+/// This class installs a "no DPAPI, throw" stand-in over the process-global
+/// <c>ProtectedDataShim</c> delegates. Because that global is shared, it joins
+/// the same serialized collection as every other shim-mutating class (see
+/// <see cref="ProtectedDataShimCollection"/>) so xUnit will not run it in
+/// parallel with them -- otherwise its throwing shim could be active while a
+/// class that needs a working shim (e.g. TokenProtectorTests) calls through it.
+/// </para>
 /// </summary>
+[Collection(ProtectedDataShimCollection.Name)]
 public class MobileReadPathContractTests : System.IDisposable
 {
     private readonly string _sandbox;

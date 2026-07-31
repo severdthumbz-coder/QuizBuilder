@@ -8,11 +8,16 @@
   MSBuild noise.
 
   USAGE
-    ./build-android.ps1                       Debug APK (installs directly)
+    ./build-android.ps1                       Debug APK (prints path; no install)
     ./build-android.ps1 -Configuration Release   Release APK + AAB (needs keystore)
     ./build-android.ps1 -Install              Build Debug, then adb-install it
+    ./build-android.ps1 -Launch              Install, then launch on the device
+    ./build-android.ps1 -Launch -Device emulator-5554   ...target one device
     ./build-android.ps1 -Clean                Clean first
     ./build-android.ps1 -NoBuildCore          Skip the Core net10 sanity build
+
+  -Launch implies -Install. -Device <serial> selects the adb target and is
+  required only when more than one device/emulator is connected.
 
   DEFAULT: Debug. A Debug build is signed with Android's auto-generated debug
   key, needs no keystore, and can be sideloaded straight onto a phone -- the
@@ -42,6 +47,8 @@ param(
     [string]$Configuration = 'Debug',
 
     [switch]$Install,
+    [string]$Device,
+    [switch]$Launch,
     [switch]$Clean,
     [switch]$NoBuildCore,
     [switch]$SkipWorkloadCheck
@@ -55,6 +62,10 @@ Set-Location -Path $PSScriptRoot
 $Project     = 'QuizBuilder.Player/QuizBuilder.Player.csproj'
 $CoreProject = 'QuizBuilder.Core/QuizBuilder.Core.csproj'
 $Framework   = 'net10.0-android'
+# Package id (must match <ApplicationId> in the .csproj). Used to launch the app
+# via adb after install; the launcher activity is resolved by intent category so
+# we never hardcode MAUI's generated activity class name.
+$PackageId   = 'com.severdthumbz.quizplayer'
 
 function Write-Stage([string]$text) {
     Write-Host ''
@@ -411,23 +422,73 @@ if ($Configuration -eq 'Release' -and -not $signed) {
 }
 
 # ----------------------------------------------------------------------------
-#  Optional: install a Debug APK on a connected device via adb.
+#  Optional: install a Debug APK on a connected device via adb, and optionally
+#  launch it. -Launch implies install (you cannot start what is not deployed).
+#  -Device <serial> picks a specific target; without it we auto-detect and, if
+#  more than one device is attached, stop and ask rather than guess.
 # ----------------------------------------------------------------------------
-if ($Install) {
+if ($Install -or $Launch) {
     Write-Stage 'Installing on a connected device (adb)'
     $adb = Get-Command adb -ErrorAction SilentlyContinue
     if (-not $adb) {
-        Write-Host "  adb not on PATH; skipping install. The APK path is listed above." -ForegroundColor Yellow
+        Write-Host "  adb not on PATH; skipping install/launch. The APK path is listed above." -ForegroundColor Yellow
     }
     elseif ($apks.Count -eq 0) {
         Write-Host "  No APK to install (Release produces an AAB for the store; use Debug to sideload)." -ForegroundColor Yellow
     }
     else {
+        # -- Resolve the target device serial --------------------------------
+        # `adb devices` lists one "serial<TAB>state" per line after a header.
+        # We only count entries whose state is exactly 'device' (not 'offline'
+        # or 'unauthorized'), so a half-booted emulator does not get chosen.
+        $ready = @(& adb devices |
+            Select-Object -Skip 1 |
+            Where-Object { $_ -match '^\S+\s+device$' } |
+            ForEach-Object { ($_ -split '\s+')[0] })
+
+        $serial = $null
+        if ($Device) {
+            # Honour an explicit choice, but verify it is actually connected so
+            # the later command fails here with a clear message, not cryptically.
+            if ($ready -notcontains $Device) {
+                Fail ("Requested device '$Device' is not connected/ready. Devices ready: " +
+                      $(if ($ready.Count) { $ready -join ', ' } else { '(none)' }) + '.')
+            }
+            $serial = $Device
+        }
+        elseif ($ready.Count -eq 1) {
+            $serial = $ready[0]
+        }
+        elseif ($ready.Count -eq 0) {
+            Fail 'No ready device found. Start an emulator or connect a phone (USB debugging on), then re-run.'
+        }
+        else {
+            Fail ("Multiple devices are connected (" + ($ready -join ', ') +
+                  "). Re-run with -Device <serial> (or 'install device=<serial>' via the .bat) to pick one.")
+        }
+
+        # `-s <serial>` targets that one device for every adb call below.
+        $adbTarget = @('-s', $serial)
         $target = $apks[-1].FullName
-        Write-Host "  adb install -r `"$target`""
-        & adb install -r $target | Out-Host
-        if ($LASTEXITCODE -ne 0) { Fail 'adb install failed (is a device connected and USB debugging on?).' }
-        Write-Host "  Installed." -ForegroundColor Green
+
+        Write-Host "  adb -s $serial install -r `"$target`""
+        & adb @adbTarget install -r $target | Out-Host
+        if ($LASTEXITCODE -ne 0) { Fail 'adb install failed (is the device authorized and USB debugging on?).' }
+        Write-Host "  Installed on $serial." -ForegroundColor Green
+
+        # -- Optionally launch the app ---------------------------------------
+        # `monkey` with the LAUNCHER category resolves the app's own launch
+        # intent, so we do not need to know MAUI's generated activity name.
+        if ($Launch) {
+            Write-Host "  Launching $PackageId ..."
+            & adb @adbTarget shell monkey -p $PackageId -c android.intent.category.LAUNCHER 1 | Out-Host
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "  Launch command returned non-zero; open the app from the launcher if it did not start." -ForegroundColor Yellow
+            }
+            else {
+                Write-Host "  Launched." -ForegroundColor Green
+            }
+        }
     }
 }
 

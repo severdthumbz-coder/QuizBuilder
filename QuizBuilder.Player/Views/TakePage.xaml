@@ -281,14 +281,18 @@
         </ScrollView>
 
         <!-- Nav footer (safe-area aware bottom padding) -->
-        <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12" Padding="20,12,20,24"
+        <Grid Grid.Row="2" RowDefinitions="Auto,Auto" ColumnDefinitions="*,*"
+              ColumnSpacing="12" RowSpacing="10" Padding="20,12,20,24"
               BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
-            <Button Grid.Column="0" Text="Back" Style="{StaticResource SecondaryButton}"
+            <Button Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                    Text="Pause &amp; save" Style="{StaticResource SecondaryButton}"
+                    Command="{Binding PauseCommand}" />
+            <Button Grid.Row="1" Grid.Column="0" Text="Back" Style="{StaticResource SecondaryButton}"
                     Command="{Binding PreviousCommand}" />
-            <Button Grid.Column="1" Text="Next" Style="{StaticResource SecondaryButton}"
+            <Button Grid.Row="1" Grid.Column="1" Text="Next" Style="{StaticResource SecondaryButton}"
                     Command="{Binding NextCommand}"
                     IsVisible="{Binding IsLast, Converter={StaticResource InverseBool}}" />
-            <Button Grid.Column="1" Text="Submit" Style="{StaticResource PrimaryButton}"
+            <Button Grid.Row="1" Grid.Column="1" Text="Submit" Style="{StaticResource PrimaryButton}"
                     Command="{Binding SubmitCommand}"
                     IsVisible="{Binding IsLast}" />
         </Grid>
