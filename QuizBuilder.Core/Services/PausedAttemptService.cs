@@ -38,6 +38,17 @@ public sealed class PausedAttemptService : IPausedAttemptService
             .OrderByDescending(a => a.SavedAt)
             .ToList();
 
+    /// <summary>
+    /// This quiz's paused sittings for one taker: entries whose stored email key
+    /// matches the signed-in taker, plus legacy entries with no key (shown to
+    /// everyone). Newest first.
+    /// </summary>
+    public IReadOnlyList<PausedAttempt> ForQuizAndTaker(Guid quizId, string? takerEmailKey) =>
+        _attempts
+            .Where(a => a.QuizId == quizId && TakerKey.Matches(a.TakerEmailKey, takerEmailKey))
+            .OrderByDescending(a => a.SavedAt)
+            .ToList();
+
     public void Save(PausedAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);

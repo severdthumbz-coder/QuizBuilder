@@ -98,7 +98,7 @@
                                     <Border.StrokeShape>
                                         <RoundRectangle CornerRadius="10" />
                                     </Border.StrokeShape>
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                         <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
                                             <Label Text="{Binding SavedAt}" Style="{StaticResource Body}" FontAttributes="Bold" />
                                             <Label Text="{Binding Progress}" Style="{StaticResource Muted}" FontSize="13" />
@@ -106,6 +106,12 @@
                                         <Button Grid.Column="1" Text="Resume"
                                                 Style="{StaticResource SecondaryButton}"
                                                 Command="{Binding Source={x:Reference Page}, Path=BindingContext.ResumeCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        <Button Grid.Column="2" Text="🗑"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Padding="10,0"
+                                                SemanticProperties.Description="Delete paused attempt"
+                                                Command="{Binding Source={x:Reference Page}, Path=BindingContext.DeletePausedCommand}"
                                                 CommandParameter="{Binding .}" />
                                     </Grid>
                                 </Border>

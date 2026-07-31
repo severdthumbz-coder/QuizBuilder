@@ -112,12 +112,13 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
-        new VersionEntry("0.26.0", 9, "2026-07-29", new[]
+        new VersionEntry("0.26.0", 10, "2026-07-30", new[]
         {
-            "Android build script: now picks a JDK the Android SDK actually supports (17–21) instead of whatever it finds first, so a newer JDK on PATH no longer breaks the build with a cryptic error",
-            "GitHub tab: paste the mobile app's APK download link and a QR code is generated as you type — scan it to install the Android player; copy the link or save the QR image",
-            "Mobile player: back button offers to pause and save; pause/resume; on-device attempt history; Study Cards review mode",
-            "Reliability: token-protection tests made immune to a rare test-run race",
+            "Mobile player: the quiz description now shows as formatted text instead of raw HTML tags",
+            "Mobile player: paused attempts can be deleted individually with a trash button, not just resumed",
+            "Mobile player: history and paused attempts are now kept separate per person — signing in with a different email gives that person their own history and paused sittings on a shared device",
+            "Android build script: picks a JDK the Android SDK supports (17–21)",
+            "GitHub tab: paste the APK download link to get a scannable QR for installing the Android player",
         }),
         new VersionEntry("0.25.0", 1, "2026-07-24", new[]
         {

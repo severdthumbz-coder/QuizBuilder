@@ -53,6 +53,19 @@ public sealed class AttemptRecord
     /// <summary>Kept so history still reads sensibly if the quiz is renamed.</summary>
     public string QuizTitle { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Normalized identity of who took it: the taker's email, trimmed and
+    /// lower-cased, so history is scoped per person on a shared device. Null on
+    /// records written before identity scoping existed; such legacy records are
+    /// treated as belonging to everyone (shown regardless of who is signed in)
+    /// so nothing silently disappears. New records always carry it.
+    /// </summary>
+    public string? TakerEmailKey { get; set; }
+
+    /// <summary>The taker's display name at the time, for showing on the record.
+    /// Not used for matching (email is the key); purely informational.</summary>
+    public string? TakerName { get; set; }
+
     public DateTimeOffset TakenAt { get; set; }
 
     /// <summary>Null when nothing could be graded automatically -- an all-essay paper.</summary>
@@ -107,6 +120,10 @@ public interface IAttemptHistoryService
 {
     /// <summary>Attempts for one quiz, newest first.</summary>
     IReadOnlyList<AttemptRecord> ForQuiz(Guid quizId);
+
+    /// <summary>This quiz's attempts for one taker (by normalized email key),
+    /// including legacy records that carry no key. Newest first.</summary>
+    IReadOnlyList<AttemptRecord> ForQuizAndTaker(Guid quizId, string? takerEmailKey);
 
     void Add(AttemptRecord attempt);
 

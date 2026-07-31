@@ -106,7 +106,8 @@ public partial class HistoryViewModel : ObservableObject
 
     private void Reload()
     {
-        var rows = _history.ForQuiz(QuizId).Select(r => new AttemptRow(r));
+        var rows = _history.ForQuizAndTaker(QuizId, _session.CurrentTakerEmailKey)
+            .Select(r => new AttemptRow(r));
         Attempts = new ObservableCollection<AttemptRow>(rows);
         OnPropertyChanged(nameof(IsEmpty));
     }
@@ -151,6 +152,11 @@ public partial class HistoryViewModel : ObservableObject
 
         if (!confirmed) return;
 
-        _history.ClearForQuiz(QuizId);
+        // Remove only the attempts currently shown (this taker's, plus any
+        // legacy ones on screen) -- not another person's records for the same
+        // quiz. Snapshot the ids first, since removing raises HistoryChanged
+        // which mutates the bound collection mid-iteration.
+        foreach (var id in Attempts.Select(a => a.Id).ToList())
+            _history.Remove(id);
     }
 }

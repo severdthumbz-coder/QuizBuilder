@@ -82,6 +82,10 @@ public sealed class QuizSessionService
 
     public void SetIdentity(TakerIdentity identity) => Identity = identity;
 
+    /// <summary>The signed-in taker's normalized email key (or null), for scoping
+    /// history and paused sittings to this person on a shared device.</summary>
+    public string? CurrentTakerEmailKey => TakerKey.Normalize(Identity?.Email);
+
     /// <summary>Records the freshly imported quiz. Clears any prior take/result.</summary>
     public void SetLoadedQuiz(IQuizPackageService package, QuizPackageReadResult loaded)
     {
@@ -141,7 +145,12 @@ public sealed class QuizSessionService
         // Add() persists and trims; a write failure there is swallowed by the
         // service and must not stop the taker seeing their score.
         if (Loaded is { } loaded)
-            _history.Add(AttemptRecordBuilder.Build(loaded.Document.Id, loaded.Document.Title, result));
+            _history.Add(AttemptRecordBuilder.Build(
+                loaded.Document.Id,
+                loaded.Document.Title,
+                result,
+                Identity?.Email,
+                Identity?.FullName));
 
         // A resumed sitting that reaches submission is finished, so its paused
         // snapshot is stale and should not linger in the resume list.
@@ -155,11 +164,25 @@ public sealed class QuizSessionService
         return result;
     }
 
-    /// <summary>Paused sittings for the loaded quiz, newest first. Empty when
-    /// nothing is loaded.</summary>
+    /// <summary>Forget a paused sitting (the taker chose to discard it).</summary>
+    public void DeletePaused(Guid pausedId)
+    {
+        _paused.Remove(pausedId);
+
+        // If they discarded the very sitting the current take was resumed from,
+        // detach so finishing it later does not try to remove it again.
+        if (_resumedFromId == pausedId)
+        {
+            _resumedFromId = null;
+            _resumeOffsetSeconds = 0;
+        }
+    }
+
+    /// <summary>Paused sittings for the loaded quiz AND the signed-in taker
+    /// (plus legacy entries without an identity). Empty when nothing is loaded.</summary>
     public IReadOnlyList<PausedAttempt> PausedForCurrentQuiz() =>
         Loaded is { } loaded
-            ? _paused.ForQuiz(loaded.Document.Id)
+            ? _paused.ForQuizAndTaker(loaded.Document.Id, TakerKey.Normalize(Identity?.Email))
             : Array.Empty<PausedAttempt>();
 
     /// <summary>
@@ -204,6 +227,8 @@ public sealed class QuizSessionService
             Id = id,
             QuizId = Loaded.Document.Id,
             QuizTitle = Loaded.Document.Title,
+            TakerEmailKey = TakerKey.Normalize(Identity?.Email),
+            TakerName = string.IsNullOrWhiteSpace(Identity?.FullName) ? null : Identity!.FullName,
             SavedAt = DateTimeOffset.Now,
             // Total time spent = this session's elapsed + any carried from a
             // prior resume, so pausing repeatedly never loses or double-counts.

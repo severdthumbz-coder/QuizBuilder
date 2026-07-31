@@ -22,6 +22,17 @@ public sealed class PausedAttempt
     /// <summary>Kept so the entry reads sensibly even if the quiz is renamed.</summary>
     public string QuizTitle { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Normalized identity of who paused it: the taker's email, trimmed and
+    /// lower-cased, so paused sittings are scoped per person on a shared device.
+    /// Null on snapshots written before identity scoping; those legacy entries
+    /// are shown to everyone so nothing silently disappears.
+    /// </summary>
+    public string? TakerEmailKey { get; set; }
+
+    /// <summary>The taker's display name at the time, informational only.</summary>
+    public string? TakerName { get; set; }
+
     public DateTimeOffset SavedAt { get; set; }
 
     /// <summary>
@@ -85,6 +96,10 @@ public interface IPausedAttemptService
 {
     /// <summary>Paused sittings for one quiz, newest first.</summary>
     IReadOnlyList<PausedAttempt> ForQuiz(Guid quizId);
+
+    /// <summary>This quiz's paused sittings for one taker (by normalized email
+    /// key), including legacy entries that carry no key. Newest first.</summary>
+    IReadOnlyList<PausedAttempt> ForQuizAndTaker(Guid quizId, string? takerEmailKey);
 
     /// <summary>Saves a paused sitting, replacing any earlier save with the same id.</summary>
     void Save(PausedAttempt attempt);

@@ -47,6 +47,17 @@ public sealed class AttemptHistoryService : IAttemptHistoryService
             .OrderByDescending(a => a.TakenAt)
             .ToList();
 
+    /// <summary>
+    /// This quiz's attempts for one taker: records whose stored email key matches
+    /// the signed-in taker, plus legacy records that carry no key (shown to
+    /// everyone so nothing disappears). Newest first.
+    /// </summary>
+    public IReadOnlyList<AttemptRecord> ForQuizAndTaker(Guid quizId, string? takerEmailKey) =>
+        _attempts
+            .Where(a => a.QuizId == quizId && TakerKey.Matches(a.TakerEmailKey, takerEmailKey))
+            .OrderByDescending(a => a.TakenAt)
+            .ToList();
+
     public void Add(AttemptRecord attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);

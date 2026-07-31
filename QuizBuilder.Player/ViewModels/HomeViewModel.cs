@@ -77,7 +77,8 @@ public partial class HomeViewModel : ObservableObject
         {
             QuizTitle = loaded.Document.Title;
             QuizDescription = string.IsNullOrWhiteSpace(loaded.Document.Description)
-                ? null : loaded.Document.Description;
+                ? null
+                : HtmlToText.Convert(loaded.Document.Description);
             QuestionCount = loaded.Document.QuestionCount;
             WarningText = loaded.Warnings.Count > 0
                 ? string.Join("\n", loaded.Warnings)
@@ -205,6 +206,22 @@ public partial class HomeViewModel : ObservableObject
 
         _session.ResumeFrom(row.Attempt);
         await Shell.Current.GoToAsync("take");
+    }
+
+    [RelayCommand]
+    private async Task DeletePausedAsync(PausedRow? row)
+    {
+        if (row is null) return;
+
+        var confirmed = await Shell.Current.DisplayAlertAsync(
+            "Delete paused attempt?",
+            $"This discards the sitting saved on {row.SavedAt}. It can't be undone.",
+            "Delete", "Keep");
+
+        if (!confirmed) return;
+
+        _session.DeletePaused(row.Id);
+        RefreshFromSession();   // rebuild the paused list so the row drops off
     }
 }
 

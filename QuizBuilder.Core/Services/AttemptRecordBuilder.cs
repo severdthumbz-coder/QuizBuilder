@@ -15,7 +15,12 @@ namespace QuizBuilder.Core.Services;
 /// </summary>
 public static class AttemptRecordBuilder
 {
-    public static AttemptRecord Build(Guid quizId, string quizTitle, AttemptResult result)
+    public static AttemptRecord Build(
+        Guid quizId,
+        string quizTitle,
+        AttemptResult result,
+        string? takerEmail = null,
+        string? takerName = null)
     {
         ArgumentNullException.ThrowIfNull(result);
 
@@ -23,6 +28,12 @@ public static class AttemptRecordBuilder
         {
             QuizId = quizId,
             QuizTitle = quizTitle,
+            // Normalized once, here, so every stored record keys identically to
+            // what the history query filters on. Null when no email was given
+            // (e.g. the desktop, which does not pass one) -> a legacy-style
+            // record shown to everyone rather than hidden.
+            TakerEmailKey = TakerKey.Normalize(takerEmail),
+            TakerName = string.IsNullOrWhiteSpace(takerName) ? null : takerName.Trim(),
             TakenAt = result.TakenAt,
             Percentage = result.Percentage,
             Passed = result.Passed,
