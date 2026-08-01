@@ -8,12 +8,9 @@ REM    --no-test      skip the test run
 REM    --no-publish   build and test only, don't publish
 REM    --quiet        don't prompt to launch at the end
 REM
-REM  Reads version.json, passes it to MSBuild, and (when QuizBuilder.App
-REM  exists) publishes a self-contained single-file .exe.
-REM
-REM  NOTE: as of the current slice there is no QuizBuilder.App project, so the
-REM  publish step is skipped automatically with a notice. Once the WPF host
-REM  lands this script needs no changes.
+REM  Reads version.json, passes it to MSBuild, builds and tests, then publishes
+REM  a self-contained single-file .exe of the WPF app (QuizBuilder.App) and zips
+REM  that exe as QuizBuilder v<version>.zip.
 REM ============================================================================
 
 setlocal EnableDelayedExpansion

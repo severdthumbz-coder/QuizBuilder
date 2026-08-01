@@ -112,10 +112,9 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
-        new VersionEntry("0.26.0", 17, "2026-07-30", new[]
+        new VersionEntry("0.26.0", 18, "2026-07-30", new[]
         {
-            "Mobile player: fixed a latent bug in the history list where an all-essay attempt (no auto score) left its pass/fail text unset, which could crash the row — now safely blank",
-            "Build/CI: caught by the Android CI job's compiler check; all three jobs green",
+            "Docs: comprehensive handoff refresh — added a build-status & commands quick reference (last green build per target, both batch files, git workflow), extended the build log through b17, and corrected every stale state (CI job count, resolved test flake, build.bat header)",
         }),
         new VersionEntry("0.25.0", 1, "2026-07-24", new[]
         {

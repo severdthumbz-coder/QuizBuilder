@@ -1,17 +1,84 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 14 (stage `maui-android-player`)
-**Status:** All green. Desktop builds on Windows; Android player builds AND runs
-on-device (emulator), confirmed by the maintainer. **CI now has three jobs
-(core-tests, app-build, android-build) and all pass** — the Android job compiles
-the MAUI player on every push, so mobile work is gated automatically and the old
-"structurally verified, awaiting build" caveat no longer applies to shipped
-builds. GitHub Actions are all on @v5 (no Node-20 deprecation warnings).
-**Deliverable:** `/mnt/user-data/outputs/QuizBuilder_v0.26.0.14.zip`
+**Last shipped:** v0.26.0 build 17 (stage `maui-android-player`)
+**Deliverable:** `/mnt/user-data/outputs/QuizBuilder_v0.26.0.17.zip`
+**Status:** All green. Both apps build and run; CI is three-for-three.
 
 This document exists so a new chat can resume without re-reading the whole
-history. Read §0 first for current state, then the rest as reference. §13 has the
-mobile/MAUI detail and exact build/deploy commands; §14 has the desktop backlog.
+history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
+then the rest as reference.
+
+---
+
+## BUILD STATUS & COMMANDS (quick reference)
+
+### Last successful build of each target
+| Target | Last confirmed-green build | How it was confirmed |
+|---|---|---|
+| **Desktop (WPF, `QuizBuilder.App`)** | **v0.26.0 build 17** | CI `app-build` job (Windows, self-contained single-file publish) green on every push through b17. Locally confirmed via `.\build.bat` at b14 (612/612 tests, exe produced); b15–17 are desktop-neutral or Core-safe and stay green in CI. |
+| **Android player (MAUI, `QuizBuilder.Player`)** | **v0.26.0 build 17** | CI `android-build` job (Windows, JDK 21, `dotnet workload install android maui`, Debug build) green on every push since it was added in b13. Maintainer has also run it **on-device (emulator)** through the tier-1 features + library. |
+| **Core (`QuizBuilder.Core`)** | **v0.26.0 build 17** | CI `core-tests` job (Ubuntu, xUnit): 612/612 tests pass. Core is multi-targeted `net8.0;net10.0`; the player consumes the net10 slice. |
+
+CI = `.github/workflows/build.yml`, **three jobs, all green, no annotations**:
+`core-tests` (Ubuntu) → `app-build` (Windows) and `android-build` (Windows), the
+latter two both `needs: core-tests`. All actions pinned to `@v5`.
+
+### Building the DESKTOP app — `build.bat`
+Run from the repo root on Windows (PowerShell or cmd):
+```
+.\build.bat                 Build + test + publish a self-contained single-file exe,
+                            then prompt to launch. Output: publish\QuizBuilder v<ver>.exe
+                            and a QuizBuilder v<ver>.zip (the exe only).
+.\build.bat --no-test       Build + publish, skip the xUnit run.
+.\build.bat --no-publish    Build + test only (no exe, no zip).
+.\build.bat --quiet         Don't prompt to launch at the end.
+```
+Five stages: (1) clean — preserves the user's `settings.json` and any `.qbx`
+saved beside the exe; (2) build; (3) test; (4) publish single-file; (5) package —
+**zips only the current build's exe** (b16: immune to a locked leftover exe and
+never ships the user's settings). If the exe is locked (the app is running),
+close it first. Needs a .NET 10 SDK (it warns but proceeds; the projects still
+target net8.0 for the desktop).
+
+### Building the ANDROID app — `build-android.bat` (wraps `build-android.ps1`)
+Run from the repo root on Windows. Flags combine in any order:
+```
+build-android.bat                         Debug APK; prints the .apk path, no install.
+build-android.bat launch                  Debug APK → install → launch on the device.
+build-android.bat launch device=emulator-5554   ...target a specific adb device.
+build-android.bat install                 Debug APK → adb-install it.
+build-android.bat release                 Release APK + AAB (needs QB_KEYSTORE* env vars).
+build-android.bat release install         Release, then install.
+build-android.bat clean                   Clean first, then Debug build.
+```
+`launch` implies `install`; `device=<serial>` targets one device when several are
+connected. The script probes installed JDKs and picks one in the Android-SDK-
+supported range **17–21** (b9: a too-new JDK like 25 is rejected with a clear
+"install JDK 21" message — that was a real blocker; the maintainer installed
+Microsoft OpenJDK 21). The APK lands under
+`QuizBuilder.Player/bin/{Debug|Release}/net10.0-android/` (NOT committed; `bin/`
+is gitignored).
+
+### Publishing the APK for download (+ desktop QR)
+`build-android.bat release` → go to the repo's **Releases** on github.com → draft
+a release, tag it (e.g. `v0.26.0`), upload the `.apk` as an asset → copy the asset
+URL (`…/releases/download/<tag>/<file>.apk`) → paste it into the desktop app's
+**GitHub tab → APK download link**, which renders a scannable QR live (b8). The
+link persists in desktop settings; it is **not** written into any `.qbx`.
+
+### Validation gate — `tools/validate.py`
+```
+py tools/validate.py        12 static checks; must pass before any delivery.
+```
+
+### Git workflow (per build)
+Push-first: commit → push → wait for green CI (`gh run watch`) → then build
+locally. Zips are gitignored (`*.zip`) so `git add -A` stages source only.
+```
+git add -A
+git commit -m "v0.26.0 build <N>: <summary>"
+git push origin main
+```
 
 ---
 
@@ -66,6 +133,19 @@ on-device. Verification level is no longer a caveat.
   maui`, Debug build of the player. Gates mobile compiles automatically. GREEN.
 - **b14 — Actions bumped to @v5.** Cleared the Node-20 deprecation warning; all
   GitHub Actions now @v5.
+- **b15 — Handoff refresh.** Brought this document current (it had been stale at
+  b6/b7).
+- **b16 — Packaging fix (build.bat).** The package step now zips ONLY the current
+  build's version-stamped exe, not `publish\*`. Fixes two things: a leftover exe
+  from a previous build (e.g. one still running, which defeats `rmdir /s /q`) can
+  no longer make packaging fail; and the user's `settings.json` (encrypted GitHub
+  token) / saved `.qbx` can never end up in a distributable zip.
+- **b17 — Nullable-warning fix, caught by the Android CI job.** `AttemptRow` in
+  HistoryViewModel left `PassFail` (a non-nullable string) unassigned on the
+  no-auto-score branch (all-essay attempt) — a latent NRE, flagged as a compiler
+  warning only because `android-build` compiles the player. Now every field is
+  assigned on every path. (Textbook example of the CI job earning its keep and of
+  the "all-fields-assigned" bug family in §9.)
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the
@@ -107,10 +187,10 @@ APK link and GitHub-tab info: desktop-local settings, not .qbx content.
   `QuizBuilder.Tests` (`net8.0`), and `QuizBuilder.App` (`net8.0-windows`). The
   MAUI project is in the `.sln` but has **no `Build.0`**, so a plain solution
   build skips it (it needs the MAUI workload, which desktop/CI runners lack).
-- **CI is green on both jobs** (`.github/workflows/build.yml`): `core-tests`
-  (ubuntu, full xUnit suite, **611/612 currently — see the CI note in §13**) and
-  `app-build` (windows, publishes the self-contained WPF exe). The Android app is
-  **not** yet in CI (no Android job — that is a documented future step in §13).
+- **CI is green on all three jobs** (`.github/workflows/build.yml`): `core-tests`
+  (ubuntu, full xUnit suite, **612/612** — the old DPAPI flake was fixed in b3),
+  `app-build` (windows, publishes the self-contained WPF exe), and `android-build`
+  (windows, compiles the MAUI player — added in b13). All actions on `@v5`.
 - **Repo:** `severdthumbz-coder/QuizBuilder`, branch `main`, working tree clean
   and pushed as of this handoff. The push-first workflow (add/commit/push → wait
   for the green checkmark → build locally) remains the gate.
@@ -241,7 +321,7 @@ and prints what it found. See §0 above for the toolchain summary and §13 for t
 exact fast dev-loop command, the emulator setup, and every gotcha.
 
 **GitHub / CI is the primary gate.** Workflow: `git add/commit/push` to `main` →
-GitHub Actions runs `build.yml` (both jobs must go green) → then build locally.
+GitHub Actions runs `build.yml` (all three jobs must go green) → then build locally.
 Check with `gh run list` / `gh run watch` / `gh run view <id> --log-failed`.
 
 ---
@@ -284,7 +364,7 @@ QuizBuilder.sln
 ├── Directory.Build.props
 ├── tools/validate.py     12 static checks; XML check now covers .xml/.manifest [CHANGED]
 ├── assets/               icon.svg / icon.ico / make-icon.py
-└── .github/workflows/build.yml   (2 jobs; no Android job yet)
+└── .github/workflows/build.yml   (3 jobs: core-tests, app-build, android-build)
 ```
 
 **The `.sln` lists `QuizBuilder.Player` with `ActiveCfg` but NO `Build.0`.** This
@@ -486,6 +566,32 @@ images/           content-hashed image files (dedup by hash)
 | Removed dead `INavigationAware` | 0.19.1 | cleanup |
 | **Question bank** | 0.20.0 | reusable pool, `question-bank.json` |
 | **Drag-to-reorder sections** | 0.20.1 | questions already had it |
+| **Sequence question type** | 0.25.0 | drag-to-order; bumped `.qbx` FormatVersion → 2 |
+| **APK download QR (desktop GitHub tab)** | 0.26.0 b8 | QRCoder; link in desktop settings, not the .qbx |
+| **MAUI Android player** | 0.26.0 | read-only take + flash-card review; shares Core |
+| ├ Study Cards review (mobile) | 0.26.0 b4 | Core FlashDeck |
+| ├ Attempt history (mobile) | 0.26.0 b5 | `history.json` in the app sandbox |
+| ├ Pause / resume (mobile) | 0.26.0 b6 | `paused-attempts.json`; back-button offers Pause |
+| ├ Formatted description | 0.26.0 b10 | HtmlToText (was showing raw tags) |
+| ├ Per-identity history & paused | 0.26.0 b10 | scoped by normalized email; legacy records shown to all |
+| └ **Quiz library** | 0.26.0 b12 | kept quizzes; open/import/delete with keep-or-wipe-data |
+| **Android CI job** | 0.26.0 b13 | gates the MAUI compile on every push |
+
+### History / paused data model — how deletes and identity interact
+Records (attempts and paused sittings) are keyed by **QuizId first, identity
+second** (`TakerEmailKey`, a normalized email). The two are independent filters,
+which makes the delete behavior predictable:
+- **History screen → "Clear all history":** clears only the *currently shown*
+  list = this quiz + this signed-in taker (plus legacy no-identity records).
+  Other quizzes and other takers are untouched.
+- **History screen → delete one attempt:** removes that single record by id.
+- **Library screen → "Delete quiz and results":** device-level; wipes that ONE
+  quiz's history + paused for **everyone** (all identities), because the quiz
+  itself is being removed. Other quizzes untouched.
+So: deleting quiz A's history never affects quiz B's; changing the signed-in
+email afterwards does not erase anything; loading quiz B still shows quiz B's
+history for that email. The only way to lose quiz B's data is to act on quiz B
+specifically. (Verified by tracing all three delete paths + modelling.)
 
 ### Local data files (all beside the .exe)
 - `settings.json` — app + quiz settings
@@ -528,14 +634,12 @@ NETSDK1045) before doing anything.
 
 **The test gate has caught real bugs 6×.** Do not weaken it.
 
-> ⚠️ **Known stale comment:** the header of `build.bat` still says
-> "as of the current slice there is no QuizBuilder.App project". That is long
-> outdated — the App exists and publishes fine. Harmless, but worth fixing.
->
-> **README.md was also badly stale** ("slice 1 of 4, no UI yet", "39/39 tests",
-> `ThemeService`/`INavigationService` "have no implementations") and has been
-> corrected as part of this handoff. Docs drifted while the code moved; if you
-> resume after a long gap, distrust prose and check the code.
+> **Note on docs drift:** `build.bat`'s header comment (previously "as of the
+> current slice there is no QuizBuilder.App project") was corrected in b17, and
+> README.md was corrected earlier ("slice 1 of 4, no UI yet", "39/39 tests",
+> `ThemeService`/`INavigationService` "have no implementations" were all stale).
+> Docs have drifted before while the code moved; if you resume after a long gap,
+> distrust prose and check the code.
 
 ### tools/validate.py — 12 static checks
 Each was added after a distinct silent-failure class bit us:
@@ -714,7 +818,7 @@ All 7 checks clean:
 
 ---
 
-## 13. NEXT STEP: MAUI companion app (Android + iPhone)
+## 13. MAUI companion app (Android — SHIPPED; iOS deferred)
 
 > **STATUS UPDATE (v0.26.0 — Android player IMPLEMENTED).**
 > The Android read-only player now exists as `QuizBuilder.Player`
