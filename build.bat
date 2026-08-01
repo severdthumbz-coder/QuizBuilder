@@ -432,8 +432,22 @@ if errorlevel 1 (
 REM ---------------------------------------------------------------------------
 REM  Package
 REM
-REM  Zip the published output with the version in the archive name, so builds
-REM  are distinguishable on disk without opening them.
+REM  Zip ONLY the version-stamped exe we just built -- not the whole publish\
+REM  folder. Two reasons, both learned the hard way:
+REM
+REM    1. Stale/locked leftovers. Old version-stamped exes from previous builds
+REM       can linger in publish\ (a running instance defeats `rmdir /s /q`, which
+REM       fails silently on a locked file). Zipping publish\* then chokes on the
+REM       locked file and the whole package step fails -- even though THIS build
+REM       succeeded. Naming the single current exe sidesteps every leftover.
+REM
+REM    2. No accidental data in the distributable. publish\ also holds the user's
+REM       settings.json (with their encrypted GitHub token) and any .qbx they
+REM       saved beside the app. Packaging just the exe means those can never end
+REM       up in a zip handed to someone else, regardless of restore ordering.
+REM
+REM  The exe is a self-contained single-file publish, so it IS the whole app --
+REM  nothing else in publish\ is needed in the archive.
 REM
 REM  Uses PowerShell's Compress-Archive rather than tar.exe. Windows does ship
 REM  bsdtar (10 1803+), whose -a flag infers zip from the extension, but GNU
@@ -450,7 +464,7 @@ echo [5/5] Packaging !ZIP_NAME! ...
 if exist "!ZIP_PATH!" del /q "!ZIP_PATH!"
 
 powershell -NoProfile -NonInteractive -Command ^
-    "$ErrorActionPreference='Stop'; Compress-Archive -Path '!PUBLISH_DIR!\*' -DestinationPath '!ZIP_PATH!' -Force"
+    "$ErrorActionPreference='Stop'; Compress-Archive -Path '!EXE_PATH!' -DestinationPath '!ZIP_PATH!' -Force"
 if errorlevel 1 (
     echo [WARN] Could not create the zip archive.
     echo        The executable is still available in !PUBLISH_DIR!\
@@ -466,12 +480,11 @@ REM  Restore the user's files here: AFTER the zip, BEFORE the launch prompt.
 REM
 REM  Both halves of that are load-bearing.
 REM
-REM  After the zip, because Compress-Archive packages publish\* wholesale and
-REM  the zip is a DISTRIBUTABLE. Restoring first would ship the user's
-REM  settings.json -- including their encrypted GitHub token and their
-REM  recent-files list -- to whoever they hand the archive to. The ciphertext is
-REM  machine-bound or PBKDF2+AES-GCM, so it is not an immediate compromise, but
-REM  shipping someone else's credential blob is indefensible regardless.
+REM  After the zip, as defence in depth. The package step now zips only the
+REM  version-stamped exe, so the user's settings.json (encrypted GitHub token,
+REM  recent-files list) and saved .qbx files can no longer reach the
+REM  distributable even if restored first. Restoring after the zip anyway keeps
+REM  the guarantee robust against a future change back to a folder-wide archive.
 REM
 REM  Before the launch prompt, because `start` returns immediately: restoring at
 REM  :done would race the app reading its own settings.json.

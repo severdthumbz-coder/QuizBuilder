@@ -1,85 +1,95 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 6 (stage `maui-android-player`)
-**Status:** Desktop builds green on Windows. **Android player builds green and
-runs on-device (emulator)** — build 4 confirmed green by the Windows builder;
-builds 5–6 add features on top and are **structurally verified but awaiting a
-Windows/emulator build confirmation** (see §0). Live on GitHub with **green CI
-(both jobs).**
-**Deliverable:** `/mnt/user-data/outputs/QuizBuilder_v0.26.0.6.zip`
+**Last shipped:** v0.26.0 build 14 (stage `maui-android-player`)
+**Status:** All green. Desktop builds on Windows; Android player builds AND runs
+on-device (emulator), confirmed by the maintainer. **CI now has three jobs
+(core-tests, app-build, android-build) and all pass** — the Android job compiles
+the MAUI player on every push, so mobile work is gated automatically and the old
+"structurally verified, awaiting build" caveat no longer applies to shipped
+builds. GitHub Actions are all on @v5 (no Node-20 deprecation warnings).
+**Deliverable:** `/mnt/user-data/outputs/QuizBuilder_v0.26.0.14.zip`
 
 This document exists so a new chat can resume without re-reading the whole
-history. Read §0 first for current state, then the rest as reference. The
-detailed MAUI/mobile status, the exact build/deploy commands, the (now-fixed) CI
-note, and the tier-1 feature status are all in **§13**.
+history. Read §0 first for current state, then the rest as reference. §13 has the
+mobile/MAUI detail and exact build/deploy commands; §14 has the desktop backlog.
 
 ---
 
 ## 0. CURRENT STATE & RECENT WINS (read this first)
 
-### What changed after build 2 (builds 3–6, this session)
-Truthful status, because verification level differs by item:
-- **Build 3 — CI test-isolation fix (DONE, and this is the real fix).** The
-  latent DPAPI flake is fixed deterministically by putting every test that
-  mutates the process-global `ProtectedDataShim` delegates into ONE xUnit
-  collection (`ProtectedDataShimCollection`), so `TokenProtectorTests` and
+### What has shipped (builds 3–14) — all confirmed building; mobile confirmed on-device
+Everything below is built, validated (validate.py 12/12), and — because the
+Android CI job now compiles the player on every push — confirmed to compile in a
+clean environment, not just locally. The maintainer has also run the player
+on-device. Verification level is no longer a caveat.
+
+- **b3 — CI test-isolation fix (the real one).** The DPAPI flake is fixed
+  deterministically by putting every test that mutates the global
+  `ProtectedDataShim` delegates into one xUnit collection
+  (`ProtectedDataShimCollection`), so `TokenProtectorTests` and
   `MobileReadPathContractTests` never run in parallel. Root cause was parallelism
-  (xUnit's unit of parallelization is the collection; classes default to separate
-  collections and run concurrently), NOT ordering as the old note guessed. The
-  MachineBound test keeps its Linux coverage (it runs via its own XOR shim). This
-  supersedes the two candidate fixes the old §13 listed — do not "skip
-  off-Windows"; the collection fix is better and is in place.
-- **Build 3 — Android script gained `-Launch` and `-Device`.** `build-android.bat
-  launch` installs then launches the app; `device=<serial>` (→ `-Device`) targets
-  one adb device when several are attached. Auto-detects a single device. Launch
-  uses `adb shell monkey -p <pkg> -c android.intent.category.LAUNCHER 1` so the
-  generated activity name is never hardcoded.
-- **Build 4 — Study Cards review (mobile). CONFIRMED GREEN on Windows.** Flips
-  through the quiz as flash cards via Core's `FlashDeck`; source toggle
-  (Questions / Study cards / Both) appears only when both exist; tap-to-flip,
-  prev/next, shuffle. Home button "Review as study cards".
-- **Build 5 — Attempt history (mobile). Structurally verified; awaiting build
-  confirmation.** Every finished attempt is recorded to `history.json` in the app
-  sandbox (the storage-path blocker, resolved via the `overrideDirectory` seam →
-  `FileSystem.AppDataDirectory`). Home "View history" → list newest-first with
-  score + PASS/FAIL → tap for the full per-question breakdown. Swipe-to-delete,
-  clear-all, both confirmed.
-- **Build 6 — Pause / resume (mobile). Structurally verified; awaiting build
-  confirmation.** "Pause & save" on the take screen snapshots the exact paper and
-  answers into a `PausedAttempt` (sandbox `paused-attempts.json`); Home shows a
-  "Paused attempts" card to resume; finishing a resumed sitting clears its
-  snapshot; re-pausing updates one entry. The back button now offers **Pause &
-  save / Leave without saving / Keep going** (three-way action sheet), completing
-  the §13 "pause instead of leaving" item.
+  (collection = unit of parallelization), NOT ordering. Supersedes the two
+  candidate fixes the old §13 note suggested; do not "skip off-Windows".
+- **b3 — Android script gained `-Launch` and `-Device`.** `build-android.bat
+  launch` installs+launches; `device=<serial>` targets one adb device.
+- **b4 — Study Cards review (mobile).** Flip through the quiz via Core's
+  FlashDeck; source toggle (Questions/Study cards/Both); shuffle. Home button.
+- **b5 — Attempt history (mobile).** Finished attempts saved to history.json in
+  the sandbox (storage-path blocker resolved via the overrideDirectory seam →
+  FileSystem.AppDataDirectory). List + per-question detail; swipe-delete; clear-all.
+- **b6 — Pause/resume (mobile).** "Pause & save" snapshots the exact paper +
+  answers to paused-attempts.json; Home lists paused sittings to resume; back
+  button offers Pause/Leave/Keep (three-way).
+- **b9 — Android build script JDK fix.** Probes each JDK's version and picks one
+  in the Android-SDK-supported range (17–21), skipping too-new JDKs (the XA0030
+  error on JDK 25). Prints a clear "install JDK 21" message if none compatible.
+  (Resolved a real blocker: the maintainer's Android Studio bundled JDK 25.)
+- **b8 — APK download QR (desktop GitHub tab).** Paste an APK link → a QR renders
+  live (QRCoder, PngByteQRCode renderer, no System.Drawing dep); copy-link and
+  save-image. The link persists in desktop settings (NOT in the .qbx).
+- **b10 — Three mobile fixes.** (1) Quiz description renders as readable text, not
+  raw HTML (HtmlToText converter). (2) Paused attempts individually deletable
+  (trash button). (3) History + paused scoped per taker by normalized email
+  (case/space-insensitive); legacy records with no identity show to everyone so
+  nothing vanishes. Core: AttemptRecord/PausedAttempt gained TakerEmailKey +
+  TakerName; ForQuizAndTaker queries; TakerKey helper.
+- **b11 — Import cleanup** (later superseded by b12's library).
+- **b12 — Quiz library (option C).** Player is no longer single-load: after
+  identity, a Library screen lists kept quizzes (QuizLibraryService + library.json
+  index, files stored as quiz_<id>.qbx). Tap to open, Choose file to import, trash
+  to delete with a keep-results / wipe-results prompt. Re-import updates the same
+  entry (keyed by QuizId, so history/paused stay attached). Nav is now Identity →
+  Library → Home(detail) → Take → Results. Core: PausedAttemptService gained
+  ClearForQuiz.
+- **b13 — Android CI job.** New android-build job (windows-latest, needs
+  core-tests): SDK from global.json, JDK 21, `dotnet workload install android
+  maui`, Debug build of the player. Gates mobile compiles automatically. GREEN.
+- **b14 — Actions bumped to @v5.** Cleared the Node-20 deprecation warning; all
+  GitHub Actions now @v5.
 
-**"Structurally verified" means:** XAML well-formed, every binding resolves to a
-real VM/row member (incl. source-generated `[ObservableProperty]` names), every
-Core call and object-initializer cross-checked against Core source (signatures,
-enum values, no missed `required` members), the 12-check `validate.py` green on
-both the working tree and the re-unzipped shipped zip. It does NOT mean the MAUI
-project was compiled — there is no MAUI toolchain in the AI sandbox (no NuGet
-restore, no `maui-android` workload). The desktop/Core changes ride the same
-`validate.py` the desktop always used. **First action for the next session:
-confirm builds 5–6 compile and run on the emulator (`build-android.bat launch`),
-then update this section to "confirmed green."**
+### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
+Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the
+library (the biggest post-tier-1 feature). The old §13 "not yet built" wording is
+historical.
 
-### Tier-1 mobile backlog is COMPLETE
-Study Cards → history → pause/resume were the three decided tier-1 features
-(§13). All three are built (builds 4–6). The old §13 "decided, not yet built"
-wording is superseded by the per-build status above.
+### On timed quizzes (still deferred — "option B")
+The player does NOT enforce a time limit, and that is correct: the .qbx /
+QuizDocument has NO time-limit field. TimeLimitMinutes lives only on QuizSettings
+(a desktop-local setting) and is never serialized into the .qbx. Making timed
+quizzes portable = add optional TimeLimitMinutes to QuizDocument (author into the
+.qbx, desktop writes it, player reads+enforces; desktop TakeQuizViewModel has the
+full timer/auto-submit reference). Product owner deferred this. Same story for the
+APK link and GitHub-tab info: desktop-local settings, not .qbx content.
 
-### On timed quizzes (finding from build 6 session)
-The player does NOT enforce a time limit, and this is correct, not a bug: the
-`.qbx`/`QuizDocument` has **no time-limit field**. `TimeLimitMinutes` lives only
-on `QuizSettings` (a desktop-local setting beside the exe) and is never
-serialized into the `.qbx`. So there is nothing in the file for the player to
-honor. Making timed quizzes portable is a real future item (**"option B"**): add
-`TimeLimitMinutes` (optional, for old-file compatibility) to `QuizDocument` so it
-authors into the `.qbx`, have the desktop write it and the player read+enforce it
-(the desktop `TakeQuizViewModel` has the full timer/auto-submit reference:
-`Stopwatch` clock, `Remaining() = TimeLimit − TotalElapsed`, auto-submit at zero
-with `timedOut: true`). Deferred by the product owner; captured here so it is not
-rediscovered from scratch.
+### Suggested next steps (none started)
+- Library search/sort (natural once there are many quizzes).
+- One-time migration adopting pre-existing sandbox files into the library.
+- Timed quizzes ("option B" above) — the notable format-level gap.
+- App icon/monogram (still placeholder); iOS target (needs a Mac).
+- To publish the APK: `build-android.bat release` (needs QB_KEYSTORE* env vars) →
+  GitHub Releases → upload the .apk → copy the asset URL → paste into the GitHub
+  tab. The APK lives under QuizBuilder.Player/bin/Release/net10.0-android/ (not in
+  the repo; bin/ is gitignored).
 
 ### Where the project is right now (v0.26.0)
 - **Two apps now share one Core.** The original **WPF desktop app** (`net8.0`)
@@ -149,22 +159,19 @@ file still opens in v2 (reading ≠ upgrading). The mobile player reads v2 `.qbx
 files through the same `QuizPackageService` the desktop uses.
 
 ### Immediate next-step options
-- **First: confirm builds 5–6 on the emulator** (`build-android.bat launch`) and
-  flip their status above to "confirmed green." Build 4 is already confirmed.
-- **The CI test-isolation bug is FIXED** (build 3, collection-based). No longer a
-  next step; the old note below is retained in §13 only for history.
-- **Tier-1 mobile is COMPLETE** (Study Cards, history, pause/resume). Next
-  candidates, none yet started: an **Android CI job** (installs `maui-android`,
-  runs `build-android.ps1` — would remove the "structurally verified only"
-  caveat by gating mobile compiles automatically); the **iOS target** (needs a
-  Mac); replace the placeholder **app icon/monogram**; or desktop feature work
-  from §14 (highest-value: hotspot/numeric question types — note the
-  drag-and-drop *sequence* type already shipped in 0.25.0). **Timed quizzes
-  ("option B" above)** is the notable format-level item.
-- **CI/housekeeping:** an Android CI job (installs the workload, runs
-  `build-android.ps1`); bump `actions/checkout`/`setup-dotnet` off deprecated
-  Node 20; replace the placeholder app icon; test the email composer on a real
-  phone (emulators usually have no mail app); iOS target (needs a Mac).
+Nothing is blocking; the tree is all-green (CI 3/3, on-device confirmed). The CI
+test-isolation bug, tier-1 mobile, the quiz library, the Android CI job, and the
+Node-20 actions bump are all DONE (see §0). Open candidates, none started:
+- **Library search/sort** — natural once there are many quizzes. Small.
+- **One-time migration** adopting pre-existing sandbox files into the library.
+- **Timed quizzes ("option B", see §0)** — the notable format-level gap; needs a
+  `.qbx`/QuizDocument change plus desktop authoring plus a mobile timer.
+- **Desktop feature work from §14** (note the drag-and-drop *sequence* type
+  already shipped in 0.25.0, so §14's #1 is partly done — hotspot/numeric types
+  are the fresh candidates).
+- **Polish/housekeeping:** replace the placeholder app icon; test the email
+  composer on a real phone (emulators usually have no mail app); iOS target
+  (needs a Mac).
 
 ---
 
@@ -1013,13 +1020,13 @@ preview image, which mixes app bugs with preview-OS bugs). The emulator usually
 has **no mail app**, so the email-results composer will report "no mail app" —
 test that feature on a real phone.
 
-### NEXT MOBILE SESSION: tier-1 offline features (✅ ALL BUILT — builds 4–6)
+### NEXT MOBILE SESSION: tier-1 offline features (✅ ALL BUILT & CONFIRMED — builds 4–6)
 
-**Status: complete.** All three below are built (Study Cards = build 4, confirmed
-green; history = build 5 and pause/resume = build 6, structurally verified,
-awaiting emulator confirmation — see §0). The back-button "pause instead of
-leaving" follow-on is also done (build 6). The original spec is kept below as the
-record of what was asked and how Core supported it.
+**Status: complete and confirmed on-device.** All three (Study Cards b4, history
+b5, pause/resume b6) build in CI (the android-build job) and the maintainer has
+run them on the emulator. The back-button "pause instead of leaving" follow-on is
+also done (b6). The original spec is kept below as the record of what was asked
+and how Core supported it.
 
 Four things were requested after the first run. The back-button bug is done. The
 other three are real features for a **fresh chat** (bring HANDOFF.md). The
