@@ -33,9 +33,15 @@ public sealed class AttemptRow
         }
         else
         {
-            // An all-essay paper has no auto score.
+            // An all-essay paper has no auto score, so there is no pass/fail to
+            // show. Every field must still be assigned: PassFail is a
+            // non-nullable string, and leaving it unset on this path is what the
+            // compiler flags (and would NRE anything that reads it).
             Score = "Pending review";
             HasPassFail = false;
+            IsPass = false;
+            IsFail = false;
+            PassFail = string.Empty;
         }
 
         ReviewNote = record.QuestionsAwaitingReview > 0
