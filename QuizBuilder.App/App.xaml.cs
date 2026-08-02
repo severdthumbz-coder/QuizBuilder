@@ -1,5 +1,6 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using QuizBuilder.App.Services;
 using QuizBuilder.App.Theming;
 using QuizBuilder.App.ViewModels;
 using QuizBuilder.App.Views;
@@ -57,6 +58,15 @@ public partial class App : Application
         services.AddSingleton<FlashCardsView>();
         services.AddSingleton<StudyCardsView>();
         services.AddSingleton<QuestionBankView>();
+
+        // Offline spell-check (feature B). Dictionary is a singleton: loading
+        // the embedded en_US word list is not free, and one instance serves
+        // every review. The ignore-list store and provider are cheap but kept
+        // as singletons for consistency and so a future settings screen shares
+        // one store with the review panel.
+        services.AddSingleton<ISpellDictionary, HunspellDictionary>();
+        services.AddSingleton<SpellIgnoreListStore>();
+        services.AddSingleton<ITextReviewProvider, OfflineSpellProvider>();
 
         _services = services.BuildServiceProvider();
 

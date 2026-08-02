@@ -52,10 +52,31 @@
       and needs no extra native bits at publish time.
     -->
     <PackageReference Include="QRCoder" Version="1.6.0" />
+    <!--
+      Offline spell-check engine for the desktop review feature. Pure-managed
+      (no System.Drawing / native DLL), so it is safe under net8.0-windows and
+      needs no extra native bits at single-file publish. The en-US dictionary
+      (.dic/.aff) is embedded as a resource under Resources/Dictionaries so it
+      travels inside the single-file exe and cannot be separated from it — the
+      portability invariant. Lives on App only; Core stays at 2 package refs.
+    -->
+    <PackageReference Include="WeCantSpell.Hunspell" Version="5.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\QuizBuilder.Core\QuizBuilder.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    The en-US Hunspell dictionary, embedded so it lives inside the single-file
+    exe (portable: it cannot be separated from the app). HunspellDictionary
+    loads these two streams by resource name at startup. The .dic/.aff pair is
+    the standard Hunspell en_US dictionary; place the two files here. They are
+    data, not code, and are the only files under Resources/Dictionaries.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Dictionaries\en_US.dic" />
+    <EmbeddedResource Include="Resources\Dictionaries\en_US.aff" />
   </ItemGroup>
 
 </Project>

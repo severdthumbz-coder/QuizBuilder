@@ -112,7 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
-        new VersionEntry("0.26.0", 19, "2026-08-01", new[]
+        new VersionEntry("0.26.0", 20, "2026-08-01", new[]
+        {
+            "Spell-check engine (offline): added the provider layer for the desktop spell-checker. Core gains ISpellDictionary (the seam), ITextReviewProvider, and SpellReviewEngine — the pure, tested pipeline that tokenizes each authored field, skips things that must never be flagged ({{n}} blank tokens, numbers, alphanumerics like mp3, URLs, emails, short ALL-CAPS acronyms), honours the user's ignore-list (case/space-insensitive, matching the taker-email normalization), and de-dupes repeats into one issue carrying every occurrence. App gains HunspellDictionary (WeCantSpell.Hunspell, pure-managed, en_US SCOWL dictionary embedded as a resource — MIT/BSD licensed), a SpellIgnoreListStore that persists the custom dictionary via settings.json/Extra (no .qbx change), and OfflineSpellProvider tying them together. Logic proved in tools/port/spell_review_port.py first (it caught a real 'mp3'->'mp' tokenization bug); pinned by SpellReviewEngineTests. Core stays at 2 package refs; the review UI (a by-section 'Check spelling' panel) and the opt-in AI grammar pass come next",
+        }),
         {
             "Spell/grammar review (groundwork): added DocumentTextInventory to Core — a pure, WPF-free walk that yields every authored, user-facing text field on a quiz (titles, prompts, hints, choices, accepted answers, blanks, match pairs, distractors, sequence items, rubric notes, study cards) as an addressable read/write TextField, grouped by section. This is the shared source of truth for the coming offline spell-checker and an opt-in AI grammar pass. Design was proved in tools/port/text_inventory_port.py before the C# was written; pinned by DocumentTextInventoryTests (coverage, no-machinery-leak, round-trip). Core stays at 2 package references; no .qbx change; the Android player is untouched",
         }),
