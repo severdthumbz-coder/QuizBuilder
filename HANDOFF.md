@@ -1,8 +1,13 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 17 (stage `maui-android-player`)
-**Deliverable:** `/mnt/user-data/outputs/QuizBuilder_v0.26.0.17.zip`
-**Status:** All green. Both apps build and run; CI is three-for-three.
+**Last shipped:** v0.26.0 build 19 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.19.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** Desktop + Android + Core all green through b17 (Windows/on-device
+confirmed). b18 was a docs/version refresh. **b19 adds `DocumentTextInventory`
+to Core plus its tests — new xUnit facts that CI's `core-tests` job runs, but
+they have NOT yet been confirmed green on a real runner or locally; awaiting
+this push's CI + a maintainer test run.** No desktop/Android runtime behaviour
+changed in b19 (Core-only addition, nothing calls it yet).
 
 This document exists so a new chat can resume without re-reading the whole
 history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
@@ -17,7 +22,7 @@ then the rest as reference.
 |---|---|---|
 | **Desktop (WPF, `QuizBuilder.App`)** | **v0.26.0 build 17** | CI `app-build` job (Windows, self-contained single-file publish) green on every push through b17. Locally confirmed via `.\build.bat` at b14 (612/612 tests, exe produced); b15–17 are desktop-neutral or Core-safe and stay green in CI. |
 | **Android player (MAUI, `QuizBuilder.Player`)** | **v0.26.0 build 17** | CI `android-build` job (Windows, JDK 21, `dotnet workload install android maui`, Debug build) green on every push since it was added in b13. Maintainer has also run it **on-device (emulator)** through the tier-1 features + library. |
-| **Core (`QuizBuilder.Core`)** | **v0.26.0 build 17** | CI `core-tests` job (Ubuntu, xUnit): 612/612 tests pass. Core is multi-targeted `net8.0;net10.0`; the player consumes the net10 slice. |
+| **Core (`QuizBuilder.Core`)** | **v0.26.0 build 17** (612/612); **b19 adds 9 `DocumentTextInventoryTests` facts, unconfirmed** | CI `core-tests` job (Ubuntu, xUnit): 612/612 through b17. b19 adds `DocumentTextInventory` + 9 tests; the new count should be 621/621 **if they pass** — not yet confirmed on a runner. Core is multi-targeted `net8.0;net10.0`; the player consumes the net10 slice. |
 
 CI = `.github/workflows/build.yml`, **three jobs, all green, no annotations**:
 `core-tests` (Ubuntu) → `app-build` (Windows) and `android-build` (Windows), the
@@ -146,6 +151,32 @@ on-device. Verification level is no longer a caveat.
   warning only because `android-build` compiles the player. Now every field is
   assigned on every path. (Textbook example of the CI job earning its keep and of
   the "all-fields-assigned" bug family in §9.)
+- **b19 — Spell/grammar review groundwork (Core only).** First slice of the
+  desktop spell/grammar-check feature. Added `DocumentTextInventory` (Core,
+  `Services/`): a pure, WPF-free static walk that yields every authored
+  user-facing text field on a `QuizDocument` as a `TextField` — a
+  `(TextFieldKind, Label, SectionId?, QuestionId?, Func<string> Get, Action<string> Set)`
+  record. Get/Set close over the live model so an accepted correction
+  round-trips to the exact source (scalar property, optional property, or a
+  `List<string>` element). Grouping ids let the review panel group findings by
+  section (the primary UX ask) and jump to the owning question. Deterministic
+  reading order. `QuestionHint` is emitted even when empty so an author-written
+  hint is checked; callers filter on `.Text`. Design was ported to
+  `tools/port/text_inventory_port.py` and run exhaustively first (coverage,
+  no-machinery-leak, round-trip), then the C# was written; both are pinned by
+  `DocumentTextInventoryTests` (9 facts). **Invariants held:** Core stays at 2
+  package refs, stays WPF-free, tests reference only Core; no `.qbx`/format
+  change (an ignore-list and any AI settings are desktop-local, like the APK
+  link); the Android player is untouched by construction.
+  **NOT yet built (next):** the App-side provider layer — `ITextReviewProvider`
+  with an `OfflineSpellProvider` (WeCantSpell.Hunspell, pure-managed, one package
+  on App only) and the custom-dictionary/ignore-list persisted via
+  `SettingsService`/`AppSettings.Extra`; then the by-section review UI on the
+  QuizBuilder tab; then the opt-in tier-3 AI grammar pass (provider-selectable
+  in settings — `Off`/`Claude`/custom-OpenAI-compatible-endpoint — default off,
+  section-scoped, suggestions advisory-only, key stored via the encrypted-token
+  machinery, never plaintext). Accepted corrections must route through
+  `IQuizDocumentService` (undo/autosave), NOT `TextField.Set` directly.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

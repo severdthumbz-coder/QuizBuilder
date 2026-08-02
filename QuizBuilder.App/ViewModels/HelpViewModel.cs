@@ -112,9 +112,9 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
-        new VersionEntry("0.26.0", 18, "2026-07-30", new[]
+        new VersionEntry("0.26.0", 19, "2026-08-01", new[]
         {
-            "Docs: comprehensive handoff refresh — added a build-status & commands quick reference (last green build per target, both batch files, git workflow), extended the build log through b17, and corrected every stale state (CI job count, resolved test flake, build.bat header)",
+            "Spell/grammar review (groundwork): added DocumentTextInventory to Core — a pure, WPF-free walk that yields every authored, user-facing text field on a quiz (titles, prompts, hints, choices, accepted answers, blanks, match pairs, distractors, sequence items, rubric notes, study cards) as an addressable read/write TextField, grouped by section. This is the shared source of truth for the coming offline spell-checker and an opt-in AI grammar pass. Design was proved in tools/port/text_inventory_port.py before the C# was written; pinned by DocumentTextInventoryTests (coverage, no-machinery-leak, round-trip). Core stays at 2 package references; no .qbx change; the Android player is untouched",
         }),
         new VersionEntry("0.25.0", 1, "2026-07-24", new[]
         {
