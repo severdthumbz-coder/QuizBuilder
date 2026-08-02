@@ -61,6 +61,57 @@ public class SpellReviewEngineTests
     private static IReadOnlyList<TextField> Fields(params (string id, string text)[] items) =>
         items.Select(i => Field(i.id, i.text)).ToList();
 
+    /// <summary>A description field (HTML-bearing), for the markup-stripping tests.</summary>
+    private static TextField DescriptionField(string text)
+    {
+        var box = new string[] { text };
+        return new TextField(
+            TextFieldKind.QuizDescription, "Quiz description", null, null,
+            get: () => box[0], set: v => box[0] = v);
+    }
+
+    // ----- description markup stripping ------------------------------------ //
+
+    [Fact]
+    public void DescriptionTagNamesAreNotFlagged()
+    {
+        // The dictionary knows the real words but NOT the tag names; if the
+        // stripping failed, "strong"/"br"/"ul"/"li" would be flagged.
+        var engine = Engine("rules", "and", "regulations", "bold", "italic", "bullets");
+        var issues = engine.Review(
+            new[] { DescriptionField(
+                "<strong>Rules and Regulations</strong><br><br><ul><li>bold italic bullets</li></ul>") },
+            ignoreWords: Array.Empty<string>());
+
+        var flagged = issues.Select(i => i.Word.ToLowerInvariant()).ToList();
+        Assert.DoesNotContain("strong", flagged);
+        Assert.DoesNotContain("br", flagged);
+        Assert.DoesNotContain("ul", flagged);
+        Assert.DoesNotContain("li", flagged);
+    }
+
+    [Fact]
+    public void DescriptionRealMisspellingStillFlaggedButNotReplaceable()
+    {
+        // "regulatons" is misspelled; it should be caught, but marked
+        // non-replaceable because offsets are on the stripped text.
+        var engine = Engine("rules", "and");
+        var issues = engine.Review(
+            new[] { DescriptionField("<strong>Rules and regulatons</strong>") },
+            ignoreWords: Array.Empty<string>());
+
+        var issue = Assert.Single(issues.Where(i => i.Word.Equals("regulatons", StringComparison.OrdinalIgnoreCase)));
+        Assert.All(issue.Occurrences, o => Assert.False(o.Replaceable));
+    }
+
+    [Fact]
+    public void NonDescriptionOccurrencesAreReplaceable()
+    {
+        var issues = Engine().Review(
+            Fields(("f1", "somme")), ignoreWords: Array.Empty<string>());
+        Assert.All(Assert.Single(issues).Occurrences, o => Assert.True(o.Replaceable));
+    }
+
     // ----- exclusions ----------------------------------------------------- //
 
     [Fact]

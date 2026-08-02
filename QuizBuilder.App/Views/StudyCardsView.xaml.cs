@@ -1,7 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using QuizBuilder.App.Services;
 using QuizBuilder.App.ViewModels;
+using QuizBuilder.Core.Interfaces;
 
 namespace QuizBuilder.App.Views;
 
@@ -9,9 +11,23 @@ public partial class StudyCardsView : UserControl
 {
     private readonly StudyCardsViewModel _viewModel;
 
-    public StudyCardsView(StudyCardsViewModel viewModel)
+    private readonly IQuizDocumentService _document;
+    private readonly ITextReviewProvider _reviewProvider;
+    private readonly SpellIgnoreListStore _ignoreList;
+    private readonly SpellFixApplier _fixApplier;
+
+    public StudyCardsView(
+        StudyCardsViewModel viewModel,
+        IQuizDocumentService document,
+        ITextReviewProvider reviewProvider,
+        SpellIgnoreListStore ignoreList,
+        SpellFixApplier fixApplier)
     {
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+        _document = document ?? throw new ArgumentNullException(nameof(document));
+        _reviewProvider = reviewProvider ?? throw new ArgumentNullException(nameof(reviewProvider));
+        _ignoreList = ignoreList ?? throw new ArgumentNullException(nameof(ignoreList));
+        _fixApplier = fixApplier ?? throw new ArgumentNullException(nameof(fixApplier));
 
         InitializeComponent();
         DataContext = viewModel;
@@ -21,6 +37,19 @@ public partial class StudyCardsView : UserControl
             if (e.NewValue is true) _viewModel.OnActivated();
             else _viewModel.OnDeactivated();
         };
+    }
+
+    /// <summary>
+    /// Opens the same whole-quiz spell-check review as the Quiz Builder tab. The
+    /// study-card text is included in that scan (under the quiz-level group), so
+    /// this is a convenience entry point from the tab where an author is working
+    /// on cards, not a separate cards-only checker.
+    /// </summary>
+    private void OnCheckSpellingClick(object sender, RoutedEventArgs e)
+    {
+        var vm = new SpellCheckViewModel(_document, _reviewProvider, _ignoreList, _fixApplier);
+        var window = new SpellCheckWindow(vm) { Owner = Window.GetWindow(this) };
+        window.ShowDialog();
     }
 
     // The Tag carries the row the button belongs to, so one dialog helper serves

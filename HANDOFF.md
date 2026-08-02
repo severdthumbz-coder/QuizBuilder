@@ -1,15 +1,16 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 24 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.24.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** **b23 was the first fully green build of the spell-check feature —
-`build.bat` succeeded, 634/634 tests pass, the single-file exe published, and the
-App compiled with the embedded Hunspell dictionary.** It emitted one warning
-(CS8714, a nullable dictionary key in the spell-check grouping); **b24 removes
-that warning — the build is now warning-clean.** Remaining maintainer runtime
-check: exercise "Check spelling" on a real quiz (does it flag misspellings, do
-Replace/Ignore work, do study-card fixes refresh). Then the opt-in AI grammar
-pass is the last planned piece.
+**Last shipped:** v0.26.0 build 25 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.25.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** Spell-check feature builds green and warning-clean as of b24 (634 tests,
+single-file exe published, embedded Hunspell dictionary confirmed loading).
+**b25 adds a "Check spelling" button on the Study Cards tab and fixes the quiz
+description being checked with its HTML tags intact (tag names like `strong`/`br`
+were flagged as misspellings) — the description is now checked as stripped
+reader-visible text via `DescriptionParser.ToPlainText`, and its findings are
+review/ignore-only (non-replaceable, since offsets are on stripped text).** New
+Core tests added. Remaining: exercise the feature at runtime, then the opt-in AI
+grammar pass.
 
 This document exists so a new chat can resume without re-reading the whole
 history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
@@ -280,6 +281,39 @@ on-device. Verification level is no longer a caveat.
   collision). Build is now warning-clean. Same nullable-warning family as b17.
   **b23 milestone:** first fully green spell-check build — `build.bat` succeeded,
   634/634 tests, single-file exe published with the embedded Hunspell dictionary.
+- **b25 — Study Cards spell-check button + HTML-description fix.**
+  - **Study Cards button:** added a "Check spelling" button to the Study Cards
+    tab header (beside "+ Add card"). It opens the same whole-quiz
+    `SpellCheckWindow` as the Builder tab — study-card text is already in that
+    scan (quiz-level group), so this is a convenience entry point, not a
+    cards-only checker. Same DI-injected services (`IQuizDocumentService`,
+    `ITextReviewProvider`, `SpellIgnoreListStore`, `SpellFixApplier`).
+  - **HTML-in-description fix (the real bug):** the quiz description is the one
+    authored field carrying markup (safelist b/strong/i/em/br/ul/li). The engine
+    was tokenizing the raw string, so tag NAMES ("strong", "br", "ul", "li") were
+    flagged as misspellings. Fix: for `TextFieldKind.QuizDescription` only, the
+    engine checks `DescriptionParser.ToPlainText(field.Text)` — the same parser
+    the renderer/exporters use, so what's checked is exactly what a reader sees.
+    Only the description is HTML-bearing (confirmed: all four `DescriptionParser`
+    call sites parse the description; nothing parses prompts/choices), so every
+    other field is unchanged and a literal `<` there is still checked as typed.
+  - **Non-replaceable description issues:** offsets from stripped text don't map
+    back to the raw markup, so a splice-Replace could corrupt formatting. Rather
+    than build a fragile offset-mapper, description occurrences are flagged
+    `Replaceable = false` (new bool on `TextOccurrence`, default true) — they're
+    surfaced with context and can be Ignored/added-to-dictionary, but Replace is
+    disabled (`SpellIssueRowViewModel.CanReplace = HasSuggestions && Replaceable`;
+    the button binds to `CanReplace`). Full description Replace is a possible
+    future add via offset-mapping; deliberately deferred as higher-risk, low-value
+    (description is a short field).
+  - Design proved in `tools/port/description_plaintext_port.py` first (tag names
+    don't leak, literal `<` survives, attributed tags stay literal per the
+    parser's no-attributes rule, words don't fuse across `<li>`). New
+    `SpellReviewEngineTests` facts pin: tag names not flagged, real description
+    misspelling flagged-but-non-replaceable, non-description issues replaceable.
+  - **Verified here:** validate 12/12, MC3024 pre-flight clean, all four ports
+    green, StudyCards Click handler + `CanReplace` binding resolve. **Core still
+    at 2 package refs.** Not verifiable here: WPF/MAUI compile, runtime behaviour.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

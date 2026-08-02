@@ -7,11 +7,12 @@ namespace QuizBuilder.Core.Services;
 /// a Replace can splice the correction at the right offset.</summary>
 public sealed class TextOccurrence
 {
-    public TextOccurrence(TextField field, int start, int length)
+    public TextOccurrence(TextField field, int start, int length, bool replaceable = true)
     {
         Field = field;
         Start = start;
         Length = length;
+        Replaceable = replaceable;
     }
 
     /// <summary>The inventory field this occurrence lives in (carries its
@@ -22,6 +23,15 @@ public sealed class TextOccurrence
     public int Start { get; }
 
     public int Length { get; }
+
+    /// <summary>
+    /// False when the offsets are relative to a transformed view of the field
+    /// (the description's markup is stripped before checking), so an in-place
+    /// splice at <see cref="Start"/> would corrupt the raw text. Such issues are
+    /// still surfaced and can be ignored/added to the dictionary — they just
+    /// can't be auto-replaced. Everything else is replaceable.
+    /// </summary>
+    public bool Replaceable { get; }
 }
 
 /// <summary>
@@ -106,7 +116,17 @@ public sealed class SpellReviewEngine
 
         foreach (var field in fields)
         {
-            var text = field.Text;
+            // The description is the one field carrying markup (a small safelist
+            // of tags). Check the reader-visible plain text via the shared
+            // parser, so tag names like "strong"/"br"/"ul"/"li" are never
+            // flagged as misspellings. Offsets then refer to the stripped text,
+            // which doesn't map back to the raw markup — so these occurrences are
+            // flagged as non-replaceable (Ignore/Add-to-dictionary still work).
+            var isDescription = field.Kind == TextFieldKind.QuizDescription;
+            var text = isDescription
+                ? DescriptionParser.ToPlainText(field.Text)
+                : field.Text;
+
             if (string.IsNullOrEmpty(text))
                 continue;
 
@@ -130,7 +150,8 @@ public sealed class SpellReviewEngine
                     order.Add(key);
                 }
 
-                acc.Occurrences.Add(new TextOccurrence(field, token.Start, token.Length));
+                acc.Occurrences.Add(new TextOccurrence(
+                    field, token.Start, token.Length, replaceable: !isDescription));
             }
         }
 

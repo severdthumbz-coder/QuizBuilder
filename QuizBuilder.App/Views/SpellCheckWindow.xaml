@@ -135,7 +135,7 @@
                                                 <Button Grid.Column="2"
                                                         Content="Replace"
                                                         Style="{StaticResource Action}"
-                                                        IsEnabled="{Binding HasSuggestions}"
+                                                        IsEnabled="{Binding CanReplace}"
                                                         Click="OnReplaceClick"
                                                         Tag="{Binding}" />
 

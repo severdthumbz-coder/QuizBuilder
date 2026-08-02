@@ -13,7 +13,7 @@ public sealed class SpellIssueRowViewModel : ViewModelBase
 
     public SpellIssueRowViewModel(
         TextField field, int start, int length, string word,
-        IReadOnlyList<string> suggestions, string context, Action onResolved)
+        IReadOnlyList<string> suggestions, string context, bool replaceable, Action onResolved)
     {
         Field = field;
         Start = start;
@@ -21,6 +21,7 @@ public sealed class SpellIssueRowViewModel : ViewModelBase
         Word = word;
         Suggestions = new ObservableCollection<string>(suggestions);
         Context = context;
+        Replaceable = replaceable;
         _onResolved = onResolved;
 
         SelectedSuggestion = Suggestions.FirstOrDefault();
@@ -30,6 +31,10 @@ public sealed class SpellIssueRowViewModel : ViewModelBase
     public int Start { get; }
     public int Length { get; }
     public string Word { get; }
+
+    /// <summary>False for description occurrences (offsets are on stripped text).
+    /// Ignore still works; Replace is disabled.</summary>
+    public bool Replaceable { get; }
 
     /// <summary>A short window of text around the word, so the reviewer sees it
     /// in situ rather than as a bare word.</summary>
@@ -55,6 +60,10 @@ public sealed class SpellIssueRowViewModel : ViewModelBase
     }
 
     public bool HasSuggestions => Suggestions.Count > 0;
+
+    /// <summary>Replace is offered only when the word has a suggestion AND the
+    /// occurrence is replaceable (not a stripped-offset description row).</summary>
+    public bool CanReplace => HasSuggestions && Replaceable;
 
     internal Action OnResolved => _onResolved;
 }
@@ -169,9 +178,14 @@ public sealed class SpellCheckViewModel : ViewModelBase
                     rowsByGroup[groupKey] = list;
                 }
 
+                var contextSource = occ.Field.Kind == TextFieldKind.QuizDescription
+                    ? DescriptionParser.ToPlainText(occ.Field.Text)
+                    : occ.Field.Text;
+
                 list.Add(new SpellIssueRowViewModel(
                     occ.Field, occ.Start, occ.Length, issue.Word,
-                    issue.Suggestions, BuildContext(occ.Field.Text, occ.Start, occ.Length),
+                    issue.Suggestions, BuildContext(contextSource, occ.Start, occ.Length),
+                    replaceable: occ.Replaceable,
                     onResolved: Run));
             }
         }

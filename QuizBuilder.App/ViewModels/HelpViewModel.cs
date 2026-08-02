@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 25, "2026-08-02", new[]
+        {
+            "Spell-check improvements: (1) a 'Check spelling' button now also lives on the Study Cards tab (it runs the same whole-quiz review, which already includes card text). (2) Fixed the quiz description being spell-checked with its formatting tags intact — the checker was flagging tag names like 'strong', 'br', 'ul', and 'li' as misspellings. The description is now checked as the reader-visible text (tags stripped via the same parser the app uses to render it), so only real words are flagged. Description findings are shown for review and can be ignored, but are not auto-replaceable (their positions refer to the stripped text, so an in-place fix could damage the markup).",
+        }),
         new VersionEntry("0.26.0", 24, "2026-08-02", new[]
         {
             "Cleanup: removed a nullable-dictionary-key warning (CS8714) in the spell-check grouping by using a non-nullable sentinel key for the quiz-level group instead of null. No behaviour change; the build is now warning-clean. (b23 was the first fully green build of the spell-check feature: 634 tests pass and the single-file exe publishes.)",

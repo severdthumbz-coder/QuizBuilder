@@ -39,17 +39,26 @@
                            Margin="0,4,0,0" />
             </StackPanel>
 
-            <Button Grid.Column="1"
-                    Content="+ Add card"
-                    Command="{Binding AddCommand}"
-                    VerticalAlignment="Top"
-                    Padding="16,8"
-                    Cursor="Hand"
-                    FontFamily="{DynamicResource Font.Family}"
-                    FontSize="{DynamicResource Font.Size.Body}"
-                    Background="{DynamicResource Brush.Primary}"
-                    Foreground="{DynamicResource Brush.OnPrimary}"
-                    BorderThickness="0" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                <Button Content="Check spelling"
+                        Click="OnCheckSpellingClick"
+                        Padding="14,8"
+                        Margin="0,0,8,0"
+                        Cursor="Hand"
+                        ToolTip="Scan the whole quiz, including these study cards, for spelling issues"
+                        FontFamily="{DynamicResource Font.Family}"
+                        FontSize="{DynamicResource Font.Size.Body}" />
+
+                <Button Content="+ Add card"
+                        Command="{Binding AddCommand}"
+                        Padding="16,8"
+                        Cursor="Hand"
+                        FontFamily="{DynamicResource Font.Family}"
+                        FontSize="{DynamicResource Font.Size.Body}"
+                        Background="{DynamicResource Brush.Primary}"
+                        Foreground="{DynamicResource Brush.OnPrimary}"
+                        BorderThickness="0" />
+            </StackPanel>
         </Grid>
 
         <!-- Empty state -->
