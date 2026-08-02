@@ -61,7 +61,6 @@
         <!-- Empty state -->
         <TextBlock Grid.Row="1"
                    Text="Nothing to review. Every word was recognised."
-                   Style="{StaticResource Context}"
                    VerticalAlignment="Center"
                    HorizontalAlignment="Center">
             <TextBlock.Style>

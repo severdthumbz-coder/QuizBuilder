@@ -1,17 +1,14 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 22 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.22.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b21 fixed the b20 compile break; the maintainer confirmed b21 builds and
-runs (opened a real `.qbx`). **b22 adds the spell-check UI: a "Check spelling"
-button on the Quiz Builder toolbar opening a modal review dialog, issues grouped
-by section, Replace (routed through undo) / Ignore (adds to custom dictionary).**
-Core gains an optional `OwnerId` on `TextField` (for study-card addressing) plus
-a test; App gains `SpellFixApplier`, `SpellCheckViewModel`, and
-`SpellCheckWindow`. New Core test expected green in CI. **Still unconfirmed at
-runtime: whether the embedded Hunspell dictionary loads under the single-file
-publish and flags real misspellings — the "Check spelling" button is now the way
-to test that on your machine.**
+**Last shipped:** v0.26.0 build 23 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.23.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b22 shipped the spell-check UI but the App compile broke on a XAML
+`MC3024` (the empty-state TextBlock set `Style` both as an attribute and as a
+child element) — caught by `app-build` CI; `core-tests`/`android-build` were
+green. **b23 fixes that.** Once `app-build` goes green, the maintainer's runtime
+checks are: does the app launch, does "Check spelling" flag misspellings, do
+Replace/Ignore work, and does the embedded Hunspell dictionary load under the
+single-file publish (still unconfirmed since b20).
 
 This document exists so a new chat can resume without re-reading the whole
 history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
@@ -265,6 +262,15 @@ on-device. Verification level is no longer a caveat.
     section-scoped, suggestions advisory, key via encrypted-token store). Also
     optional: a "Check spelling" entry point on the Study Cards tab itself
     (currently the whole-quiz scan on the Builder tab already covers cards).
+- **b23 — XAML compile fix.** `SpellCheckWindow.xaml`'s empty-state TextBlock set
+  `Style` twice: once as a `Style="{StaticResource Context}"` attribute and again
+  via a `<TextBlock.Style>` element (needed for the HasIssues DataTrigger) — WPF
+  forbids both (`MC3024`). Folded into the single element style, which already
+  used `BasedOn="{StaticResource Context}"` so the styling is unchanged. Caught
+  by `app-build`; `core-tests`/`android-build` green throughout. Added a repo-wide
+  pre-flight (attribute-`Style=` plus child-`.Style` on the same element) to the
+  session's local checks so this class is caught before push next time — the same
+  category of gap as b21 (validate.py doesn't compile XAML/C#).
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

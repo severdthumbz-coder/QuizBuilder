@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 23, "2026-08-02", new[]
+        {
+            "Build fix: the spell-check dialog's empty-state text set its Style both as an attribute and as a child element, which WPF rejects (MC3024). Folded into a single style. Caught by the app-build CI job; no behaviour change",
+        }),
         new VersionEntry("0.26.0", 22, "2026-08-02", new[]
         {
             "Spell-check UI: a 'Check spelling' button on the Quiz Builder toolbar opens a review dialog that scans every field on the quiz and lists possible misspellings grouped by section (plus a quiz-level group for the title, description, and study cards). Each finding shows the word in context with a suggestion picker; Replace applies the fix through undo and dirty-tracking (Ctrl+Z reverts it), and Ignore adds the word to your custom dictionary so it is never flagged again. The dictionary is offline and portable — no cloud, no account. The review re-runs after every fix so offsets and grouping stay correct. (An opt-in AI grammar pass is the planned next step.)",
