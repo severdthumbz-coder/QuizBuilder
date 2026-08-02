@@ -206,6 +206,12 @@
                     <Border Width="1" Margin="0,2,12,2"
                             Background="{DynamicResource Brush.Border}" />
 
+                    <Button x:Name="CheckSpellingButton" Content="Check spelling"
+                            Click="OnCheckSpellingClick"
+                            Style="{StaticResource SmallButton}"
+                            ToolTip="Scan every section for possible spelling issues"
+                            Margin="0,0,12,0" />
+
                     <Button x:Name="NewButton" Content="New"
                             Command="{Binding NewCommand}"
                             Style="{StaticResource SmallButton}"

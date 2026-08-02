@@ -53,7 +53,8 @@ public sealed class TextField
         Guid? sectionId,
         Guid? questionId,
         Func<string> get,
-        Action<string> set)
+        Action<string> set,
+        Guid? ownerId = null)
     {
         Kind = kind;
         Label = label;
@@ -61,6 +62,7 @@ public sealed class TextField
         QuestionId = questionId;
         Get = get;
         Set = set;
+        OwnerId = ownerId;
     }
 
     public TextFieldKind Kind { get; }
@@ -71,6 +73,14 @@ public sealed class TextField
     public Guid? SectionId { get; }
 
     public Guid? QuestionId { get; }
+
+    /// <summary>
+    /// Id of a non-section, non-question owner the text belongs to — currently a
+    /// study card (front/back). Null for quiz-level and question-internal text.
+    /// Lets a corrector address the owning object (e.g. call UpdateStudyCard)
+    /// without the review layer having to re-scan the document to find it.
+    /// </summary>
+    public Guid? OwnerId { get; }
 
     /// <summary>Reads the current text. A null underlying value reads as "".</summary>
     public Func<string> Get { get; }
@@ -157,15 +167,18 @@ public static class DocumentTextInventory
 
         foreach (var card in document.StudyCards)
         {
+            var c = card; // capture per-iteration
             fields.Add(new TextField(
                 TextFieldKind.StudyCardFront, "Study card (front)", null, null,
-                () => card.Front ?? string.Empty,
-                v => card.Front = v));
+                () => c.Front ?? string.Empty,
+                v => c.Front = v,
+                ownerId: c.Id));
 
             fields.Add(new TextField(
                 TextFieldKind.StudyCardBack, "Study card (back)", null, null,
-                () => card.Back ?? string.Empty,
-                v => card.Back = v));
+                () => c.Back ?? string.Empty,
+                v => c.Back = v,
+                ownerId: c.Id));
         }
 
         return fields;

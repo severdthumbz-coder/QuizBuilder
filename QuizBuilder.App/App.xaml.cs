@@ -67,6 +67,7 @@ public partial class App : Application
         services.AddSingleton<ISpellDictionary, HunspellDictionary>();
         services.AddSingleton<SpellIgnoreListStore>();
         services.AddSingleton<ITextReviewProvider, OfflineSpellProvider>();
+        services.AddSingleton<SpellFixApplier>();
 
         _services = services.BuildServiceProvider();
 

@@ -5,13 +5,23 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
 using QuizBuilder.App.Controls;
+using QuizBuilder.App.Services;
 using QuizBuilder.App.ViewModels;
+using QuizBuilder.Core.Interfaces;
 
 namespace QuizBuilder.App.Views;
 
 public partial class QuizBuilderView : UserControl
 {
     private readonly QuizBuilderViewModel _viewModel;
+
+    // Services for the "Check spelling" dialog. A fresh SpellCheckViewModel is
+    // built per open so it reviews the current document state rather than a
+    // stale snapshot.
+    private readonly IQuizDocumentService _document;
+    private readonly ITextReviewProvider _reviewProvider;
+    private readonly SpellIgnoreListStore _ignoreList;
+    private readonly SpellFixApplier _fixApplier;
 
     private Point _dragStart;
     private QuestionRowViewModel? _dragItem;
@@ -23,7 +33,12 @@ public partial class QuizBuilderView : UserControl
     private readonly ListReorderDropTarget _questionDrop;
     private readonly ListReorderDropTarget _sectionDrop;
 
-    public QuizBuilderView(QuizBuilderViewModel viewModel)
+    public QuizBuilderView(
+        QuizBuilderViewModel viewModel,
+        IQuizDocumentService document,
+        ITextReviewProvider reviewProvider,
+        SpellIgnoreListStore ignoreList,
+        SpellFixApplier fixApplier)
     {
         InitializeComponent();
 
@@ -31,6 +46,10 @@ public partial class QuizBuilderView : UserControl
         _sectionDrop = new ListReorderDropTarget(SectionList);
 
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+        _document = document ?? throw new ArgumentNullException(nameof(document));
+        _reviewProvider = reviewProvider ?? throw new ArgumentNullException(nameof(reviewProvider));
+        _ignoreList = ignoreList ?? throw new ArgumentNullException(nameof(ignoreList));
+        _fixApplier = fixApplier ?? throw new ArgumentNullException(nameof(fixApplier));
 
         // The dialog lives here rather than in the view model, which has no
         // WPF dependency and should keep it: a MessageBox in a view model
@@ -38,6 +57,18 @@ public partial class QuizBuilderView : UserControl
         _viewModel.ConfirmSectionDelete = ConfirmSectionDelete;
 
         DataContext = _viewModel;
+    }
+
+    /// <summary>
+    /// Opens the modal spell-check review over the current document. A new
+    /// SpellCheckViewModel is created each time so it enumerates the document as
+    /// it stands now — after edits, undo, or a fresh Open.
+    /// </summary>
+    private void OnCheckSpellingClick(object sender, RoutedEventArgs e)
+    {
+        var vm = new SpellCheckViewModel(_document, _reviewProvider, _ignoreList, _fixApplier);
+        var window = new SpellCheckWindow(vm) { Owner = Window.GetWindow(this) };
+        window.ShowDialog();
     }
 
     /// <summary>

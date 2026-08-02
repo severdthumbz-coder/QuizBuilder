@@ -1,15 +1,17 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 21 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.21.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b20 shipped the offline spell-check engine but the App compile broke on
-a dropped `VersionEntry(...)` constructor in `HelpViewModel` (CS1003) — caught by
-`app-build` CI (`core-tests` and `android-build` were green, so the engine, its
-tests, and Core all compile and pass). **b21 fixes that one-line structural
-error.** The Core spell-check tests are confirmed green (they ran in b20's
-`core-tests`); the App-side Hunspell integration — embedded dictionary loading
-under single-file publish, real misspelling detection — still awaits a
-maintainer runtime check. No review UI yet (next increment).
+**Last shipped:** v0.26.0 build 22 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.22.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b21 fixed the b20 compile break; the maintainer confirmed b21 builds and
+runs (opened a real `.qbx`). **b22 adds the spell-check UI: a "Check spelling"
+button on the Quiz Builder toolbar opening a modal review dialog, issues grouped
+by section, Replace (routed through undo) / Ignore (adds to custom dictionary).**
+Core gains an optional `OwnerId` on `TextField` (for study-card addressing) plus
+a test; App gains `SpellFixApplier`, `SpellCheckViewModel`, and
+`SpellCheckWindow`. New Core test expected green in CI. **Still unconfirmed at
+runtime: whether the embedded Hunspell dictionary loads under the single-file
+publish and flags real misspellings — the "Check spelling" button is now the way
+to test that on your machine.**
 
 This document exists so a new chat can resume without re-reading the whole
 history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
@@ -213,6 +215,56 @@ on-device. Verification level is no longer a caveat.
     dictionary loads under the single-file publish (`build.bat`), and that
     Hunspell actually flags a planted misspelling and suggests a fix. The engine
     logic is proved; the engine *dependency* is not.
+- **b21 — App compile fix.** b20's App build broke on a dropped
+  `new VersionEntry(...)` constructor in `HelpViewModel` (the b19 changelog entry
+  lost its opening line during a `str_replace`), leaving a bare `{ "..." }`
+  block — `CS1003`. Caught by `app-build` CI; `core-tests`/`android-build` were
+  green throughout, confirming the engine + tests were fine. One-line fix.
+  Lesson recorded: `validate.py` does not parse C#, so a brace-balanced but
+  malformed initializer passes it — after any changelog/initializer edit,
+  re-read the whole entry block (now done as a routine check).
+- **b22 — Spell-check UI (the "B" increment's UI).** Wired the engine to a real
+  interface:
+  - **Entry point:** a "Check spelling" button on the Quiz Builder toolbar
+    (before New, after a divider). Opens a modal `SpellCheckWindow` built with a
+    fresh `SpellCheckViewModel` each time, so it reviews the document as it
+    stands (post-edit / post-undo / post-Open), never a stale snapshot.
+  - **Grouping:** issues grouped by section, in document order, with a synthetic
+    "Quiz (title, description, study cards)" group first for non-section text.
+    Each row shows the word, its field label, the word in context, a suggestion
+    picker, and Replace / Ignore.
+  - **Replace** routes through a new App `SpellFixApplier` (routing proved in
+    `tools/port/spell_fix_apply_port.py`): captures an undo snapshot BEFORE the
+    edit, then dispatches by `TextFieldKind` — quiz title/description/section
+    title via the dedicated service setters; question-internal fields via raw
+    `TextField.Set` + `NotifyQuestionChanged`; study cards via `UpdateStudyCard`.
+    Splices by offset so a field with the same misspelling twice fixes only the
+    targeted instance. After every fix the review RE-RUNS (undo swaps the whole
+    document; stale `TextField` closures must not be reused — the guard/staleness
+    family again).
+  - **Ignore** adds the word to the custom dictionary (`SpellIgnoreListStore`,
+    `settings.json`/`Extra`) and re-runs so all occurrences vanish.
+  - **Core change:** `TextField` gained an optional `OwnerId` (Guid?, default
+    null) so study-card text can be addressed for `UpdateStudyCard` without the
+    review layer re-scanning. Backward-compatible (optional trailing param);
+    existing call sites and tests compile unchanged. Pinned by a new
+    `DocumentTextInventoryTests` fact. **Core still at 2 package refs.**
+  - **Study-card Replace subtlety (RUNTIME-UNCONFIRMED):** `ApplyStudyCard`
+    computes both sides and lets `UpdateStudyCard` do the write rather than
+    pre-writing via the raw setter — otherwise `UpdateStudyCard`'s no-op guard
+    (front/back unchanged → skip) would swallow the notification. Logic proved in
+    the port; visual deck refresh after a study-card fix is a maintainer check.
+  - **Verified here:** validate.py 12/12 (new window's x:Class + 15
+    DynamicResource keys resolve), every XAML binding resolves to a VM member,
+    every `Click` handler exists in code-behind, brace-balance clean, all three
+    ports green. **NOT verifiable here:** MAUI/WPF compile and the Hunspell
+    dictionary actually loading/flagging — the "Check spelling" button is now the
+    way to confirm that on Windows.
+  - **NOT done (next):** the opt-in AI grammar provider (provider-selectable in
+    settings — `Off`/`Claude`/custom-OpenAI-compatible-endpoint — default off,
+    section-scoped, suggestions advisory, key via encrypted-token store). Also
+    optional: a "Check spelling" entry point on the Study Cards tab itself
+    (currently the whole-quiz scan on the Builder tab already covers cards).
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

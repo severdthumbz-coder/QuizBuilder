@@ -277,6 +277,23 @@ public class DocumentTextInventoryTests
     public void NullDocumentThrows() =>
         Assert.Throws<ArgumentNullException>(() => DocumentTextInventory.Enumerate(null!));
 
+    [Fact]
+    public void StudyCardFieldsCarryOwnerId()
+    {
+        var doc = new QuizDocument();
+        var card = new StudyCard { Front = "Front", Back = "Back" };
+        doc.StudyCards.Add(card);
+
+        var fields = DocumentTextInventory.Enumerate(doc);
+        var front = First(fields, TextFieldKind.StudyCardFront);
+        var back = First(fields, TextFieldKind.StudyCardBack);
+
+        Assert.Equal(card.Id, front.OwnerId);
+        Assert.Equal(card.Id, back.OwnerId);
+        // Non-study-card fields leave OwnerId null.
+        Assert.Null(First(fields, TextFieldKind.QuizTitle).OwnerId);
+    }
+
     private static TextField First(IReadOnlyList<TextField> fields, TextFieldKind kind) =>
         fields.First(f => f.Kind == kind);
 }
