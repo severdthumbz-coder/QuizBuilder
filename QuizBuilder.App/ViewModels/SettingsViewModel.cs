@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using QuizBuilder.App.Services;
 using QuizBuilder.Core.Interfaces;
 using QuizBuilder.Core.Models;
 
@@ -90,17 +91,20 @@ public sealed class SettingsViewModel : ViewModelBase
     private readonly IQuizDocumentService _document;
     private readonly IAutoSaveService _autoSave;
     private readonly IUndoService _undo;
+    private readonly SpellIgnoreListStore _spellDictionary;
 
     public SettingsViewModel(
         ISettingsService settings,
         IQuizDocumentService document,
         IAutoSaveService autoSave,
-        IUndoService undo)
+        IUndoService undo,
+        SpellIgnoreListStore spellDictionary)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _document = document ?? throw new ArgumentNullException(nameof(document));
         _autoSave = autoSave ?? throw new ArgumentNullException(nameof(autoSave));
         _undo = undo ?? throw new ArgumentNullException(nameof(undo));
+        _spellDictionary = spellDictionary ?? throw new ArgumentNullException(nameof(spellDictionary));
 
         // The saved depth is only a number until it is pushed into the service
         // that enforces it.
@@ -108,6 +112,9 @@ public sealed class SettingsViewModel : ViewModelBase
 
         DefaultPoints = BuildDefaultPointsRows();
         RefreshSections();
+        RefreshSpellWords();
+
+        AddSpellWordCommand = new RelayCommand(AddSpellWord, () => CanAddSpellWord);
 
         ResetDefaultsCommand = new RelayCommand(ResetDefaults);
         ClearTokenCommand = new RelayCommand(
@@ -695,4 +702,79 @@ public sealed class SettingsViewModel : ViewModelBase
         _settings.Save();
         OnPropertyChanged(nameof(SettingsFileExists));
     }
+
+    // ----- Spelling dictionary (custom words the checker treats as correct) -- //
+
+    /// <summary>The words the user has added to their custom spelling dictionary,
+    /// shown in Settings so they can be reviewed and removed. Each row wraps one
+    /// word plus a remove command.</summary>
+    public ObservableCollection<SpellWordRow> SpellWords { get; } = new();
+
+    public bool HasSpellWords => SpellWords.Count > 0;
+
+    public bool HasNoSpellWords => SpellWords.Count == 0;
+
+    private string _newSpellWord = string.Empty;
+    public string NewSpellWord
+    {
+        get => _newSpellWord;
+        set
+        {
+            if (SetProperty(ref _newSpellWord, value))
+            {
+                OnPropertyChanged(nameof(CanAddSpellWord));
+                RelayCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool CanAddSpellWord => !string.IsNullOrWhiteSpace(NewSpellWord);
+
+    public RelayCommand AddSpellWordCommand { get; }
+
+    private void AddSpellWord()
+    {
+        if (_spellDictionary.Add(NewSpellWord))
+        {
+            NewSpellWord = string.Empty;
+            RefreshSpellWords();
+        }
+        else
+        {
+            // Already present (or blank): just clear the box so it's clear the
+            // word is known, without a duplicate row.
+            NewSpellWord = string.Empty;
+        }
+    }
+
+    private void RemoveSpellWord(string word)
+    {
+        if (_spellDictionary.Remove(word))
+            RefreshSpellWords();
+    }
+
+    public void RefreshSpellWords()
+    {
+        SpellWords.Clear();
+        foreach (var word in _spellDictionary.GetWords()
+                     .OrderBy(w => w, StringComparer.CurrentCultureIgnoreCase))
+        {
+            SpellWords.Add(new SpellWordRow(word, new RelayCommand(() => RemoveSpellWord(word))));
+        }
+        OnPropertyChanged(nameof(HasSpellWords));
+        OnPropertyChanged(nameof(HasNoSpellWords));
+    }
+}
+
+/// <summary>One word in the custom spelling dictionary, with a command to remove it.</summary>
+public sealed class SpellWordRow
+{
+    public SpellWordRow(string word, RelayCommand removeCommand)
+    {
+        Word = word;
+        RemoveCommand = removeCommand;
+    }
+
+    public string Word { get; }
+    public RelayCommand RemoveCommand { get; }
 }

@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 26, "2026-08-02", new[]
+        {
+            "Spelling dictionary management: the spell-check dialog's 'Ignore' button is now labelled 'Add to dictionary' — it already removed every occurrence of the word and remembered it for future checks, and the new label makes that clear. Settings gains a 'Spelling dictionary' section where you can see every word you've added, add new domain terms by hand (e.g. licensure, subagent), and remove any word to start flagging it again. This makes it easy to teach the checker your field's vocabulary instead of clicking past the same correct terms repeatedly.",
+        }),
         new VersionEntry("0.26.0", 25, "2026-08-02", new[]
         {
             "Spell-check improvements: (1) a 'Check spelling' button now also lives on the Study Cards tab (it runs the same whole-quiz review, which already includes card text). (2) Fixed the quiz description being spell-checked with its formatting tags intact — the checker was flagging tag names like 'strong', 'br', 'ul', and 'li' as misspellings. The description is now checked as the reader-visible text (tags stripped via the same parser the app uses to render it), so only real words are flagged. Description findings are shown for review and can be ignored, but are not auto-replaceable (their positions refer to the stripped text, so an in-place fix could damage the markup).",

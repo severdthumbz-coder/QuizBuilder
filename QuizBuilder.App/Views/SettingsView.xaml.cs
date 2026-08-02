@@ -20,7 +20,11 @@ public partial class SettingsView : UserControl
         // this tab was hidden.
         IsVisibleChanged += (_, e) =>
         {
-            if (e.NewValue is true) _viewModel.RefreshSections();
+            if (e.NewValue is true)
+            {
+                _viewModel.RefreshSections();
+                _viewModel.RefreshSpellWords();
+            }
         };
     }
 }

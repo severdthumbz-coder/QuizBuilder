@@ -1,16 +1,15 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 25 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.25.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** Spell-check feature builds green and warning-clean as of b24 (634 tests,
-single-file exe published, embedded Hunspell dictionary confirmed loading).
-**b25 adds a "Check spelling" button on the Study Cards tab and fixes the quiz
-description being checked with its HTML tags intact (tag names like `strong`/`br`
-were flagged as misspellings) — the description is now checked as stripped
-reader-visible text via `DescriptionParser.ToPlainText`, and its findings are
-review/ignore-only (non-replaceable, since offsets are on stripped text).** New
-Core tests added. Remaining: exercise the feature at runtime, then the opt-in AI
-grammar pass.
+**Last shipped:** v0.26.0 build 26 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.26.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** Spell-check confirmed working at runtime (b25 screenshots: dialog opens
+from both tabs, groups by section, HTML tags no longer flagged). The remaining
+rough edge was noise from domain terms a general dictionary doesn't know
+(licensure, subagent). **b26 addresses that: the dialog's "Ignore" is relabelled
+"Add to dictionary" (it already cleared all occurrences + persisted), and Settings
+gains a "Spelling dictionary" card to view / add / remove custom words.** App-only
+change; Core untouched (still 634 tests). Next planned: the opt-in AI grammar
+pass (which also sidesteps the domain-term noise, since it understands context).
 
 This document exists so a new chat can resume without re-reading the whole
 history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
@@ -314,6 +313,27 @@ on-device. Verification level is no longer a caveat.
   - **Verified here:** validate 12/12, MC3024 pre-flight clean, all four ports
     green, StudyCards Click handler + `CanReplace` binding resolve. **Core still
     at 2 package refs.** Not verifiable here: WPF/MAUI compile, runtime behaviour.
+- **b26 — Spelling dictionary management (the "make Ignore powerful" work).**
+  Runtime confirmed the checker flags correct domain terms a general dictionary
+  doesn't know (licensure×7, subagent), with bad suggestions ("censurer"). The
+  engine is right; the gap was no easy way to teach it vocabulary. Fix, App-only:
+  - **"Ignore" → "Add to dictionary".** The button already added the word to the
+    custom dictionary and re-ran the review (so all occurrences vanished in one
+    click — it was already "Ignore All"). Relabelled to say what it does; the
+    Replace/Ignore semantics are unchanged.
+  - **Settings "Spelling dictionary" card.** New section on the Settings tab
+    listing every custom word (sorted), with a text box + "Add word" to add a
+    term by hand and a "Remove" per word. Backed by the existing
+    `SpellIgnoreListStore` (already had Add/Remove/GetWords), surfaced via new
+    `SettingsViewModel` members (`SpellWords`, `NewSpellWord`,
+    `AddSpellWordCommand`, `SpellWordRow` with a remove command). The list
+    refreshes when the Settings tab is shown (`IsVisibleChanged`), so words added
+    via the dialog appear without a restart. `SettingsViewModel` gained a
+    `SpellIgnoreListStore` ctor param — DI supplies it (both are singletons;
+    `SettingsViewModel` is DI-only).
+  - No `.qbx`/format change (dictionary is in `settings.json`/`Extra`). Core
+    untouched — 634 tests unchanged. Verified: validate 12/12, MC3024 clean,
+    balance clean, all new bindings resolve, DI wiring confirmed.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

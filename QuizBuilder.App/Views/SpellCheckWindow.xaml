@@ -140,9 +140,10 @@
                                                         Tag="{Binding}" />
 
                                                 <Button Grid.Column="3"
-                                                        Content="Ignore"
+                                                        Content="Add to dictionary"
                                                         Style="{StaticResource Action}"
-                                                        ToolTip="Add this word to your dictionary so it is never flagged"
+                                                        MinWidth="120"
+                                                        ToolTip="Treat this word as correct everywhere — removes every occurrence and remembers it for future checks"
                                                         Click="OnIgnoreClick"
                                                         Tag="{Binding}" />
                                             </Grid>

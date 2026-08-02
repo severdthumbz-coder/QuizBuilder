@@ -477,6 +477,73 @@
                 </StackPanel>
             </Border>
 
+            <!-- Spelling dictionary -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Text="Spelling dictionary" Style="{StaticResource SectionHeading}" />
+                    <TextBlock Text="Words you've added from &quot;Check spelling&quot; — the checker treats these as correct everywhere. Add domain terms here (e.g. licensure, subagent) so they stop being flagged."
+                               Style="{StaticResource Hint}"
+                               TextWrapping="Wrap" />
+
+                    <!-- Add a word -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <TextBox Width="220"
+                                 VerticalContentAlignment="Center"
+                                 Padding="6,4"
+                                 FontFamily="{DynamicResource Font.Family}"
+                                 FontSize="{DynamicResource Font.Size.Body}"
+                                 Text="{Binding NewSpellWord, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Content="Add word"
+                                Command="{Binding AddSpellWordCommand}"
+                                Margin="8,0,0,0"
+                                Padding="12,4"
+                                Cursor="Hand"
+                                FontFamily="{DynamicResource Font.Family}"
+                                FontSize="{DynamicResource Font.Size.Body}" />
+                    </StackPanel>
+
+                    <!-- Current words -->
+                    <ItemsControl ItemsSource="{Binding SpellWords}" Margin="0,12,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource Brush.SurfaceSunken}"
+                                        Padding="8,4" Margin="0,0,0,4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Word}"
+                                                   VerticalAlignment="Center"
+                                                   FontFamily="{DynamicResource Font.Family}"
+                                                   FontSize="{DynamicResource Font.Size.Body}"
+                                                   Foreground="{DynamicResource Brush.TextPrimary}" />
+                                        <Button Grid.Column="1"
+                                                Content="Remove"
+                                                Command="{Binding RemoveCommand}"
+                                                Padding="8,2"
+                                                Cursor="Hand"
+                                                Background="Transparent"
+                                                Foreground="{DynamicResource Brush.Error}"
+                                                BorderBrush="{DynamicResource Brush.Border}"
+                                                BorderThickness="1"
+                                                FontFamily="{DynamicResource Font.Family}"
+                                                FontSize="{DynamicResource Font.Size.Caption}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="Your dictionary is empty. Words you add here or via &quot;Check spelling&quot; will appear in this list."
+                               Style="{StaticResource Hint}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0"
+                               Visibility="{Binding HasNoSpellWords, Converter={StaticResource BoolVis}}" />
+                </StackPanel>
+            </Border>
+
             <!-- File location -->
             <Border Style="{StaticResource SectionCard}" Margin="0,0,0,24">
                 <StackPanel>
