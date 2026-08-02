@@ -1,13 +1,15 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 19 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.19.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** Desktop + Android + Core all green through b17 (Windows/on-device
-confirmed). b18 was a docs/version refresh. **b19 adds `DocumentTextInventory`
-to Core plus its tests — new xUnit facts that CI's `core-tests` job runs, but
-they have NOT yet been confirmed green on a real runner or locally; awaiting
-this push's CI + a maintainer test run.** No desktop/Android runtime behaviour
-changed in b19 (Core-only addition, nothing calls it yet).
+**Last shipped:** v0.26.0 build 21 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.21.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b20 shipped the offline spell-check engine but the App compile broke on
+a dropped `VersionEntry(...)` constructor in `HelpViewModel` (CS1003) — caught by
+`app-build` CI (`core-tests` and `android-build` were green, so the engine, its
+tests, and Core all compile and pass). **b21 fixes that one-line structural
+error.** The Core spell-check tests are confirmed green (they ran in b20's
+`core-tests`); the App-side Hunspell integration — embedded dictionary loading
+under single-file publish, real misspelling detection — still awaits a
+maintainer runtime check. No review UI yet (next increment).
 
 This document exists so a new chat can resume without re-reading the whole
 history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
@@ -22,7 +24,7 @@ then the rest as reference.
 |---|---|---|
 | **Desktop (WPF, `QuizBuilder.App`)** | **v0.26.0 build 17** | CI `app-build` job (Windows, self-contained single-file publish) green on every push through b17. Locally confirmed via `.\build.bat` at b14 (612/612 tests, exe produced); b15–17 are desktop-neutral or Core-safe and stay green in CI. |
 | **Android player (MAUI, `QuizBuilder.Player`)** | **v0.26.0 build 17** | CI `android-build` job (Windows, JDK 21, `dotnet workload install android maui`, Debug build) green on every push since it was added in b13. Maintainer has also run it **on-device (emulator)** through the tier-1 features + library. |
-| **Core (`QuizBuilder.Core`)** | **v0.26.0 build 17** (612/612); **b19 adds 9 `DocumentTextInventoryTests` facts, unconfirmed** | CI `core-tests` job (Ubuntu, xUnit): 612/612 through b17. b19 adds `DocumentTextInventory` + 9 tests; the new count should be 621/621 **if they pass** — not yet confirmed on a runner. Core is multi-targeted `net8.0;net10.0`; the player consumes the net10 slice. |
+| **Core (`QuizBuilder.Core`)** | **b19 green (621/621, `DocumentTextInventory` tests passed on CI); b20 adds `SpellReviewEngineTests`, expected green** | CI `core-tests` (Ubuntu, xUnit). b19 confirmed green. b20 adds `SpellReviewEngine` + contracts + tests (~15 more facts); the App-side Hunspell wrapper is NOT tested here (App-only). Core multi-targeted `net8.0;net10.0`; player consumes net10. |
 
 CI = `.github/workflows/build.yml`, **three jobs, all green, no annotations**:
 `core-tests` (Ubuntu) → `app-build` (Windows) and `android-build` (Windows), the
@@ -177,6 +179,40 @@ on-device. Verification level is no longer a caveat.
   section-scoped, suggestions advisory-only, key stored via the encrypted-token
   machinery, never plaintext). Accepted corrections must route through
   `IQuizDocumentService` (undo/autosave), NOT `TextField.Set` directly.
+- **b20 — Offline spell-check engine + provider layer (the "B" increment).**
+  Built the engine and its offline provider; the provider-layer item above is
+  now DONE except the UI. Split per the agreed (b) design — testable logic in
+  Core, the unverifiable engine in App:
+  - **Core (tested):** `ISpellDictionary` (IsKnown/Suggest — the seam that keeps
+    the pipeline testable without Hunspell), `ITextReviewProvider` (DisplayName +
+    `Review(fields)`; one-shot, button-triggered, not live), and
+    `SpellReviewEngine` — tokenization with spans, exclusions ({{n}} tokens,
+    numbers, alphanumerics like "mp3", URLs, emails, short ALL-CAPS acronyms,
+    single letters), ignore-list suppression (trim + lower-invariant, same
+    normalization as `TakerKey`), and de-dup into one `TextIssue` per word
+    carrying every `TextOccurrence`. Pinned by `SpellReviewEngineTests`.
+  - **App (maintainer must confirm at runtime):** `HunspellDictionary` wrapping
+    WeCantSpell.Hunspell (API verified against upstream source:
+    `WordList.CreateFromStreams`/`Check`/`Suggest`), loading an **embedded**
+    en_US SCOWL dictionary (`Resources/Dictionaries/en_US.dic/.aff`, sourced
+    from the npm `dictionary-en` package, **MIT/BSD** — clean to bundle;
+    `en_US.LICENSE.txt` kept alongside for attribution). `SpellIgnoreListStore`
+    persists the custom dictionary in `AppSettings.Extra` under
+    `spellcheck.ignoreWords` (JSON array; no `.qbx`/format change).
+    `OfflineSpellProvider` composes engine + dictionary + ignore-list. All three
+    registered in `App.xaml.cs` DI.
+  - **Package count:** App gains ONE ref (WeCantSpell.Hunspell); **Core stays at
+    2**. Logic was ported to `tools/port/spell_review_port.py` and run first — it
+    caught a real tokenization bug ("mp3" leaving a stray "mp" token) before any
+    C# was written.
+  - **NOT done (next):** the review UI — a "Check spelling" button on the
+    QuizBuilder tab opening a by-section results panel (Replace / Ignore-once /
+    Add-to-dictionary), with Replace routing through `IQuizDocumentService` so
+    corrections join undo/autosave. Then the opt-in AI grammar provider.
+  - **Verification gap to close on your machine:** confirm the embedded
+    dictionary loads under the single-file publish (`build.bat`), and that
+    Hunspell actually flags a planted misspelling and suggests a fix. The engine
+    logic is proved; the engine *dependency* is not.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the
