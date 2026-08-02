@@ -1,14 +1,15 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 23 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.23.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b22 shipped the spell-check UI but the App compile broke on a XAML
-`MC3024` (the empty-state TextBlock set `Style` both as an attribute and as a
-child element) — caught by `app-build` CI; `core-tests`/`android-build` were
-green. **b23 fixes that.** Once `app-build` goes green, the maintainer's runtime
-checks are: does the app launch, does "Check spelling" flag misspellings, do
-Replace/Ignore work, and does the embedded Hunspell dictionary load under the
-single-file publish (still unconfirmed since b20).
+**Last shipped:** v0.26.0 build 24 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.24.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** **b23 was the first fully green build of the spell-check feature —
+`build.bat` succeeded, 634/634 tests pass, the single-file exe published, and the
+App compiled with the embedded Hunspell dictionary.** It emitted one warning
+(CS8714, a nullable dictionary key in the spell-check grouping); **b24 removes
+that warning — the build is now warning-clean.** Remaining maintainer runtime
+check: exercise "Check spelling" on a real quiz (does it flag misspellings, do
+Replace/Ignore work, do study-card fixes refresh). Then the opt-in AI grammar
+pass is the last planned piece.
 
 This document exists so a new chat can resume without re-reading the whole
 history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
@@ -271,6 +272,14 @@ on-device. Verification level is no longer a caveat.
   pre-flight (attribute-`Style=` plus child-`.Style` on the same element) to the
   session's local checks so this class is caught before push next time — the same
   category of gap as b21 (validate.py doesn't compile XAML/C#).
+- **b24 — Warning cleanup (CS8714).** b23 built green but warned: the
+  spell-check grouping keyed a `Dictionary<Guid?, …>` on a nullable Guid, using
+  `null` for the quiz-level group — `Guid?` violates the `notnull` key
+  constraint. Switched to a non-nullable `Guid` key with `Guid.Empty` as the
+  quiz-level sentinel (safe: sections always get `Guid.NewGuid()`, so no
+  collision). Build is now warning-clean. Same nullable-warning family as b17.
+  **b23 milestone:** first fully green spell-check build — `build.bat` succeeded,
+  634/634 tests, single-file exe published with the embedded Hunspell dictionary.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

@@ -145,17 +145,24 @@ public sealed class SpellCheckViewModel : ViewModelBase
             s => s.Id,
             s => string.IsNullOrWhiteSpace(s.Title) ? "(untitled section)" : s.Title);
 
-        // Preserve document order: quiz-level first, then sections in order.
-        var order = new List<Guid?> { null };
-        order.AddRange(document.Sections.Select(s => (Guid?)s.Id));
+        // Group key: a section's id, or Guid.Empty for the synthetic quiz-level
+        // group (title, description, study cards). Guid.Empty is safe as a
+        // sentinel because every real section is created with a fresh Guid, so
+        // it can never collide. Using it keeps the dictionary key non-nullable
+        // (a Dictionary<Guid?, _> trips CS8714 and has awkward null-key edges).
+        var quizLevelKey = Guid.Empty;
 
-        var rowsByGroup = new Dictionary<Guid?, List<SpellIssueRowViewModel>>();
+        // Preserve document order: quiz-level first, then sections in order.
+        var order = new List<Guid> { quizLevelKey };
+        order.AddRange(document.Sections.Select(s => s.Id));
+
+        var rowsByGroup = new Dictionary<Guid, List<SpellIssueRowViewModel>>();
 
         foreach (var issue in issues)
         {
             foreach (var occ in issue.Occurrences)
             {
-                var groupKey = occ.Field.SectionId; // null => quiz-level group
+                var groupKey = occ.Field.SectionId ?? quizLevelKey;
                 if (!rowsByGroup.TryGetValue(groupKey, out var list))
                 {
                     list = new List<SpellIssueRowViewModel>();
@@ -176,9 +183,9 @@ public sealed class SpellCheckViewModel : ViewModelBase
             if (!rowsByGroup.TryGetValue(key, out var rows) || rows.Count == 0)
                 continue;
 
-            var heading = key is null
+            var heading = key == quizLevelKey
                 ? "Quiz (title, description, study cards)"
-                : sectionTitles.TryGetValue(key.Value, out var t) ? t : "(section)";
+                : sectionTitles.TryGetValue(key, out var t) ? t : "(section)";
 
             Groups.Add(new SpellSectionGroupViewModel(heading, rows));
             total += rows.Count;

@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 24, "2026-08-02", new[]
+        {
+            "Cleanup: removed a nullable-dictionary-key warning (CS8714) in the spell-check grouping by using a non-nullable sentinel key for the quiz-level group instead of null. No behaviour change; the build is now warning-clean. (b23 was the first fully green build of the spell-check feature: 634 tests pass and the single-file exe publishes.)",
+        }),
         new VersionEntry("0.26.0", 23, "2026-08-02", new[]
         {
             "Build fix: the spell-check dialog's empty-state text set its Style both as an attribute and as a child element, which WPF rejects (MC3024). Folded into a single style. Caught by the app-build CI job; no behaviour change",
