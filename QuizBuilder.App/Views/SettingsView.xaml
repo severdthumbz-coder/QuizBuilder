@@ -544,6 +544,98 @@
                 </StackPanel>
             </Border>
 
+            <!-- AI grammar review (opt-in) -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Text="AI grammar review (optional)" Style="{StaticResource SectionHeading}" />
+                    <TextBlock Text="A separate, opt-in pass that checks grammar and phrasing using an AI model. The offline spell-checker above always works and is unaffected by this. Off by default — nothing here runs, and no quiz text leaves your device, unless you turn it on."
+                               Style="{StaticResource Hint}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Text="Provider" Style="{StaticResource SectionHeading}"
+                               FontSize="{DynamicResource Font.Size.Body}" Margin="0,12,0,4" />
+                    <ComboBox Width="360" HorizontalAlignment="Left"
+                              ItemsSource="{Binding AiProviderOptions}"
+                              DisplayMemberPath="Label"
+                              SelectedItem="{Binding SelectedAiProvider}" />
+
+                    <!-- Local endpoint fields -->
+                    <StackPanel Visibility="{Binding IsLocalEndpointSelected, Converter={StaticResource BoolVis}}">
+                        <TextBlock Text="Endpoint URL" Style="{StaticResource SectionHeading}"
+                                   FontSize="{DynamicResource Font.Size.Body}" Margin="0,12,0,4" />
+                        <TextBlock Text="An OpenAI-compatible endpoint on your machine or network, e.g. http://localhost:11434/v1 (Ollama). Content stays local."
+                                   Style="{StaticResource Hint}" TextWrapping="Wrap" />
+                        <TextBox Width="360" HorizontalAlignment="Left" Padding="6,4" Margin="0,6,0,0"
+                                 FontFamily="{DynamicResource Font.Family.Mono}"
+                                 FontSize="{DynamicResource Font.Size.Body}"
+                                 Text="{Binding AiLocalEndpointUrl, UpdateSourceTrigger=LostFocus}" />
+                    </StackPanel>
+
+                    <!-- Cloud notice for Claude -->
+                    <Border Background="{DynamicResource Brush.SurfaceSunken}"
+                            Padding="10,8" Margin="0,12,0,0"
+                            Visibility="{Binding ShowsCloudNotice, Converter={StaticResource BoolVis}}">
+                        <TextBlock TextWrapping="Wrap"
+                                   FontFamily="{DynamicResource Font.Family}"
+                                   FontSize="{DynamicResource Font.Size.Caption}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   Text="With Claude selected, the text of the section (or study cards) you choose to check is sent to Anthropic's servers when you run a check. Nothing is sent until you explicitly run an AI check." />
+                    </Border>
+
+                    <!-- API key (Claude) -->
+                    <StackPanel Visibility="{Binding NeedsApiKey, Converter={StaticResource BoolVis}}">
+                        <TextBlock Text="API key" Style="{StaticResource SectionHeading}"
+                                   FontSize="{DynamicResource Font.Size.Body}" Margin="0,12,0,4" />
+                        <TextBlock Text="Stored encrypted on this machine (Windows DPAPI). It is machine-bound: copying settings.json to another computer will not carry the key, and you'd re-enter it there."
+                                   Style="{StaticResource Hint}" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <PasswordBox x:Name="AiKeyBox" Width="280" Padding="6,4"
+                                         FontFamily="{DynamicResource Font.Family}"
+                                         FontSize="{DynamicResource Font.Size.Body}" />
+                            <Button Content="Save key"
+                                    Click="OnSaveAiKeyClick"
+                                    Margin="8,0,0,0" Padding="12,4" Cursor="Hand"
+                                    FontFamily="{DynamicResource Font.Family}"
+                                    FontSize="{DynamicResource Font.Size.Body}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="✓ A key is stored."
+                                       VerticalAlignment="Center"
+                                       FontFamily="{DynamicResource Font.Family}"
+                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                       Foreground="{DynamicResource Brush.Success}"
+                                       Visibility="{Binding HasAiKey, Converter={StaticResource BoolVis}}" />
+                            <Button Content="Clear key"
+                                    Command="{Binding ClearAiKeyCommand}"
+                                    Margin="12,0,0,0" Padding="10,2" Cursor="Hand"
+                                    Background="Transparent"
+                                    Foreground="{DynamicResource Brush.Error}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    FontFamily="{DynamicResource Font.Family}"
+                                    FontSize="{DynamicResource Font.Size.Caption}"
+                                    Visibility="{Binding HasAiKey, Converter={StaticResource BoolVis}}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Model (both cloud + local) -->
+                    <StackPanel Visibility="{Binding IsLocalEndpointSelected, Converter={StaticResource BoolVis}}">
+                        <TextBlock Text="Model (optional)" Style="{StaticResource SectionHeading}"
+                                   FontSize="{DynamicResource Font.Size.Body}" Margin="0,12,0,4" />
+                        <TextBox Width="360" HorizontalAlignment="Left" Padding="6,4"
+                                 FontFamily="{DynamicResource Font.Family.Mono}"
+                                 FontSize="{DynamicResource Font.Size.Body}"
+                                 Text="{Binding AiModel, UpdateSourceTrigger=LostFocus}" />
+                    </StackPanel>
+
+                    <TextBlock Text="This sets up AI review. Running it — choosing a section, study cards, or the whole quiz to check — comes from the Check buttons and is coming in a later update."
+                               Style="{StaticResource Hint}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding IsClaudeSelected, Converter={StaticResource BoolVis}}" />
+                </StackPanel>
+            </Border>
+
             <!-- File location -->
             <Border Style="{StaticResource SectionCard}" Margin="0,0,0,24">
                 <StackPanel>

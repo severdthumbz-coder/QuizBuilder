@@ -99,6 +99,11 @@ public sealed class AppSettings
     public AutoSaveSettings AutoSave { get; set; } = new();
     public UndoSettings Undo { get; set; } = new();
 
+    /// <summary>Opt-in AI grammar review configuration (non-secret; the key is
+    /// protected separately). Defaults to Off, so upgrading adds nothing that
+    /// reaches the network.</summary>
+    public AiReviewSettings AiReview { get; set; } = new();
+
     /// <summary>
     /// Escape hatch for per-tab settings added later without touching this
     /// class. Keys should be namespaced, e.g. "preview.zoomLevel".
@@ -325,6 +330,60 @@ public sealed class ShellSettings
 }
 
 /// <summary>
+/// Which AI grammar-review provider is active. The offline spell-checker is
+/// always available and unaffected by this; these choices only govern the
+/// separate, opt-in AI grammar pass.
+/// </summary>
+public enum AiProvider
+{
+    /// <summary>No AI grammar review. The default — a fresh install does nothing
+    /// AI-related, and no quiz content ever leaves the device.</summary>
+    Off,
+
+    /// <summary>
+    /// A local or self-hosted endpoint that speaks the OpenAI chat-completions
+    /// shape (e.g. Ollama, LM Studio, LocalAI). Listed first deliberately: it
+    /// keeps content on the user's own machine/network, preserving the app's
+    /// offline character while still offering AI review.
+    /// </summary>
+    LocalEndpoint,
+
+    /// <summary>
+    /// Anthropic's Claude API. The turnkey cloud option. Using it sends the
+    /// scoped quiz text to Anthropic's servers — the settings UI states this
+    /// plainly, since it crosses the app's otherwise-offline boundary.
+    /// </summary>
+    Claude,
+}
+
+/// <summary>
+/// Configuration for the opt-in AI grammar review. The API key is NOT here — it
+/// is protected separately (DPAPI, machine-bound) and stored under its own key
+/// in <see cref="AppSettings.Extra"/>, never in plaintext in this model. This
+/// class holds only non-secret selection/endpoint data, safe to sit in
+/// settings.json as-is.
+/// </summary>
+public sealed class AiReviewSettings
+{
+    /// <summary>The active provider. Off by default.</summary>
+    public AiProvider Provider { get; set; } = AiProvider.Off;
+
+    /// <summary>
+    /// Base URL for <see cref="AiProvider.LocalEndpoint"/> (e.g.
+    /// "http://localhost:11434/v1"). Ignored for other providers. Free-text so
+    /// old settings files without it load unchanged.
+    /// </summary>
+    public string? LocalEndpointUrl { get; set; }
+
+    /// <summary>
+    /// Model name to request. For Claude, a model id (e.g. a Claude model
+    /// string); for a local endpoint, whatever that server names the model.
+    /// Optional; the provider supplies a sensible default when null.
+    /// </summary>
+    public string? Model { get; set; }
+}
+
+/// <summary>
 /// Loads and saves <see cref="AppSettings"/> to settings.json beside the
 /// executable. Never touches %AppData% or the registry: the app is portable.
 /// </summary>
@@ -356,6 +415,18 @@ public interface ISettingsService
     /// handle null by prompting for re-entry rather than treating it as fatal.
     /// </summary>
     string? GetGitHubToken();
+
+    /// <summary>Stores the AI review API key, DPAPI-protected, under a namespaced
+    /// Extra key. Null/blank clears it. Separate from the GitHub token.</summary>
+    void SetAiReviewKey(string? plainKey);
+
+    /// <summary>The decrypted AI review key, or null if none is stored or the
+    /// stored blob won't decrypt on this machine (copied settings file).</summary>
+    string? GetAiReviewKey();
+
+    /// <summary>True when a (protected) AI review key is present in settings,
+    /// without decrypting it — for showing "key stored" state in the UI.</summary>
+    bool HasAiReviewKey { get; }
 
     /// <summary>
     /// True when a stored token exists but a passphrase is needed to read it.

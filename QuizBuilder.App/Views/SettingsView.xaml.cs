@@ -27,4 +27,21 @@ public partial class SettingsView : UserControl
             }
         };
     }
+
+    /// <summary>
+    /// Reads the AI key from the PasswordBox and hands the plaintext straight to
+    /// the view model, which encrypts and stores it. The key is never bound to a
+    /// property or held in a field — same discipline as the GitHub token — so a
+    /// binding, debugger dump, or crash report can't pick it up. The box is
+    /// cleared immediately after.
+    /// </summary>
+    private void OnSaveAiKeyClick(object sender, RoutedEventArgs e)
+    {
+        var key = AiKeyBox.Password;
+        if (!string.IsNullOrWhiteSpace(key))
+        {
+            _viewModel.SetAiKey(key);
+            AiKeyBox.Clear();
+        }
+    }
 }

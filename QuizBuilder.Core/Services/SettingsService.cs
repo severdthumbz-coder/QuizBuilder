@@ -14,6 +14,7 @@ public sealed class SettingsService : ISettingsService
     private const int MaxRecentFiles = 10;
 
     private readonly TokenProtector _protector;
+    private readonly AiKeyProtector _aiKeyProtector = new();
     private readonly string _settingsPath;
     private AppSettings _current = new();
 
@@ -200,6 +201,29 @@ public sealed class SettingsService : ISettingsService
     }
 
     public string? GetGitHubToken() => _protector.Unprotect(_current.GitHub.EncryptedToken);
+
+    // AI review key. Stored (DPAPI-protected) under a namespaced Extra key,
+    // separate from the GitHub token machinery (option C). Machine-bound: a
+    // copied settings.json yields null on read, and the user re-enters the key.
+    private const string AiKeyExtraKey = "ai.reviewKey";
+
+    public void SetAiReviewKey(string? plainKey)
+    {
+        var cipher = _aiKeyProtector.Protect(plainKey);
+        if (cipher is null)
+            _current.Extra.Remove(AiKeyExtraKey);
+        else
+            _current.Extra[AiKeyExtraKey] = cipher;
+    }
+
+    public string? GetAiReviewKey() =>
+        _current.Extra.TryGetValue(AiKeyExtraKey, out var cipher)
+            ? _aiKeyProtector.Unprotect(cipher)
+            : null;
+
+    public bool HasAiReviewKey =>
+        _current.Extra.TryGetValue(AiKeyExtraKey, out var cipher)
+        && !string.IsNullOrWhiteSpace(cipher);
 
     public bool UnlockTokens(string passphrase) => _protector.Unlock(passphrase);
 

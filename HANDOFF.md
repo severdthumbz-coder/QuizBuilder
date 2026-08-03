@@ -1,15 +1,20 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 26 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.26.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** Spell-check confirmed working at runtime (b25 screenshots: dialog opens
-from both tabs, groups by section, HTML tags no longer flagged). The remaining
-rough edge was noise from domain terms a general dictionary doesn't know
-(licensure, subagent). **b26 addresses that: the dialog's "Ignore" is relabelled
-"Add to dictionary" (it already cleared all occurrences + persisted), and Settings
-gains a "Spelling dictionary" card to view / add / remove custom words.** App-only
-change; Core untouched (still 634 tests). Next planned: the opt-in AI grammar
-pass (which also sidesteps the domain-term noise, since it understands context).
+**Last shipped:** v0.26.0 build 27 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.27.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** Offline spell-check + dictionary management confirmed working (b26). Now
+starting the **opt-in AI grammar review**, split into 3 phases. **b27 is phase 1:
+Settings + secure key plumbing, NO network yet.** Adds `AiProvider`/`AiReviewSettings`
+(default Off), an isolated `AiKeyProtector` (DPAPI, machine-bound — option C, GitHub
+token machinery untouched), settings-service `SetAiReviewKey`/`GetAiReviewKey`/
+`HasAiReviewKey`, and the Settings UI (provider dropdown Off/Local/Claude, endpoint/
+model fields, encrypted key box). New Core tests join the `ProtectedDataShim`
+collection (the DPAPI-flake fix). **Next: phase 2 (the Claude + local providers and
+the actual network call), then phase 3 (scope picker + accept/reject UI).**
+Decided: one active provider at a time (not simultaneous); privacy-first ordering
+(Local before Claude); AI scope will be section / study-cards / whole-quiz; apply
+flow is one-by-one accept/reject plus accept-all, all routed through undo; AI input
+reuses the description HTML-strip so tags never reach the model.
 
 This document exists so a new chat can resume without re-reading the whole
 history. Read the BUILD STATUS block immediately below, then §0 for what shipped,
@@ -334,6 +339,37 @@ on-device. Verification level is no longer a caveat.
   - No `.qbx`/format change (dictionary is in `settings.json`/`Extra`). Core
     untouched — 634 tests unchanged. Verified: validate 12/12, MC3024 clean,
     balance clean, all new bindings resolve, DI wiring confirmed.
+- **b27 — AI grammar review, phase 1: settings + secure key (no network).**
+  First of three phases for the opt-in AI pass. This phase adds only
+  configuration and secret storage — nothing calls the network yet.
+  - **Core model:** `AiProvider` enum (`Off` default / `LocalEndpoint` /
+    `Claude`) and `AiReviewSettings` (provider, `LocalEndpointUrl`, `Model`) as a
+    typed field on `AppSettings`. Off by default, so upgrading adds nothing that
+    reaches the network. Serialises as a string (existing `JsonStringEnumConverter`).
+  - **Key storage (option C):** `AiKeyProtector` — a minimal, isolated DPAPI
+    protector (CurrentUser, machine-bound) with its OWN entropy, wrapping the
+    existing `ProtectedDataShim`. Deliberately NOT reusing/refactoring the
+    stateful, passphrase-capable `TokenProtector` (leaves that tested,
+    slightly-flaky code alone). Key ciphertext lives in `Extra` under
+    `ai.reviewKey`; `SettingsService` gained `SetAiReviewKey`/`GetAiReviewKey`/
+    `HasAiReviewKey`. Machine-bound is correct for an API key (re-enter if the
+    settings file is copied).
+  - **Settings UI:** provider dropdown (privacy-first order: Off, Local, Claude),
+    conditional endpoint/model fields for Local, a cloud-notice banner for Claude
+    stating plainly that content is sent to Anthropic only when a check is run,
+    and an encrypted API-key `PasswordBox`. The key follows the GitHub-token
+    discipline exactly: read from the password box at the point of use, passed
+    straight to the VM, never bound to a property or held in a field, box cleared
+    after save.
+  - **Tests:** `AiKeyProtectorTests` + `SettingsServiceAiKeyTests` — round-trip,
+    blank/null, wrong-scheme, corrupted-base64, unicode, persist-across-reload,
+    key-stored-protected-not-plaintext, default-Off. BOTH join
+    `[Collection(ProtectedDataShimCollection.Name)]` — mandatory, since they swap
+    the global shim delegates (the documented DPAPI-flake race).
+  - **Verified here:** validate 12/12, MC3024 clean, balance clean, all 10 AI
+    Settings bindings resolve, `OnSaveAiKeyClick` handler present, no other
+    `ISettingsService` implementer to break. **Core package count unchanged.**
+    Not verifiable here: WPF compile, DPAPI on real Windows, runtime.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

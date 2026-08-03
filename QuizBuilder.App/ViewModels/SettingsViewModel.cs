@@ -697,6 +697,88 @@ public sealed class SettingsViewModel : ViewModelBase
         RelayCommand.RaiseCanExecuteChanged();
     }
 
+    // ----- AI grammar review (opt-in; Phase 1 = settings + key only) -------- //
+
+    private AiReviewSettings Ai => _settings.Current.AiReview;
+
+    /// <summary>The provider options in UI order: Off, Local endpoint (privacy-
+    /// first), then Claude. Bound to the dropdown.</summary>
+    public IReadOnlyList<AiProviderOption> AiProviderOptions { get; } = new[]
+    {
+        new AiProviderOption(AiProvider.Off, "Off — no AI review (default)"),
+        new AiProviderOption(AiProvider.LocalEndpoint, "Local endpoint (stays on your machine/network)"),
+        new AiProviderOption(AiProvider.Claude, "Claude (sends text to Anthropic)"),
+    };
+
+    public AiProviderOption SelectedAiProvider
+    {
+        get => AiProviderOptions.First(o => o.Provider == Ai.Provider);
+        set
+        {
+            if (value is null || value.Provider == Ai.Provider) return;
+            Ai.Provider = value.Provider;
+            Save();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsLocalEndpointSelected));
+            OnPropertyChanged(nameof(IsClaudeSelected));
+            OnPropertyChanged(nameof(ShowsCloudNotice));
+            OnPropertyChanged(nameof(NeedsApiKey));
+        }
+    }
+
+    public bool IsLocalEndpointSelected => Ai.Provider == AiProvider.LocalEndpoint;
+    public bool IsClaudeSelected => Ai.Provider == AiProvider.Claude;
+
+    /// <summary>Shown when the selected provider sends content off-device, so the
+    /// privacy implication is never hidden.</summary>
+    public bool ShowsCloudNotice => Ai.Provider == AiProvider.Claude;
+
+    /// <summary>Claude needs a key; a local endpoint usually doesn't.</summary>
+    public bool NeedsApiKey => Ai.Provider == AiProvider.Claude;
+
+    public string? AiLocalEndpointUrl
+    {
+        get => Ai.LocalEndpointUrl;
+        set
+        {
+            if (Ai.LocalEndpointUrl == value) return;
+            Ai.LocalEndpointUrl = value;
+            Save();
+            OnPropertyChanged();
+        }
+    }
+
+    public string? AiModel
+    {
+        get => Ai.Model;
+        set
+        {
+            if (Ai.Model == value) return;
+            Ai.Model = value;
+            Save();
+            OnPropertyChanged();
+        }
+    }
+
+    public bool HasAiKey => _settings.HasAiReviewKey;
+
+    /// <summary>
+    /// Sets (and encrypts) the AI key from the password box. Not a bound
+    /// property — the plaintext key is passed in at the call site and never held
+    /// in a VM field, mirroring how the GitHub token is handled.
+    /// </summary>
+    public void SetAiKey(string? plainKey)
+    {
+        _settings.SetAiReviewKey(plainKey);
+        Save();
+        OnPropertyChanged(nameof(HasAiKey));
+    }
+
+    public RelayCommand ClearAiKeyCommand => _clearAiKeyCommand ??= new RelayCommand(
+        () => { _settings.SetAiReviewKey(null); Save(); OnPropertyChanged(nameof(HasAiKey)); },
+        () => HasAiKey);
+    private RelayCommand? _clearAiKeyCommand;
+
     private void Save()
     {
         _settings.Save();
@@ -777,4 +859,17 @@ public sealed class SpellWordRow
 
     public string Word { get; }
     public RelayCommand RemoveCommand { get; }
+}
+
+/// <summary>A selectable AI provider with a human-readable label for the dropdown.</summary>
+public sealed class AiProviderOption
+{
+    public AiProviderOption(AiProvider provider, string label)
+    {
+        Provider = provider;
+        Label = label;
+    }
+
+    public AiProvider Provider { get; }
+    public string Label { get; }
 }

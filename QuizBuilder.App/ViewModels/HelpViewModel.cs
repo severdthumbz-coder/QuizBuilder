@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 27, "2026-08-02", new[]
+        {
+            "AI grammar review — setup (phase 1 of 3): Settings gains an 'AI grammar review (optional)' section to configure an opt-in AI pass that will check grammar and phrasing. It is Off by default — nothing runs and no quiz text leaves your device unless you turn it on. You can choose a provider (Off; a local/self-hosted endpoint that keeps content on your machine; or Claude), set an endpoint URL or model, and store an API key that is encrypted on this machine (Windows DPAPI, machine-bound). This build only sets it up — actually running a check (scoped to a section, the study cards, or the whole quiz) arrives in a later update. The offline spell-checker is unchanged and always available.",
+        }),
         new VersionEntry("0.26.0", 26, "2026-08-02", new[]
         {
             "Spelling dictionary management: the spell-check dialog's 'Ignore' button is now labelled 'Add to dictionary' — it already removed every occurrence of the word and remembered it for future checks, and the new label makes that clear. Settings gains a 'Spelling dictionary' section where you can see every word you've added, add new domain terms by hand (e.g. licensure, subagent), and remove any word to start flagging it again. This makes it easy to teach the checker your field's vocabulary instead of clicking past the same correct terms repeatedly.",
