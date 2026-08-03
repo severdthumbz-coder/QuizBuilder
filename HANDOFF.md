@@ -1,16 +1,15 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 27 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.27.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** Offline spell-check + dictionary management confirmed working (b26). Now
-starting the **opt-in AI grammar review**, split into 3 phases. **b27 is phase 1:
-Settings + secure key plumbing, NO network yet.** Adds `AiProvider`/`AiReviewSettings`
-(default Off), an isolated `AiKeyProtector` (DPAPI, machine-bound — option C, GitHub
-token machinery untouched), settings-service `SetAiReviewKey`/`GetAiReviewKey`/
-`HasAiReviewKey`, and the Settings UI (provider dropdown Off/Local/Claude, endpoint/
-model fields, encrypted key box). New Core tests join the `ProtectedDataShim`
-collection (the DPAPI-flake fix). **Next: phase 2 (the Claude + local providers and
-the actual network call), then phase 3 (scope picker + accept/reject UI).**
+**Last shipped:** v0.26.0 build 28 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.28.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b27 (AI-review phase 1: settings + DPAPI key) had two xUnit mistakes in
+the NEW test code that broke the `core-tests` build — `Assert.NotContains` (should be
+`Assert.DoesNotContain`) and a `.Where()` before `Assert.Single` (analyzer wants the
+predicate overload; a latent one in `SpellReviewEngineTests` surfaced too). **b28
+fixes both; no product code changed.** The phase-1 feature (AiProvider/AiReviewSettings,
+AiKeyProtector, Settings UI) is intact. Local check note: the test project builds with
+xUnit analyzers as errors, which validate.py doesn't run — added test-anti-pattern
+greps (NotContains, Where-before-Single) to the local pre-flight.
 Decided: one active provider at a time (not simultaneous); privacy-first ordering
 (Local before Claude); AI scope will be section / study-cards / whole-quiz; apply
 flow is one-by-one accept/reject plus accept-all, all routed through undo; AI input

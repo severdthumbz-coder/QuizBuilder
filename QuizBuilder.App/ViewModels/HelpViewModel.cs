@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 28, "2026-08-03", new[]
+        {
+            "Test-build fix: two xUnit issues in the b27 test code broke the core-tests build — a wrong assertion name (Assert.NotContains instead of Assert.DoesNotContain) and a Where-clause before Assert.Single (the analyzer wants the filtering overload). Both corrected; no product code changed. The b27 AI-review settings feature is otherwise intact.",
+        }),
         new VersionEntry("0.26.0", 27, "2026-08-02", new[]
         {
             "AI grammar review — setup (phase 1 of 3): Settings gains an 'AI grammar review (optional)' section to configure an opt-in AI pass that will check grammar and phrasing. It is Off by default — nothing runs and no quiz text leaves your device unless you turn it on. You can choose a provider (Off; a local/self-hosted endpoint that keeps content on your machine; or Claude), set an endpoint URL or model, and store an API key that is encrypted on this machine (Windows DPAPI, machine-bound). This build only sets it up — actually running a check (scoped to a section, the study cards, or the whole quiz) arrives in a later update. The offline spell-checker is unchanged and always available.",

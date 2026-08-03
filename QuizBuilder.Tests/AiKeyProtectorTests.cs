@@ -41,7 +41,7 @@ public class AiKeyProtectorTests : IDisposable
         var cipher = p.Protect("sk-secret-key-123");
         Assert.NotNull(cipher);
         Assert.StartsWith("dpapi$", cipher);
-        Assert.NotContains("sk-secret-key-123", cipher); // not stored in the clear
+        Assert.DoesNotContain("sk-secret-key-123", cipher); // not stored in the clear
         Assert.Equal("sk-secret-key-123", p.Unprotect(cipher));
     }
 

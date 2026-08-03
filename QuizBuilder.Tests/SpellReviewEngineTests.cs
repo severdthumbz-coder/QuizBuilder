@@ -100,7 +100,7 @@ public class SpellReviewEngineTests
             new[] { DescriptionField("<strong>Rules and regulatons</strong>") },
             ignoreWords: Array.Empty<string>());
 
-        var issue = Assert.Single(issues.Where(i => i.Word.Equals("regulatons", StringComparison.OrdinalIgnoreCase)));
+        var issue = Assert.Single(issues, i => i.Word.Equals("regulatons", StringComparison.OrdinalIgnoreCase));
         Assert.All(issue.Occurrences, o => Assert.False(o.Replaceable));
     }
 
