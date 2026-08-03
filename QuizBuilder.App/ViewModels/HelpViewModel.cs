@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 29, "2026-08-03", new[]
+        {
+            "AI grammar review — engine + local provider (phase 2 of 3): built the machinery that turns quiz text into an AI grammar check and the reply back into concrete suggestions. Starts with a local/self-hosted endpoint (OpenAI-compatible, e.g. Ollama) so it works fully offline with no cloud account. The shared engine builds the prompt from HTML-stripped field text and parses the model's reply robustly — it copes with JSON wrapped in prose or code fences, ignores malformed output gracefully, and drops any suggestion whose text can't be found in your quiz (so a model can't rewrite something that isn't there). There's still no button to run it — that arrives in the final phase. Claude support comes right after the local endpoint. The offline spell-checker is unchanged.",
+        }),
         new VersionEntry("0.26.0", 28, "2026-08-03", new[]
         {
             "Test-build fix: two xUnit issues in the b27 test code broke the core-tests build — a wrong assertion name (Assert.NotContains instead of Assert.DoesNotContain) and a Where-clause before Assert.Single (the analyzer wants the filtering overload). Both corrected; no product code changed. The b27 AI-review settings feature is otherwise intact.",

@@ -69,6 +69,18 @@ public partial class App : Application
         services.AddSingleton<ITextReviewProvider, OfflineSpellProvider>();
         services.AddSingleton<SpellFixApplier>();
 
+        // AI grammar review — local endpoint provider (phase 2). Reads the
+        // endpoint/model from settings at call time via the closure, so a
+        // settings change takes effect without rebuilding. Nothing invokes it
+        // yet (the scope picker + accept/reject UI is phase 3); registering it
+        // now keeps the wiring ready and startup unaffected.
+        services.AddSingleton<IGrammarReviewProvider>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            return new LocalEndpointReviewProvider(
+                () => (settings.Current.AiReview.LocalEndpointUrl, settings.Current.AiReview.Model));
+        });
+
         _services = services.BuildServiceProvider();
 
         // Settings must load before the theme: the active theme id lives in

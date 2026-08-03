@@ -1,15 +1,20 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 28 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.28.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b27 (AI-review phase 1: settings + DPAPI key) had two xUnit mistakes in
-the NEW test code that broke the `core-tests` build — `Assert.NotContains` (should be
-`Assert.DoesNotContain`) and a `.Where()` before `Assert.Single` (analyzer wants the
-predicate overload; a latent one in `SpellReviewEngineTests` surfaced too). **b28
-fixes both; no product code changed.** The phase-1 feature (AiProvider/AiReviewSettings,
-AiKeyProtector, Settings UI) is intact. Local check note: the test project builds with
-xUnit analyzers as errors, which validate.py doesn't run — added test-anti-pattern
-greps (NotContains, Where-before-Single) to the local pre-flight.
+**Last shipped:** v0.26.0 build 29 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.29.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** AI-review phase 1 (settings + DPAPI key) confirmed working on Windows
+(b28 screenshots: provider dropdown, cloud notice, key saved/cleared). **b29 is
+phase 2: the grammar engine + the local-endpoint provider (no UI yet).** Core gains
+`IGrammarReviewProvider`/`GrammarSuggestion`/`GrammarReviewResult`/`GrammarField` and
+`GrammarReviewEngine` (prompt builder + resilient JSON parser — fences, prose,
+wrappers, malformed→clean-error, hallucinated-span drop, whitespace-tolerant
+anchoring), all proved in `tools/port/grammar_prompt_parse_port.py` and pinned by
+`GrammarReviewEngineTests`. App gains `LocalEndpointReviewProvider` (async
+OpenAI-compatible `/chat/completions`, mirrors GitHubService's HttpClient pattern),
+registered in DI (reads endpoint/model from settings at call time). **Nothing invokes
+it yet — the scope picker (section / study-cards / whole-quiz) + accept-reject UI is
+phase 3.** Claude provider comes after the local one (a thin variant: same engine,
+different auth/request).
 Decided: one active provider at a time (not simultaneous); privacy-first ordering
 (Local before Claude); AI scope will be section / study-cards / whole-quiz; apply
 flow is one-by-one accept/reject plus accept-all, all routed through undo; AI input
@@ -369,6 +374,55 @@ on-device. Verification level is no longer a caveat.
     Settings bindings resolve, `OnSaveAiKeyClick` handler present, no other
     `ISettingsService` implementer to break. **Core package count unchanged.**
     Not verifiable here: WPF compile, DPAPI on real Windows, runtime.
+- **b28 — xUnit test-build fix.** b27's new test code used `Assert.NotContains`
+  (does not exist — it's `Assert.DoesNotContain(substring, actual)`) and a
+  `.Where()` before `Assert.Single` (xUnit2031 wants the predicate overload; a
+  latent one in `SpellReviewEngineTests` surfaced too). Both fixed; no product
+  code changed. `core-tests` builds the test project with xUnit analyzers as
+  errors, which validate.py doesn't run — added greps for both patterns to the
+  local pre-flight. (Third CI-caught compile-class error in this arc: b21 C#,
+  b23 XAML, b28 test-API — all from the same root, that the environment here
+  can't run the compiler/analyzers.)
+- **b29 — AI grammar review, phase 2: engine + local-endpoint provider (no UI).**
+  The machinery that turns quiz text into a grammar check and the reply into
+  concrete, anchored suggestions. Local-first so the whole pipeline works with no
+  cloud account or cost.
+  - **Core contracts:** `IGrammarReviewProvider` (async `ReviewAsync`),
+    `GrammarSuggestion` (field id + span + original + rewrite + explanation),
+    `GrammarReviewResult` (Ok/Failed, GitHubResult-style), `GrammarField` (id +
+    label + HTML-stripped text). Deliberately SEPARATE from the spelling
+    `TextIssue`/`ITextReviewProvider` — grammar is async, phrase-level, and
+    carries an explanation, so overloading the working (synchronous) spell
+    interface was rejected.
+  - **Core engine (tested):** `GrammarReviewEngine` — system instruction
+    (JSON-only, no style rewrites, verbatim "original"), `BuildUserPrompt`
+    (numbered non-empty fields), and `ParseResponse` — the risk-bearing parser.
+    It survives: bare array, ```json``` fences, prose-wrapped JSON, object
+    wrappers ({suggestions:[…]}), malformed JSON (→ clean Failed), empty array
+    (→ Ok with none, NOT an error), string field ids, and — critically — DROPS
+    any suggestion whose "original" can't be located in its field (hallucinated
+    span) or references an unknown field or is a no-op. Anchors each survivor to
+    the real source span (exact, then whitespace-tolerant), so an accepted
+    rewrite (phase 3) splices at a true offset. Proved in
+    `tools/port/grammar_prompt_parse_port.py` (13 cases) first; pinned by
+    `GrammarReviewEngineTests`.
+  - **App provider:** `LocalEndpointReviewProvider` — async POST to an
+    OpenAI-compatible `/chat/completions` (Ollama/LM Studio/…), mirrors
+    `GitHubService`'s injectable-HttpClient pattern. Appends the chat path if the
+    base URL omits it; pulls `choices[0].message.content`; hands it to the
+    engine. Every expected failure (no endpoint, unreachable, non-200, malformed
+    envelope, cancellation) → `GrammarReviewResult.Failed` with plain words, never
+    an exception to the caller. `HttpClient` is BCL — App package count unchanged.
+  - **DI:** registered as `IGrammarReviewProvider`, reading endpoint/model from
+    settings at call time via a closure (settings change takes effect without
+    rebuild). Nothing invokes it yet — startup unaffected.
+  - **NOT done (phase 3):** the scope picker (section / study-cards / whole-quiz),
+    the "AI grammar check" entry point, and the accept/reject diff panel
+    (one-by-one + accept-all, all through undo). Then the Claude provider.
+  - **Verified here:** validate 12/12, xUnit anti-pattern pre-flight clean, all
+    five ports green, balance clean, DI usings/wiring confirmed. **Core still at 2
+    package refs.** Not verifiable here: compile, and the real network call to a
+    local model (the maintainer's Ollama check once phase 3 gives it a button).
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the
