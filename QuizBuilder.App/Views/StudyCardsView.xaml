@@ -49,6 +49,15 @@
                         FontFamily="{DynamicResource Font.Family}"
                         FontSize="{DynamicResource Font.Size.Body}" />
 
+                <Button Content="AI grammar check"
+                        Click="OnAiGrammarClick"
+                        Padding="14,8"
+                        Margin="0,0,8,0"
+                        Cursor="Hand"
+                        ToolTip="Check grammar and phrasing with an AI model (set up in Settings)"
+                        FontFamily="{DynamicResource Font.Family}"
+                        FontSize="{DynamicResource Font.Size.Body}" />
+
                 <Button Content="+ Add card"
                         Command="{Binding AddCommand}"
                         Padding="16,8"

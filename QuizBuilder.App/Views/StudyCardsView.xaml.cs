@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using QuizBuilder.App.Services;
 using QuizBuilder.App.ViewModels;
 using QuizBuilder.Core.Interfaces;
+using QuizBuilder.Core.Services;
 
 namespace QuizBuilder.App.Views;
 
@@ -15,19 +16,25 @@ public partial class StudyCardsView : UserControl
     private readonly ITextReviewProvider _reviewProvider;
     private readonly SpellIgnoreListStore _ignoreList;
     private readonly SpellFixApplier _fixApplier;
+    private readonly ISettingsService _settings;
+    private readonly IGrammarReviewProvider _grammarProvider;
 
     public StudyCardsView(
         StudyCardsViewModel viewModel,
         IQuizDocumentService document,
         ITextReviewProvider reviewProvider,
         SpellIgnoreListStore ignoreList,
-        SpellFixApplier fixApplier)
+        SpellFixApplier fixApplier,
+        ISettingsService settings,
+        IGrammarReviewProvider grammarProvider)
     {
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         _document = document ?? throw new ArgumentNullException(nameof(document));
         _reviewProvider = reviewProvider ?? throw new ArgumentNullException(nameof(reviewProvider));
         _ignoreList = ignoreList ?? throw new ArgumentNullException(nameof(ignoreList));
         _fixApplier = fixApplier ?? throw new ArgumentNullException(nameof(fixApplier));
+        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _grammarProvider = grammarProvider ?? throw new ArgumentNullException(nameof(grammarProvider));
 
         InitializeComponent();
         DataContext = viewModel;
@@ -49,6 +56,19 @@ public partial class StudyCardsView : UserControl
     {
         var vm = new SpellCheckViewModel(_document, _reviewProvider, _ignoreList, _fixApplier);
         var window = new SpellCheckWindow(vm) { Owner = Window.GetWindow(this) };
+        window.ShowDialog();
+    }
+
+    /// <summary>
+    /// Opens the AI grammar-check dialog defaulting to the Study cards scope,
+    /// since this is the Study Cards tab. The user can widen it to the whole quiz.
+    /// </summary>
+    private void OnAiGrammarClick(object sender, RoutedEventArgs e)
+    {
+        var vm = new GrammarCheckViewModel(
+            _document, _settings, _grammarProvider, _fixApplier,
+            initialScope: GrammarScope.StudyCards, sectionId: null, sectionLabel: null);
+        var window = new GrammarCheckWindow(vm) { Owner = Window.GetWindow(this) };
         window.ShowDialog();
     }
 

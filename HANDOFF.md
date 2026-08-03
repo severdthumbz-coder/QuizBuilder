@@ -1,20 +1,18 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 29 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.29.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** AI-review phase 1 (settings + DPAPI key) confirmed working on Windows
-(b28 screenshots: provider dropdown, cloud notice, key saved/cleared). **b29 is
-phase 2: the grammar engine + the local-endpoint provider (no UI yet).** Core gains
-`IGrammarReviewProvider`/`GrammarSuggestion`/`GrammarReviewResult`/`GrammarField` and
-`GrammarReviewEngine` (prompt builder + resilient JSON parser — fences, prose,
-wrappers, malformed→clean-error, hallucinated-span drop, whitespace-tolerant
-anchoring), all proved in `tools/port/grammar_prompt_parse_port.py` and pinned by
-`GrammarReviewEngineTests`. App gains `LocalEndpointReviewProvider` (async
-OpenAI-compatible `/chat/completions`, mirrors GitHubService's HttpClient pattern),
-registered in DI (reads endpoint/model from settings at call time). **Nothing invokes
-it yet — the scope picker (section / study-cards / whole-quiz) + accept-reject UI is
-phase 3.** Claude provider comes after the local one (a thin variant: same engine,
-different auth/request).
+**Last shipped:** v0.26.0 build 30 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.30.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** AI grammar review phases 1 (settings+key) and 2 (engine+local provider)
+confirmed green on CI. **b30 is phase 3: the feature is now RUNNABLE.** An "AI
+grammar check" button on both the Quiz Builder and Study Cards toolbars opens a
+dialog with a scope picker (section / study cards / whole quiz), an async
+cancellable run, and accept/reject diff rows + accept-all — all routed through
+undo via the existing `SpellFixApplier`. Core gains `GrammarScopeBuilder`
+(inventory→scoped GrammarFields + id→source back-map, description stripped) and
+tests. **The local-endpoint AI grammar feature is now feature-complete;** the
+maintainer's runtime check is to point it at Ollama and verify a real round-trip.
+Remaining: the Claude provider (a thin variant — same engine, different
+auth/request), which is the last planned piece of this arc.
 Decided: one active provider at a time (not simultaneous); privacy-first ordering
 (Local before Claude); AI scope will be section / study-cards / whole-quiz; apply
 flow is one-by-one accept/reject plus accept-all, all routed through undo; AI input
@@ -423,6 +421,48 @@ on-device. Verification level is no longer a caveat.
     five ports green, balance clean, DI usings/wiring confirmed. **Core still at 2
     package refs.** Not verifiable here: compile, and the real network call to a
     local model (the maintainer's Ollama check once phase 3 gives it a button).
+- **b30 — AI grammar review, phase 3: the runnable UI.** The feature is now
+  usable end to end (local endpoint).
+  - **Entry points:** an "AI grammar check" button next to "Check spelling" on
+    BOTH the Quiz Builder and Study Cards toolbars (separate from spelling — the
+    two are different tools: instant/offline/dictionary vs async/network/diffs).
+  - **`GrammarCheckWindow` + `GrammarCheckViewModel`:** a scope dropdown
+    (section / study cards / whole quiz — the Section option only appears when
+    launched with a section context; Builder defaults to whole-quiz, Study Cards
+    tab defaults to study-cards), a Run button, async cancellable run with a busy
+    state, plain-words error display (the provider already returns
+    `GrammarReviewResult.Failed`), and suggestion rows shown as a before→after
+    diff (strikethrough original → green rewrite) with the reason. Accept /
+    Reject per row + Accept all. When the provider is Off, Run short-circuits
+    with a "turn it on in Settings" message.
+  - **Accept routing:** reuses `SpellFixApplier.Apply` (span + replacement →
+    undo), so every accept — including Accept-all — is Ctrl+Z-reversible. The
+    applier's offset guard skips a suggestion whose span shifted from an earlier
+    accept in the same field; a re-run realigns.
+  - **Async pattern:** `RunAsync` is a public VM method awaited from the
+    code-behind Run click (the house pattern — mirrors GitHub connect — not an
+    `async void` RelayCommand).
+  - **Core bridge:** `GrammarScopeBuilder` turns the inventory + scope into the
+    engine's `GrammarField`s, strips the description via
+    `DescriptionParser.ToPlainText` (tags never reach the model), drops empties,
+    assigns stable ids, keeps an id→`TextField` back-map for routing accepts, and
+    marks the description non-replaceable (offsets on stripped text — Accept
+    disabled, with an inline note to edit it directly). Proved in
+    `tools/port/grammar_scope_port.py`; pinned by `GrammarScopeBuilderTests`.
+  - **DI:** both views gained `ISettingsService` + `IGrammarReviewProvider` ctor
+    params (DI supplies them — both registered). New second
+    `BoolToVisibilityConverter` instance with `Invert="True"` for the
+    can't-auto-apply note.
+  - **Verified here:** validate 12/12 (new window x:Class + 15 keys resolve),
+    MC3024 clean, xUnit anti-patterns clean, all 15 window bindings resolve, all
+    5 window Click handlers present, both AI buttons+handlers present, all 6
+    ports green, model API in the new test confirmed (concrete Question
+    subclasses). **Core still at 2 package refs.** Not verifiable here: WPF
+    compile, and the real Ollama round-trip (maintainer runtime check).
+  - **NOT done (last piece):** the Claude provider — a thin
+    `IGrammarReviewProvider` variant reusing `GrammarReviewEngine`, with
+    Anthropic Messages auth (`x-api-key`, `anthropic-version`) and the key from
+    `GetAiReviewKey()`. Selected when `AiProvider.Claude`.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

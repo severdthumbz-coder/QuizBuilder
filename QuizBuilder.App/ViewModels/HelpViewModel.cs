@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 30, "2026-08-03", new[]
+        {
+            "AI grammar review — now runnable (phase 3 of 3): an 'AI grammar check' button sits next to 'Check spelling' on both the Quiz Builder and Study Cards tabs. It opens a dialog where you pick a scope — a section, the study cards, or the whole quiz — and run the check. Each suggestion is shown as a clear before → after with a short reason; Accept applies it (and Ctrl+Z undoes it), Reject dismisses it, and 'Accept all' applies every remaining one at once. The check runs against the provider you set up in Settings (a local endpoint works fully offline); it's cancellable, and any problem (nothing configured, unreachable, a bad reply) shows a plain message instead of failing silently. Description text is checked with its formatting tags removed, as elsewhere. This completes the local-endpoint AI grammar feature; Claude support is a small follow-on.",
+        }),
         new VersionEntry("0.26.0", 29, "2026-08-03", new[]
         {
             "AI grammar review — engine + local provider (phase 2 of 3): built the machinery that turns quiz text into an AI grammar check and the reply back into concrete suggestions. Starts with a local/self-hosted endpoint (OpenAI-compatible, e.g. Ollama) so it works fully offline with no cloud account. The shared engine builds the prompt from HTML-stripped field text and parses the model's reply robustly — it copes with JSON wrapped in prose or code fences, ignores malformed output gracefully, and drops any suggestion whose text can't be found in your quiz (so a model can't rewrite something that isn't there). There's still no button to run it — that arrives in the final phase. Claude support comes right after the local endpoint. The offline spell-checker is unchanged.",

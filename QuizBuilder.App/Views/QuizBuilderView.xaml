@@ -210,6 +210,12 @@
                             Click="OnCheckSpellingClick"
                             Style="{StaticResource SmallButton}"
                             ToolTip="Scan every section for possible spelling issues"
+                            Margin="0,0,8,0" />
+
+                    <Button x:Name="AiGrammarButton" Content="AI grammar check"
+                            Click="OnAiGrammarClick"
+                            Style="{StaticResource SmallButton}"
+                            ToolTip="Check grammar and phrasing with an AI model (set up in Settings)"
                             Margin="0,0,12,0" />
 
                     <Button x:Name="NewButton" Content="New"

@@ -8,6 +8,7 @@ using QuizBuilder.App.Controls;
 using QuizBuilder.App.Services;
 using QuizBuilder.App.ViewModels;
 using QuizBuilder.Core.Interfaces;
+using QuizBuilder.Core.Services;
 
 namespace QuizBuilder.App.Views;
 
@@ -22,6 +23,8 @@ public partial class QuizBuilderView : UserControl
     private readonly ITextReviewProvider _reviewProvider;
     private readonly SpellIgnoreListStore _ignoreList;
     private readonly SpellFixApplier _fixApplier;
+    private readonly ISettingsService _settings;
+    private readonly IGrammarReviewProvider _grammarProvider;
 
     private Point _dragStart;
     private QuestionRowViewModel? _dragItem;
@@ -38,7 +41,9 @@ public partial class QuizBuilderView : UserControl
         IQuizDocumentService document,
         ITextReviewProvider reviewProvider,
         SpellIgnoreListStore ignoreList,
-        SpellFixApplier fixApplier)
+        SpellFixApplier fixApplier,
+        ISettingsService settings,
+        IGrammarReviewProvider grammarProvider)
     {
         InitializeComponent();
 
@@ -50,6 +55,8 @@ public partial class QuizBuilderView : UserControl
         _reviewProvider = reviewProvider ?? throw new ArgumentNullException(nameof(reviewProvider));
         _ignoreList = ignoreList ?? throw new ArgumentNullException(nameof(ignoreList));
         _fixApplier = fixApplier ?? throw new ArgumentNullException(nameof(fixApplier));
+        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _grammarProvider = grammarProvider ?? throw new ArgumentNullException(nameof(grammarProvider));
 
         // The dialog lives here rather than in the view model, which has no
         // WPF dependency and should keep it: a MessageBox in a view model
@@ -68,6 +75,20 @@ public partial class QuizBuilderView : UserControl
     {
         var vm = new SpellCheckViewModel(_document, _reviewProvider, _ignoreList, _fixApplier);
         var window = new SpellCheckWindow(vm) { Owner = Window.GetWindow(this) };
+        window.ShowDialog();
+    }
+
+    /// <summary>
+    /// Opens the AI grammar-check dialog, defaulting the scope to the whole quiz
+    /// (this is the Builder tab). A fresh view model each time reviews the
+    /// current document state.
+    /// </summary>
+    private void OnAiGrammarClick(object sender, RoutedEventArgs e)
+    {
+        var vm = new GrammarCheckViewModel(
+            _document, _settings, _grammarProvider, _fixApplier,
+            initialScope: GrammarScope.WholeQuiz, sectionId: null, sectionLabel: null);
+        var window = new GrammarCheckWindow(vm) { Owner = Window.GetWindow(this) };
         window.ShowDialog();
     }
 
