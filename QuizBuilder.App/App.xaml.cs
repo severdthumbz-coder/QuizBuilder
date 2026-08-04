@@ -69,16 +69,22 @@ public partial class App : Application
         services.AddSingleton<ITextReviewProvider, OfflineSpellProvider>();
         services.AddSingleton<SpellFixApplier>();
 
-        // AI grammar review — local endpoint provider (phase 2). Reads the
-        // endpoint/model from settings at call time via the closure, so a
-        // settings change takes effect without rebuilding. Nothing invokes it
-        // yet (the scope picker + accept/reject UI is phase 3); registering it
-        // now keeps the wiring ready and startup unaffected.
+        // AI grammar review. The app depends on a single IGrammarReviewProvider
+        // (the dispatcher), which reads the active AiProvider from settings at
+        // call time and forwards to the local-endpoint or Claude transport. Both
+        // concrete providers read their config (endpoint/model, or key/model)
+        // from settings via closures, so a settings change needs no rebuild.
         services.AddSingleton<IGrammarReviewProvider>(sp =>
         {
             var settings = sp.GetRequiredService<ISettingsService>();
-            return new LocalEndpointReviewProvider(
+
+            var local = new LocalEndpointReviewProvider(
                 () => (settings.Current.AiReview.LocalEndpointUrl, settings.Current.AiReview.Model));
+
+            var claude = new ClaudeReviewProvider(
+                () => (settings.GetAiReviewKey(), settings.Current.AiReview.Model));
+
+            return new DispatchingGrammarProvider(settings, local, claude);
         });
 
         _services = services.BuildServiceProvider();

@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 31, "2026-08-03", new[]
+        {
+            "AI grammar review — Claude support (completes the feature): you can now choose Claude as the AI grammar provider, not just a local endpoint. Select it in Settings, save your API key (stored encrypted on this machine), and the 'AI grammar check' button uses Claude. Whichever provider you pick in Settings is the one that runs — switch any time. Everything else works the same: pick a scope, review before/after suggestions, accept or reject, undo with Ctrl+Z. This completes the opt-in AI grammar review; the offline spell-checker remains the default and is unaffected.",
+        }),
         new VersionEntry("0.26.0", 30, "2026-08-03", new[]
         {
             "AI grammar review — now runnable (phase 3 of 3): an 'AI grammar check' button sits next to 'Check spelling' on both the Quiz Builder and Study Cards tabs. It opens a dialog where you pick a scope — a section, the study cards, or the whole quiz — and run the check. Each suggestion is shown as a clear before → after with a short reason; Accept applies it (and Ctrl+Z undoes it), Reject dismisses it, and 'Accept all' applies every remaining one at once. The check runs against the provider you set up in Settings (a local endpoint works fully offline); it's cancellable, and any problem (nothing configured, unreachable, a bad reply) shows a plain message instead of failing silently. Description text is checked with its formatting tags removed, as elsewhere. This completes the local-endpoint AI grammar feature; Claude support is a small follow-on.",

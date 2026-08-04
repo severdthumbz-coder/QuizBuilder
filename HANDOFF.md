@@ -1,18 +1,19 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 30 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.30.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** AI grammar review phases 1 (settings+key) and 2 (engine+local provider)
-confirmed green on CI. **b30 is phase 3: the feature is now RUNNABLE.** An "AI
-grammar check" button on both the Quiz Builder and Study Cards toolbars opens a
-dialog with a scope picker (section / study cards / whole quiz), an async
-cancellable run, and accept/reject diff rows + accept-all — all routed through
-undo via the existing `SpellFixApplier`. Core gains `GrammarScopeBuilder`
-(inventory→scoped GrammarFields + id→source back-map, description stripped) and
-tests. **The local-endpoint AI grammar feature is now feature-complete;** the
-maintainer's runtime check is to point it at Ollama and verify a real round-trip.
-Remaining: the Claude provider (a thin variant — same engine, different
-auth/request), which is the last planned piece of this arc.
+**Last shipped:** v0.26.0 build 31 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.31.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b30 (phase 3 UI) confirmed green on CI + `build.bat` (671 tests, exe runs).
+**b31 adds the Claude provider — the AI grammar review is now FEATURE-COMPLETE.**
+A `DispatchingGrammarProvider` reads the active `AiProvider` from settings and
+routes each check to the local-endpoint or Claude transport; both share the Core
+`GrammarReviewEngine`. Claude uses the Messages API (`x-api-key` +
+`anthropic-version: 2023-06-01` headers, top-level `system`, `content[0].text`
+reply), key from the DPAPI-protected `GetAiReviewKey()`. App-only change; Core
+untouched (671 tests). **Runtime checks still open (need a live provider):** point
+the feature at Ollama (local) and/or enter a Claude key and run a real check — the
+transport shapes are matched from docs/patterns but a live call is the confirmation.
+The whole spell-check + AI-grammar arc (b19–b31) is now done pending that runtime
+verification.
 Decided: one active provider at a time (not simultaneous); privacy-first ordering
 (Local before Claude); AI scope will be section / study-cards / whole-quiz; apply
 flow is one-by-one accept/reject plus accept-all, all routed through undo; AI input
@@ -463,6 +464,38 @@ on-device. Verification level is no longer a caveat.
     `IGrammarReviewProvider` variant reusing `GrammarReviewEngine`, with
     Anthropic Messages auth (`x-api-key`, `anthropic-version`) and the key from
     `GetAiReviewKey()`. Selected when `AiProvider.Claude`.
+- **b31 — AI grammar review: Claude provider (completes the arc).** The cloud
+  transport, the last planned piece.
+  - **`ClaudeReviewProvider`:** async POST to `https://api.anthropic.com/v1/messages`,
+    Messages-API shape (verified against current Anthropic docs via web search):
+    headers `x-api-key` + `anthropic-version: 2023-06-01`; body has a TOP-LEVEL
+    `system` field (not a system message) plus the user turn, `max_tokens` and
+    `temperature: 0`; reply text pulled from the first `text` block in `content`
+    (`content[0].text`, not OpenAI's `choices[0].message.content`). Reuses the
+    Core `GrammarReviewEngine` for prompt + parse. Key from the DPAPI-protected
+    `GetAiReviewKey()`, read at call time, never held. Per-status error messages
+    (401 bad key, 403 model, 429 rate limit, 5xx server), plus unreachable/
+    cancelled/malformed → `GrammarReviewResult.Failed`, never an exception.
+  - **`DispatchingGrammarProvider`:** the single `IGrammarReviewProvider` the app
+    depends on. Reads the active `AiProvider` from settings per call and forwards
+    to local or Claude (or fails clearly when Off). Keeps the view models unaware
+    of provider selection; switching in Settings takes effect on the next check,
+    no rebuild. DI now builds both concrete providers (each with its settings
+    closure) and wraps them in the dispatcher.
+  - App-only; Core untouched (671 tests). **Verified here:** validate 12/12,
+    xUnit + MC3024 clean, a proper state-machine brace/paren scan confirms
+    balance (the crude regex stripper false-positived on the interpolated
+    `$"...({status})..."` error strings — the state-machine check is the better
+    tool and is now the one to trust), all 6 ports green, `GetAiReviewKey()` call
+    + Messages shape confirmed. **Least-verifiable piece of the whole arc:** the
+    live Claude request/response — matched from docs, but a real key + call on
+    the maintainer's machine is the confirmation. Same for the local endpoint vs
+    a real Ollama.
+  - **Arc complete (b19–b31):** offline spell-check (inventory, engine, UI,
+    dictionary management, HTML-strip) + opt-in AI grammar review (settings +
+    DPAPI key, engine + resilient parser, scope/accept-reject UI, local + Claude
+    providers). Next natural runtime step is purely the maintainer's: exercise
+    both providers live.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the
