@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 32, "2026-08-04", new[]
+        {
+            "Two new question types — Numeric and Dropdown (desktop authoring + taking; mobile and exporters to follow). Numeric accepts a typed number, correct when it's within an optional tolerance of the target (0 tolerance means exact); an optional unit label can be shown. Dropdown is a single-answer question presented as a dropdown instead of radio buttons — handy for long option lists — and is graded exactly like single-choice. Both are available in the 'add question' menu, the editor, preview, and when taking a quiz on the desktop. The .qbx format is now version 3; version-2 files still open. Note: exporting these two types to Word/Excel/HTML and taking them on the Android player arrive in the next update — a quiz using them opens and grades correctly everywhere, but those two surfaces don't render them yet.",
+        }),
         new VersionEntry("0.26.0", 31, "2026-08-03", new[]
         {
             "AI grammar review — Claude support (completes the feature): you can now choose Claude as the AI grammar provider, not just a local endpoint. Select it in Settings, save your API key (stored encrypted on this machine), and the 'AI grammar check' button uses Claude. Whichever provider you pick in Settings is the one that runs — switch any time. Everything else works the same: pick a scope, review before/after suggestions, accept or reject, undo with Ctrl+Z. This completes the opt-in AI grammar review; the offline spell-checker remains the default and is unaffected.",

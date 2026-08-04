@@ -242,6 +242,16 @@ public static class DocumentTextInventory
             // TrueFalseQuestion contributes prompt + hint only: no extra text.
             case TrueFalseQuestion:
                 break;
+
+            case DropdownQuestion dd:
+                // Same as single-choice: its options are checkable text.
+                AddChoices(fields, sid, qid, dd.Choices);
+                break;
+
+            // NumericQuestion contributes prompt + hint only; the target is a
+            // number and the optional unit is a short label not worth checking.
+            case NumericQuestion:
+                break;
         }
     }
 

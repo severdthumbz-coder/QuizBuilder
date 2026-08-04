@@ -204,6 +204,8 @@ public abstract class QuestionEditorViewModel : ViewModelBase
         FillInTheBlankQuestion q => new FillInTheBlankEditorViewModel(q, notifyChanged, images),
         MatchingQuestion q => new MatchingEditorViewModel(q, notifyChanged, images),
         SequenceQuestion q => new SequenceEditorViewModel(q, notifyChanged, images),
+        NumericQuestion q => new NumericEditorViewModel(q, notifyChanged, images),
+        DropdownQuestion q => new DropdownEditorViewModel(q, notifyChanged, images),
         EssayQuestion q => new EssayEditorViewModel(q, notifyChanged, images),
 
         // Not a silent fallback: a new question type added to Core without an

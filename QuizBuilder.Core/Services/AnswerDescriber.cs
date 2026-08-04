@@ -50,6 +50,15 @@ public static class AnswerDescriber
                 // both read as "this, then this".
                 return string.Join(" → ", q.Items);
 
+            case NumericQuestion q:
+                return q.Tolerance > 0
+                    ? $"{q.Target} (± {q.Tolerance})" + (string.IsNullOrWhiteSpace(q.Unit) ? "" : $" {q.Unit}")
+                    : q.Target.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                      + (string.IsNullOrWhiteSpace(q.Unit) ? "" : $" {q.Unit}");
+
+            case DropdownQuestion q:
+                return q.Choices.FirstOrDefault(c => c.IsCorrect)?.Text ?? string.Empty;
+
             default:
                 return string.Empty;
         }

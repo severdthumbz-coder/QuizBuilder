@@ -142,6 +142,8 @@ public sealed class QuizBuilderViewModel : ViewModelBase
             new QuestionTypeOption(QuestionKind.FillInTheBlank, "Fill in the blank", "Gaps within a sentence"),
             new QuestionTypeOption(QuestionKind.Matching, "Matching", "Pair items across two columns"),
             new QuestionTypeOption(QuestionKind.Sequence, "Sequence", "Put items in the correct order"),
+            new QuestionTypeOption(QuestionKind.Numeric, "Numeric", "A number, with optional tolerance"),
+            new QuestionTypeOption(QuestionKind.Dropdown, "Dropdown", "One answer, chosen from a dropdown"),
             new QuestionTypeOption(QuestionKind.Essay, "Essay", "A long written response, graded by hand"),
         };
 
@@ -415,6 +417,8 @@ public sealed class QuizBuilderViewModel : ViewModelBase
         QuestionKind.FillInTheBlank => new FillInTheBlankQuestion(),
         QuestionKind.Matching => new MatchingQuestion(),
         QuestionKind.Sequence => new SequenceQuestion(),
+        QuestionKind.Numeric => new NumericQuestion(),
+        QuestionKind.Dropdown => new DropdownQuestion(),
         QuestionKind.Essay => new EssayQuestion(),
         _ => throw new NotSupportedException($"Unknown question kind '{kind}'.")
     };

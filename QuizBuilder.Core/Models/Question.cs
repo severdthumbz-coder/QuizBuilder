@@ -14,7 +14,12 @@ public enum QuestionKind
 
     // Appended last: these are persisted by name in .qbx but by value in some
     // spreadsheet round-trips, so inserting earlier would renumber the rest.
-    Sequence
+    Sequence,
+
+    // v3 (v0.26): Numeric (target +/- tolerance) and Dropdown (single-choice
+    // presented as a dropdown). Appended after Sequence for the same reason.
+    Numeric,
+    Dropdown
 }
 
 /// <summary>
@@ -34,6 +39,8 @@ public enum QuestionKind
 [JsonDerivedType(typeof(MatchingQuestion), "matching")]
 [JsonDerivedType(typeof(EssayQuestion), "essay")]
 [JsonDerivedType(typeof(SequenceQuestion), "sequence")]
+[JsonDerivedType(typeof(NumericQuestion), "numeric")]
+[JsonDerivedType(typeof(DropdownQuestion), "dropdown")]
 public abstract class Question
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -163,6 +170,73 @@ public sealed class ShortAnswerQuestion : Question
         {
             AcceptedAnswers = new List<string>(AcceptedAnswers),
             CaseSensitive = CaseSensitive
+        };
+        CopyBaseTo(c);
+        return c;
+    }
+}
+
+/// <summary>
+/// A numeric-answer question: the taker types a number, correct when it falls
+/// within <see cref="Tolerance"/> of <see cref="Target"/> (inclusive). Tolerance
+/// 0 means an exact match. The typed value is stored in
+/// <see cref="QuestionAnswer.TextAnswer"/> (like short-answer) and parsed at
+/// grading time with the invariant culture — see QuizGrader.
+/// </summary>
+public sealed class NumericQuestion : Question
+{
+    public override QuestionKind Kind => QuestionKind.Numeric;
+    public override string KindDisplayName => "Numeric";
+
+    /// <summary>The correct value.</summary>
+    public double Target { get; set; }
+
+    /// <summary>
+    /// Allowed absolute distance from <see cref="Target"/> (inclusive). Zero is
+    /// an exact match. A negative value is treated as zero at grading time (an
+    /// author slip must never widen the accepted window).
+    /// </summary>
+    public double Tolerance { get; set; }
+
+    /// <summary>Optional unit label shown next to the input (e.g. "kg", "m/s").
+    /// Presentation only — not part of grading.</summary>
+    public string? Unit { get; set; }
+
+    public override Question Clone()
+    {
+        var c = new NumericQuestion
+        {
+            Target = Target,
+            Tolerance = Tolerance,
+            Unit = Unit
+        };
+        CopyBaseTo(c);
+        return c;
+    }
+}
+
+/// <summary>
+/// A single-choice question presented as a dropdown rather than a radio group —
+/// useful for long option lists (years, countries) where buttons are unwieldy.
+/// Grading is identical to <see cref="MultipleChoiceSingleQuestion"/>: reuses
+/// the <see cref="Choice"/> list and the chosen
+/// <see cref="QuestionAnswer.ChoiceIndex"/>, so scoring can never diverge from
+/// single-choice. The distinct type exists only so authors, exporters, and the
+/// player can render it as a dropdown.
+/// </summary>
+public sealed class DropdownQuestion : Question
+{
+    public override QuestionKind Kind => QuestionKind.Dropdown;
+    public override string KindDisplayName => "Dropdown";
+
+    /// <summary>The options; exactly one should be marked correct.</summary>
+    public List<Choice> Choices { get; set; } = new();
+
+    public override Question Clone()
+    {
+        var c = new DropdownQuestion
+        {
+            Choices = Choices.Select(x => x.Clone()).ToList()
         };
         CopyBaseTo(c);
         return c;

@@ -1,3 +1,4 @@
+using System.Globalization;
 using QuizBuilder.Core.Interfaces;
 using QuizBuilder.Core.Models;
 
@@ -118,8 +119,52 @@ public sealed class QuizGrader : IQuizGrader
         FillInTheBlankQuestion q => ScoreBlanks(q, answer),
         MatchingQuestion q => ScoreMatching(q, answer),
         SequenceQuestion q => ScoreSequence(q, answer),
+        NumericQuestion q => ScoreNumeric(q, answer),
+        DropdownQuestion q => ScoreDropdown(q, answer),
         _ => 0,
     };
+
+    /// <summary>
+    /// Numeric: parse the typed answer (invariant culture) and award full points
+    /// when it is within tolerance of the target, inclusive. Blank or non-numeric
+    /// input scores zero. A negative tolerance is clamped to zero so an author
+    /// slip can never widen the window. inf/nan are rejected as answers. Proved
+    /// in tools/port/numeric_grading_port.py.
+    /// </summary>
+    private static double ScoreNumeric(NumericQuestion question, QuestionAnswer answer)
+    {
+        if (string.IsNullOrWhiteSpace(answer.TextAnswer))
+            return 0;
+
+        if (!double.TryParse(
+                answer.TextAnswer.Trim(),
+                NumberStyles.Float | NumberStyles.AllowLeadingSign,
+                CultureInfo.InvariantCulture,
+                out var value))
+            return 0;
+
+        if (double.IsNaN(value) || double.IsInfinity(value))
+            return 0;
+
+        var tolerance = question.Tolerance > 0 ? question.Tolerance : 0;
+
+        return Math.Abs(value - question.Target) <= tolerance
+            ? question.Points
+            : 0;
+    }
+
+    /// <summary>
+    /// Dropdown: identical scoring to single-choice multiple choice — one chosen
+    /// index, correct when that choice is the correct one. Shares the logic so it
+    /// can never drift from single-choice.
+    /// </summary>
+    private static double ScoreDropdown(DropdownQuestion question, QuestionAnswer answer)
+    {
+        if (answer.ChoiceIndex is not { } index) return 0;
+        if (index < 0 || index >= question.Choices.Count) return 0;
+
+        return question.Choices[index].IsCorrect ? question.Points : 0;
+    }
 
     private static double ScoreSingle(MultipleChoiceSingleQuestion question, QuestionAnswer answer)
     {

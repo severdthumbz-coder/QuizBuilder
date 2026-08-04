@@ -25,7 +25,9 @@ public sealed class QuizPackageService : IQuizPackageService
     // Version 2 (v0.24): adds the Sequence question type. A v1 build cannot
     // deserialize a "sequence" $kind, so a file containing one is written as
     // version 2 and correctly rejected by older builds via the gate below.
-    public int CurrentFormatVersion => 2;
+    // Version 3 (v0.26): adds the Numeric and Dropdown question types, same
+    // rationale — a file using either is written as version 3.
+    public int CurrentFormatVersion => 3;
 
     public string AddImage(byte[] imageBytes, string originalFileName)
     {

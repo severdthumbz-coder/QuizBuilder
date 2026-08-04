@@ -471,6 +471,65 @@
         </StackPanel>
     </DataTemplate>
 
+    <!-- Numeric -->
+    <DataTemplate DataType="{x:Type vm:NumericEditorViewModel}">
+        <StackPanel>
+            <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CommonFieldsTemplate}" />
+
+            <TextBlock Text="Correct value" Style="{StaticResource EditorLabel}" Margin="0,16,0,4" />
+            <TextBlock Text="The number that counts as correct. Use the tolerance below to accept nearby answers."
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       Margin="0,0,0,8" />
+            <TextBox Text="{Binding TargetText, UpdateSourceTrigger=LostFocus}"
+                     Width="200" HorizontalAlignment="Left" Padding="6,4"
+                     FontFamily="{DynamicResource Font.Family}"
+                     FontSize="{DynamicResource Font.Size.Body}" />
+
+            <TextBlock Text="Tolerance (±)" Style="{StaticResource EditorLabel}" Margin="0,16,0,4" />
+            <TextBlock Text="How far from the correct value still counts. Leave at 0 to require an exact match."
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       Margin="0,0,0,8" />
+            <TextBox Text="{Binding ToleranceText, UpdateSourceTrigger=LostFocus}"
+                     Width="200" HorizontalAlignment="Left" Padding="6,4"
+                     FontFamily="{DynamicResource Font.Family}"
+                     FontSize="{DynamicResource Font.Size.Body}" />
+
+            <TextBlock Text="Unit (optional)" Style="{StaticResource EditorLabel}" Margin="0,16,0,4" />
+            <TextBox Text="{Binding Unit, UpdateSourceTrigger=LostFocus}"
+                     Width="200" HorizontalAlignment="Left" Padding="6,4"
+                     FontFamily="{DynamicResource Font.Family}"
+                     FontSize="{DynamicResource Font.Size.Body}" />
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Dropdown (single choice, shown as a dropdown) -->
+    <DataTemplate DataType="{x:Type vm:DropdownEditorViewModel}">
+        <StackPanel>
+            <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource CommonFieldsTemplate}" />
+
+            <TextBlock Text="Options" Style="{StaticResource EditorLabel}" Margin="0,16,0,4" />
+            <TextBlock Text="Tick exactly one option as correct. The taker picks from a dropdown."
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       Margin="0,0,0,8" />
+
+            <ItemsControl ItemsSource="{Binding Choices}"
+                          ItemTemplate="{StaticResource ChoiceRowTemplate}"
+                          Focusable="False" />
+
+            <Button Content="Add option"
+                    Command="{Binding AddChoiceCommand}"
+                    Style="{StaticResource SmallButton}"
+                    HorizontalAlignment="Left"
+                    Margin="0,4,0,0" />
+        </StackPanel>
+    </DataTemplate>
+
     <!-- Essay -->
     <DataTemplate DataType="{x:Type vm:EssayEditorViewModel}">
         <StackPanel>

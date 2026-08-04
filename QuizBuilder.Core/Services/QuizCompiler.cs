@@ -418,6 +418,13 @@ public sealed class QuizCompiler : IQuizCompiler
                 Shuffle(q.Choices, rng);
                 break;
 
+            // Dropdown is single-choice presented differently; its options
+            // shuffle exactly like multiple choice so the authored order (which
+            // may list the correct option first) doesn't leak the answer.
+            case DropdownQuestion q:
+                Shuffle(q.Choices, rng);
+                break;
+
             // Matching shuffles via MatchingOptions instead: the left column
             // must keep its order so the printed rows stay stable.
             case MatchingQuestion:
@@ -433,6 +440,8 @@ public sealed class QuizCompiler : IQuizCompiler
             case ShortAnswerQuestion:
             case FillInTheBlankQuestion:
             case EssayQuestion:
+            // Numeric has no options to shuffle.
+            case NumericQuestion:
             default:
                 break;
         }

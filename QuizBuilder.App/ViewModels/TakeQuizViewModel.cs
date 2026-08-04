@@ -64,7 +64,28 @@ public sealed class TakeQuestionViewModel : ViewModelBase
     public bool IsBlanks => Question is FillInTheBlankQuestion;
     public bool IsMatching => Question is MatchingQuestion;
     public bool IsSequence => Question is SequenceQuestion;
+    public bool IsNumeric => Question is NumericQuestion;
+    public bool IsDropdown => Question is DropdownQuestion;
     public bool IsEssay => Question is EssayQuestion;
+
+    /// <summary>Unit label for a numeric question, shown after the input (may be null).</summary>
+    public string? NumericUnit => (Question as NumericQuestion)?.Unit;
+
+    /// <summary>
+    /// The selected choice for a dropdown question, bound to the ComboBox's
+    /// SelectedItem. Setting it selects that choice (which routes to ChoiceIndex
+    /// through the same IsSelected path single-choice uses), so dropdown and
+    /// single-choice share the answer mechanism exactly.
+    /// </summary>
+    public TakeChoiceViewModel? SelectedChoice
+    {
+        get => Choices.FirstOrDefault(c => c.IsSelected);
+        set
+        {
+            if (value is not null) value.IsSelected = true;
+            OnPropertyChanged();
+        }
+    }
 
     /// <summary>
     /// Told to the taker up front. An essay that silently scores nothing would
@@ -128,6 +149,14 @@ public sealed class TakeQuestionViewModel : ViewModelBase
         switch (Question)
         {
             case MultipleChoiceSingleQuestion q:
+                for (var i = 0; i < q.Choices.Count; i++)
+                    Choices.Add(new TakeChoiceViewModel(this, i, q.Choices[i].Text, single: true));
+                break;
+
+            // Dropdown is single-choice; populate the same Choices collection.
+            // The XAML renders a ComboBox instead of radio buttons, keyed on
+            // IsDropdown, but the answer path (ChoiceIndex) is identical.
+            case DropdownQuestion q:
                 for (var i = 0; i < q.Choices.Count; i++)
                     Choices.Add(new TakeChoiceViewModel(this, i, q.Choices[i].Text, single: true));
                 break;

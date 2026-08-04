@@ -111,6 +111,29 @@
                      HorizontalAlignment="Left" />
         </DataTemplate>
 
+        <DataTemplate x:Key="NumericTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBox Text="{Binding TextAnswer, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource AnswerBox}"
+                         Width="200"
+                         HorizontalAlignment="Left" />
+                <TextBlock Text="{Binding NumericUnit}"
+                           Style="{StaticResource Body}"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="DropdownTemplate">
+            <ComboBox ItemsSource="{Binding Choices}"
+                      SelectedItem="{Binding SelectedChoice, Mode=TwoWay}"
+                      DisplayMemberPath="Text"
+                      Width="280"
+                      HorizontalAlignment="Left"
+                      FontFamily="{DynamicResource Font.Family}"
+                      FontSize="{DynamicResource Font.Size.Body}" />
+        </DataTemplate>
+
         <DataTemplate x:Key="BlanksTemplate">
             <ItemsControl ItemsSource="{Binding Blanks}">
                 <ItemsControl.ItemTemplate>
@@ -349,6 +372,12 @@
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsSequence}" Value="True">
                                                         <Setter Property="ContentTemplate" Value="{StaticResource SequenceTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsNumeric}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource NumericTemplate}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsDropdown}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource DropdownTemplate}" />
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsEssay}" Value="True">
                                                         <Setter Property="ContentTemplate" Value="{StaticResource EssayTemplate}" />

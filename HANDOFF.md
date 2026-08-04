@@ -1,8 +1,23 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 31 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.31.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b30 (phase 3 UI) confirmed green on CI + `build.bat` (671 tests, exe runs).
+**Last shipped:** v0.26.0 build 32 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.32.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** AI grammar review arc complete (b31, CI-green). **b32 begins a new
+feature: two new question types, Numeric and Dropdown.** This build is
+**Core-complete + desktop-UI-complete**; mobile (MAUI Player) rendering and the
+Word/Excel/HTML/web exporters are DEFERRED to a follow-on build (agreed
+sequencing). Core: new `NumericQuestion` (Target/Tolerance/Unit) and
+`DropdownQuestion` (Choice list, single-pick), grader cases (numeric proved in
+`tools/port/numeric_grading_port.py`; dropdown shares single-choice scoring),
+`.qbx` bumped to FormatVersion 3 (v2 files still open), plus
+inventory/answer-describer/compiler-shuffle cases and `NumericDropdownGradingTests`.
+Desktop: type picker + factory + two editor VMs/templates + take rendering
+(numeric text box, dropdown ComboBox) + preview answer text. **KNOWN DEFERRED
+GAPS (safe, not broken):** exporters have no `default`-throw, so a numeric/dropdown
+question exports its prompt but not its answer body until the exporter build; the
+Android player doesn't render the two new types yet. A quiz using them opens and
+grades correctly everywhere. **Next builds:** (1) exporters, (2) mobile player
+rendering.
 **b31 adds the Claude provider — the AI grammar review is now FEATURE-COMPLETE.**
 A `DispatchingGrammarProvider` reads the active `AiProvider` from settings and
 routes each check to the local-endpoint or Claude transport; both share the Core
@@ -496,6 +511,41 @@ on-device. Verification level is no longer a caveat.
     DPAPI key, engine + resilient parser, scope/accept-reject UI, local + Claude
     providers). Next natural runtime step is purely the maintainer's: exercise
     both providers live.
+- **b32 — new question types: Numeric + Dropdown (Core + desktop; mobile +
+  exporters deferred).** Chosen first among the audit's feature ideas because new
+  types change the `.qbx` format, and the format should settle before iOS work.
+  - **Core (correctness-complete):** `NumericQuestion` (Target, Tolerance, Unit;
+    grades within-tolerance-inclusive, negative tolerance clamped to exact,
+    inf/nan rejected, invariant-culture parse — proved in
+    `tools/port/numeric_grading_port.py`, pinned by `NumericDropdownGradingTests`)
+    and `DropdownQuestion` (reuses the `Choice` list + `ChoiceIndex`; grader
+    delegates to the same single-choice logic, with a test asserting the
+    equivalence so they can't diverge). New `[JsonDerivedType]` discriminators
+    "numeric"/"dropdown"; `QuestionKind` appended (not inserted). `.qbx`
+    `CurrentFormatVersion => 3`; `PackageBackwardCompatTests` still green (reads
+    old files). Also updated: `AnswerDescriber`, `DocumentTextInventory`
+    (dropdown choices are spell-checkable), `QuizCompiler.ShuffleAnswers`
+    (dropdown shuffles like single-choice so authored order doesn't leak the
+    answer; numeric no-op).
+  - **Desktop UI:** type picker + `CreateQuestion` factory + editor-factory `For`
+    entries; `NumericEditorViewModel` (target/tolerance/unit) and
+    `DropdownEditorViewModel` (reuses `ChoiceListEditorViewModel`, single-correct)
+    + their DataTemplates; take rendering via new `IsNumeric`/`IsDropdown` flags,
+    a `NumericTemplate` (text box bound to the shared `TextAnswer` + unit label)
+    and `DropdownTemplate` (ComboBox over `Choices`, `SelectedChoice` routes
+    through the same `IsSelected`→`ChoiceIndex` path); preview `AnswerText` cases.
+  - **DEFERRED (agreed): exporters + mobile.** The four exporters
+    (Word/Excel/HTML/web) switch on type with NO default-throw, so a
+    numeric/dropdown question currently exports its prompt but not its answer body
+    — safe degradation, not a crash. The Android player's take UI doesn't render
+    the two types yet. A `.qbx` using them opens and grades correctly on both
+    desktop and mobile; only these two presentation surfaces lag. Two follow-on
+    builds planned: exporters, then mobile.
+  - **Verified here:** validate 12/12, MC3024 clean, xUnit anti-patterns clean,
+    state-machine balance clean on all 11 changed files, editor `vm:` namespace
+    matches, all take bindings + both take templates + both editor templates
+    resolve, numeric port + full port regression green. **Core still at 2 package
+    refs.** Not verifiable here: WPF compile, runtime.
 
 ### Tier-1 mobile backlog: COMPLETE. Quiz library: COMPLETE.
 Study Cards, history, pause/resume (the decided tier-1 set) all shipped, plus the

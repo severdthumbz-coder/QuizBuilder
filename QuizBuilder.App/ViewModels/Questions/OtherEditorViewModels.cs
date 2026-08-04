@@ -555,3 +555,89 @@ public sealed class SequenceEditorViewModel : QuestionEditorViewModel
         }
     }
 }
+
+/// <summary>
+/// Editor for a numeric question: a target value, an optional tolerance, and an
+/// optional unit label. The three are bound as text and parsed leniently so a
+/// half-typed "-" or "." while the user is mid-entry doesn't reset the field.
+/// </summary>
+public sealed class NumericEditorViewModel : QuestionEditorViewModel
+{
+    private readonly NumericQuestion _question;
+
+    public NumericEditorViewModel(NumericQuestion question, Action notifyChanged, IQuizPackageService images)
+        : base(question, notifyChanged, images)
+    {
+        _question = question;
+    }
+
+    public string TargetText
+    {
+        get => _question.Target.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        set
+        {
+            if (double.TryParse(value, System.Globalization.NumberStyles.Float | System.Globalization.NumberStyles.AllowLeadingSign,
+                    System.Globalization.CultureInfo.InvariantCulture, out var v) && v != _question.Target)
+            {
+                _question.Target = v;
+                OnPropertyChanged();
+                MarkChanged();
+            }
+        }
+    }
+
+    public string ToleranceText
+    {
+        get => _question.Tolerance.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        set
+        {
+            if (double.TryParse(value, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var v) && v >= 0 && v != _question.Tolerance)
+            {
+                _question.Tolerance = v;
+                OnPropertyChanged();
+                MarkChanged();
+            }
+        }
+    }
+
+    public string? Unit
+    {
+        get => _question.Unit;
+        set
+        {
+            if (_question.Unit == value) return;
+            _question.Unit = value;
+            OnPropertyChanged();
+            MarkChanged();
+        }
+    }
+}
+
+/// <summary>
+/// Editor for a dropdown question. Behaviourally identical to single-choice
+/// (one correct option from a list); the only difference is that the taker sees
+/// a dropdown. Reuses the shared choice-list editor and enforces exactly one
+/// correct answer, exactly like the single-choice editor.
+/// </summary>
+public sealed class DropdownEditorViewModel : ChoiceListEditorViewModel
+{
+    public DropdownEditorViewModel(DropdownQuestion question, Action notifyChanged, IQuizPackageService images)
+        : base(question, question.Choices, notifyChanged, images)
+    {
+        if (question.Choices.Count == 0)
+        {
+            AddChoiceCommand.Execute(null);
+            AddChoiceCommand.Execute(null);
+        }
+    }
+
+    protected override void OnChoiceMarkedCorrect(ChoiceViewModel choice)
+    {
+        foreach (var other in Choices)
+        {
+            if (ReferenceEquals(other, choice)) continue;
+            other.ClearCorrectSilently();
+        }
+    }
+}

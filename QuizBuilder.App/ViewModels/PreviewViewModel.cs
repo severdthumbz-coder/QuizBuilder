@@ -69,6 +69,13 @@ public sealed class PreviewQuestionViewModel
         SequenceQuestion q =>
             q.Items.Count > 0 ? string.Join(" -> ", q.Items) : "(no items)",
 
+        NumericQuestion q =>
+            (q.Tolerance > 0 ? $"{q.Target} (± {q.Tolerance})" : q.Target.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            + (string.IsNullOrWhiteSpace(q.Unit) ? "" : $" {q.Unit}"),
+
+        DropdownQuestion q =>
+            q.Choices.FirstOrDefault(c => c.IsCorrect)?.Text ?? "(no correct answer marked)",
+
         EssayQuestion q =>
             string.IsNullOrWhiteSpace(q.RubricNotes) ? "(graded by hand)" : q.RubricNotes,
 
