@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 33, "2026-08-04", new[]
+        {
+            "Test fix: b32 added the Numeric and Dropdown question types, which correctly tripped a guard test that pinned Sequence as the last item in the question-kind list. All the new feature code and its own tests passed (700 of 701) — this was just the guard doing its job. Updated it to a sturdier form that pins the saved numeric value of every question kind (so existing files can never be silently renumbered) and confirms new kinds are appended. No product code changed.",
+        }),
         new VersionEntry("0.26.0", 32, "2026-08-04", new[]
         {
             "Two new question types — Numeric and Dropdown (desktop authoring + taking; mobile and exporters to follow). Numeric accepts a typed number, correct when it's within an optional tolerance of the target (0 tolerance means exact); an optional unit label can be shown. Dropdown is a single-answer question presented as a dropdown instead of radio buttons — handy for long option lists — and is graded exactly like single-choice. Both are available in the 'add question' menu, the editor, preview, and when taking a quiz on the desktop. The .qbx format is now version 3; version-2 files still open. Note: exporting these two types to Word/Excel/HTML and taking them on the Android player arrive in the next update — a quiz using them opens and grades correctly everywhere, but those two surfaces don't render them yet.",

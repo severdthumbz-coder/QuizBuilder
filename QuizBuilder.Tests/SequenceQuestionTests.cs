@@ -226,14 +226,29 @@ public class SequenceQuestionTests
     }
 
     [Fact]
-    public void SequenceIsLastInTheKindEnum()
+    public void ExistingKindValuesAreStableAndNewOnesAreAppended()
     {
-        // Appended rather than inserted: the value is persisted numerically in
-        // some spreadsheet round-trips, so inserting earlier would renumber
-        // every kind after it and silently rewrite existing files.
-        var values = Enum.GetValues<QuestionKind>();
+        // The kind is persisted numerically in some spreadsheet round-trips, so
+        // an existing value's number must never change — inserting a new kind
+        // earlier would renumber the ones after it and silently rewrite existing
+        // files. This pins each established value to its number; new types must
+        // be APPENDED with the next number, never inserted. When you add a type,
+        // add its assertion at the end here — that is the deliberate checkpoint.
+        Assert.Equal(0, (int)QuestionKind.MultipleChoiceSingle);
+        Assert.Equal(1, (int)QuestionKind.MultipleChoiceMultiple);
+        Assert.Equal(2, (int)QuestionKind.TrueFalse);
+        Assert.Equal(3, (int)QuestionKind.ShortAnswer);
+        Assert.Equal(4, (int)QuestionKind.FillInTheBlank);
+        Assert.Equal(5, (int)QuestionKind.Matching);
+        Assert.Equal(6, (int)QuestionKind.Essay);
+        Assert.Equal(7, (int)QuestionKind.Sequence);
 
-        Assert.Equal(QuestionKind.Sequence, values[^1]);
+        // v3 additions — appended after Sequence.
+        Assert.Equal(8, (int)QuestionKind.Numeric);
+        Assert.Equal(9, (int)QuestionKind.Dropdown);
+
+        // And the newest type is genuinely last, so nothing was inserted after it.
+        Assert.Equal(QuestionKind.Dropdown, Enum.GetValues<QuestionKind>()[^1]);
     }
 
     [Fact]

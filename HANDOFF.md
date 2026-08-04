@@ -1,23 +1,16 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 32 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.32.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** AI grammar review arc complete (b31, CI-green). **b32 begins a new
-feature: two new question types, Numeric and Dropdown.** This build is
-**Core-complete + desktop-UI-complete**; mobile (MAUI Player) rendering and the
-Word/Excel/HTML/web exporters are DEFERRED to a follow-on build (agreed
-sequencing). Core: new `NumericQuestion` (Target/Tolerance/Unit) and
-`DropdownQuestion` (Choice list, single-pick), grader cases (numeric proved in
-`tools/port/numeric_grading_port.py`; dropdown shares single-choice scoring),
-`.qbx` bumped to FormatVersion 3 (v2 files still open), plus
-inventory/answer-describer/compiler-shuffle cases and `NumericDropdownGradingTests`.
-Desktop: type picker + factory + two editor VMs/templates + take rendering
-(numeric text box, dropdown ComboBox) + preview answer text. **KNOWN DEFERRED
-GAPS (safe, not broken):** exporters have no `default`-throw, so a numeric/dropdown
-question exports its prompt but not its answer body until the exporter build; the
-Android player doesn't render the two new types yet. A quiz using them opens and
-grades correctly everywhere. **Next builds:** (1) exporters, (2) mobile player
-rendering.
+**Last shipped:** v0.26.0 build 33 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.33.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b32 (Numeric + Dropdown types, Core + desktop) compiled clean (0 errors,
+0 warnings) and 700/701 tests passed on CI — the one failure was the pre-existing
+`SequenceIsLastInTheKindEnum` guard, which correctly fired because the two new
+kinds were appended after Sequence. **b33 fixes that guard** (all b32 feature code
+and its own tests were green). Rewrote it from "assert Sequence is last" to pin the
+persisted numeric value of EVERY kind (0–9) plus confirm the newest is last — a
+sturdier invariant that protects saved-file numbering directly. No product code
+changed. **Numeric + Dropdown remain Core-complete + desktop-complete; exporters
+and mobile rendering still deferred to follow-on builds.**
 **b31 adds the Claude provider — the AI grammar review is now FEATURE-COMPLETE.**
 A `DispatchingGrammarProvider` reads the active `AiProvider` from settings and
 routes each check to the local-endpoint or Claude transport; both share the Core
