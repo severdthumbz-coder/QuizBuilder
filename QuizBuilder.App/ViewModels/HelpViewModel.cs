@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 35, "2026-08-04", new[]
+        {
+            "Fix for the b34 Excel round-trip: numeric and dropdown questions were being written to the spreadsheet's Type column as 'Essay', so they came back as essays on import. The exporter had a separate type-label list that hadn't been updated for the two new types. Fixed — they now export with the correct Type and round-trip properly. Word and HTML exports were unaffected.",
+        }),
         new VersionEntry("0.26.0", 34, "2026-08-04", new[]
         {
             "Exporters now handle the Numeric and Dropdown question types. Word, HTML, and Excel exports render both types and show their answers in the answer key. Excel is a full round-trip: a numeric question stores its correct value, tolerance, and unit; a dropdown stores its options and correct choice — and both import back correctly, with the Guide sheet explaining the format. The interactive web export handles them in a follow-on update. Combined with the desktop authoring from before, numeric and dropdown questions now work across authoring, taking, grading, and document export.",

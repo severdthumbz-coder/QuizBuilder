@@ -1,20 +1,17 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 34 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.34.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b33 (enum-guard fix) fully green. **b34 adds Numeric + Dropdown support
-to the Word, HTML, and Excel exporters** (Excel is a full export→import round-trip:
-numeric = target/tolerance/unit in Option1/Option2/Extra; dropdown = options +
-Correct like single-choice; Guide sheet documents both; importer has `numeric`/
-`dropdown` cases). Answer keys in all three show the new types. Round-trip +
-answer-key tests added. **One exporter surface remains: the interactive web
-exporter** (`QuizWebExporter`) — it re-implements grading in JS, so numeric
-tolerance needs a JS port + mirror; deferred to its own focused build (it degrades
-safely today — unknown types just don't render/grade). After that, the only
-remaining numeric/dropdown surface is the **Android player** take UI. iOS note: the
-user asked about building iOS via emulator without a Mac — NOT possible (Apple
-toolchain/simulator/signing are macOS-only); realistic paths are a cloud/CI mac
-runner or a borrowed Mac; I can prepare iOS scaffolding but can't build/run it here.
+**Last shipped:** v0.26.0 build 35 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.35.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b34 (Word/HTML/Excel numeric+dropdown) compiled clean and 703/706 passed;
+the 3 failures were my own new Excel round-trip tests, which correctly caught a real
+bug: `ExcelExporter.TypeName` (a SEPARATE type-label switch from the body-writer
+switch) still fell through to `_ => "Essay"` for Numeric/Dropdown, so they were
+written to the Type column as "Essay" and re-imported as essays. **b35 adds the two
+missing `TypeName` cases** — round-trip now works. Verified there's no other missed
+type-label switch in the three shipped exporters (the only other is
+`QuizWebExporter`'s, already deferred). **Remaining numeric/dropdown surfaces: the
+web exporter and the Android player take UI.** iOS-without-Mac: not possible (Apple
+toolchain is macOS-only); cloud/CI mac runner or borrowed Mac are the paths.
 **b31 adds the Claude provider — the AI grammar review is now FEATURE-COMPLETE.**
 A `DispatchingGrammarProvider` reads the active `AiProvider` from settings and
 routes each check to the local-endpoint or Claude transport; both share the Core

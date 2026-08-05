@@ -413,6 +413,8 @@ public sealed class ExcelExporter : IExcelExporter
         MatchingQuestion => "Matching",
         EssayQuestion => "Essay",
         SequenceQuestion => "Sequence",
+        NumericQuestion => "Numeric",
+        DropdownQuestion => "Dropdown",
 
         // Unreachable while every kind is listed above. Kept as Essay because
         // it is the one type the importer treats as hand-graded, so an
