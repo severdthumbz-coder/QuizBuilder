@@ -79,7 +79,7 @@ public static class QuizSheetSchema
 
         ("Type",
             "One of: MultipleChoiceSingle, MultipleChoiceMultiple, TrueFalse, ShortAnswer, "
-            + "FillInTheBlank, Matching, Sequence, Essay. Spaces and capitals are ignored, so \"multiple choice single\" also works."),
+            + "FillInTheBlank, Matching, Sequence, Numeric, Dropdown, Essay. Spaces and capitals are ignored, so \"multiple choice single\" also works."),
 
         ("Points",
             "A number. Decimals are fine. Zero means the question is not graded, and it is excluded from "
@@ -94,6 +94,14 @@ public static class QuizSheetSchema
 
         ("ShortAnswer",
             "Put each accepted answer in Option 1..8. Any one of them counts as correct."),
+
+        ("Dropdown",
+            "Same as MultipleChoiceSingle: put each choice in Option 1..8 and TRUE in the matching "
+            + "Correct column for the right answer. The taker picks it from a dropdown."),
+
+        ("Numeric",
+            "Put the correct number in Option 1. Optionally put a tolerance (how far off still counts) "
+            + "in Option 2 — leave it blank or 0 for an exact match. Put a unit label (e.g. kg) in Extra if you want one shown."),
 
         ("FillInTheBlank",
             "Write the prompt with {{1}}, {{2}} and so on where the blanks go. "

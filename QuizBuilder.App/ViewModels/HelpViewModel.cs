@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 34, "2026-08-04", new[]
+        {
+            "Exporters now handle the Numeric and Dropdown question types. Word, HTML, and Excel exports render both types and show their answers in the answer key. Excel is a full round-trip: a numeric question stores its correct value, tolerance, and unit; a dropdown stores its options and correct choice — and both import back correctly, with the Guide sheet explaining the format. The interactive web export handles them in a follow-on update. Combined with the desktop authoring from before, numeric and dropdown questions now work across authoring, taking, grading, and document export.",
+        }),
         new VersionEntry("0.26.0", 33, "2026-08-04", new[]
         {
             "Test fix: b32 added the Numeric and Dropdown question types, which correctly tripped a guard test that pinned Sequence as the last item in the question-kind list. All the new feature code and its own tests passed (700 of 701) — this was just the guard doing its job. Updated it to a sturdier form that pins the saved numeric value of every question kind (so existing files can never be silently renumbered) and confirms new kinds are appended. No product code changed.",

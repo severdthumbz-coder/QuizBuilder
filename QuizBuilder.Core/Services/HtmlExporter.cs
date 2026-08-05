@@ -400,6 +400,14 @@ public sealed partial class HtmlExporter : IHtmlExporter
                 AppendLines(sb, 1);
                 break;
 
+            case DropdownQuestion q:
+                AppendOptions(sb, q.Choices.Select(c => (c.Text, c.IsCorrect)), options);
+                break;
+
+            case NumericQuestion q:
+                AppendLines(sb, 1);
+                break;
+
             case EssayQuestion q:
                 // Roughly ten words a line, floor of three so a short essay
                 // still looks like an essay. Capped so a 5000-word suggestion
@@ -538,6 +546,15 @@ public sealed partial class HtmlExporter : IHtmlExporter
         // Items are stored in correct order, so the answer key is simply that
         // order joined with arrows.
         SequenceQuestion q => string.Join(" -> ", q.Items),
+
+        NumericQuestion q =>
+            (q.Tolerance > 0
+                ? $"{q.Target.ToString(System.Globalization.CultureInfo.InvariantCulture)} (± {q.Tolerance.ToString(System.Globalization.CultureInfo.InvariantCulture)})"
+                : q.Target.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            + (string.IsNullOrWhiteSpace(q.Unit) ? "" : $" {q.Unit}"),
+
+        DropdownQuestion q =>
+            q.Choices.FirstOrDefault(c => c.IsCorrect)?.Text ?? "(no correct answer marked)",
 
         EssayQuestion q => string.IsNullOrWhiteSpace(q.RubricNotes) ? "(graded by hand)" : q.RubricNotes,
 

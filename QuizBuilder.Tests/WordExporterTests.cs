@@ -63,6 +63,41 @@ public class WordExporterTests
         return doc;
     }
 
+    private static QuizDocument DocWithQuestion(Question q)
+    {
+        var doc = new QuizDocument { Title = "Test" };
+        var section = new Section { Title = "A" };
+        section.Questions.Add(q);
+        doc.Sections.Add(section);
+        doc.SectionDisplayOrder.Add(section.Id);
+        return doc;
+    }
+
+    [Fact]
+    public void NumericAnswerKeyShowsTargetToleranceAndUnit()
+    {
+        var docx = Export(DocWithQuestion(new NumericQuestion
+        {
+            Prompt = "How fast?", Target = 9.8, Tolerance = 0.1, Unit = "m/s²",
+        }), showAnswers: true);
+
+        var text = TextOf(docx);
+        Assert.Contains("9.8", text);
+        Assert.Contains("0.1", text);
+        Assert.Contains("m/s²", text);
+    }
+
+    [Fact]
+    public void DropdownAnswerKeyShowsCorrectChoice()
+    {
+        var dropdown = new DropdownQuestion { Prompt = "Which year?" };
+        dropdown.Choices.Add(new Choice { Text = "1990" });
+        dropdown.Choices.Add(new Choice { Text = "2000", IsCorrect = true });
+
+        var text = TextOf(Export(DocWithQuestion(dropdown), showAnswers: true));
+        Assert.Contains("2000", text);
+    }
+
     // --- Package shape ------------------------------------------------------
 
     [Fact]

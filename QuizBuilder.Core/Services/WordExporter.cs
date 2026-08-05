@@ -386,6 +386,19 @@ public sealed class WordExporter : IWordExporter
                 AppendParagraph(sb, "AnswerLine", string.Empty);
                 break;
 
+            case DropdownQuestion dd:
+                // Same options as single choice — on paper a dropdown reads as a
+                // labelled option list.
+                AppendOptions(sb, dd.Choices.Select(c => (c.Text, c.IsCorrect)), options);
+                break;
+
+            case NumericQuestion numeric:
+                // An answer line, with the unit shown after it when present so
+                // the taker knows what to write.
+                AppendParagraph(sb, "AnswerLine",
+                    string.IsNullOrWhiteSpace(numeric.Unit) ? string.Empty : $"________  {numeric.Unit}");
+                break;
+
             case EssayQuestion essay:
                 var lines = Math.Clamp(essay.SuggestedWordCount / 10, 3, 40);
                 for (var i = 0; i < lines; i++)
@@ -528,6 +541,15 @@ public sealed class WordExporter : IWordExporter
                 : "(no correct answer marked)",
 
         TrueFalseQuestion q => q.CorrectAnswer ? "True" : "False",
+
+        NumericQuestion q =>
+            (q.Tolerance > 0
+                ? $"{q.Target.ToString(System.Globalization.CultureInfo.InvariantCulture)} (± {q.Tolerance.ToString(System.Globalization.CultureInfo.InvariantCulture)})"
+                : q.Target.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            + (string.IsNullOrWhiteSpace(q.Unit) ? "" : $" {q.Unit}"),
+
+        DropdownQuestion q =>
+            q.Choices.FirstOrDefault(c => c.IsCorrect)?.Text ?? "(no correct answer marked)",
 
         ShortAnswerQuestion q =>
             q.AcceptedAnswers.Count > 0 ? string.Join("  /  ", q.AcceptedAnswers) : "(no accepted answer)",

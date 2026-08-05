@@ -1,16 +1,20 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 33 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.33.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b32 (Numeric + Dropdown types, Core + desktop) compiled clean (0 errors,
-0 warnings) and 700/701 tests passed on CI — the one failure was the pre-existing
-`SequenceIsLastInTheKindEnum` guard, which correctly fired because the two new
-kinds were appended after Sequence. **b33 fixes that guard** (all b32 feature code
-and its own tests were green). Rewrote it from "assert Sequence is last" to pin the
-persisted numeric value of EVERY kind (0–9) plus confirm the newest is last — a
-sturdier invariant that protects saved-file numbering directly. No product code
-changed. **Numeric + Dropdown remain Core-complete + desktop-complete; exporters
-and mobile rendering still deferred to follow-on builds.**
+**Last shipped:** v0.26.0 build 34 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.34.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b33 (enum-guard fix) fully green. **b34 adds Numeric + Dropdown support
+to the Word, HTML, and Excel exporters** (Excel is a full export→import round-trip:
+numeric = target/tolerance/unit in Option1/Option2/Extra; dropdown = options +
+Correct like single-choice; Guide sheet documents both; importer has `numeric`/
+`dropdown` cases). Answer keys in all three show the new types. Round-trip +
+answer-key tests added. **One exporter surface remains: the interactive web
+exporter** (`QuizWebExporter`) — it re-implements grading in JS, so numeric
+tolerance needs a JS port + mirror; deferred to its own focused build (it degrades
+safely today — unknown types just don't render/grade). After that, the only
+remaining numeric/dropdown surface is the **Android player** take UI. iOS note: the
+user asked about building iOS via emulator without a Mac — NOT possible (Apple
+toolchain/simulator/signing are macOS-only); realistic paths are a cloud/CI mac
+runner or a borrowed Mac; I can prepare iOS scaffolding but can't build/run it here.
 **b31 adds the Claude provider — the AI grammar review is now FEATURE-COMPLETE.**
 A `DispatchingGrammarProvider` reads the active `AiProvider` from settings and
 routes each check to the local-endpoint or Claude transport; both share the Core

@@ -259,6 +259,21 @@ public sealed class ExcelExporter : IExcelExporter
             case EssayQuestion q:
                 values[QuizSheetSchema.Extra] = q.RubricNotes ?? string.Empty;
                 break;
+
+            case DropdownQuestion q:
+                // Same shape as single choice: options + the matching Correct.
+                AppendChoices(values, q.Choices);
+                break;
+
+            case NumericQuestion q:
+                // Target in Option 1, tolerance in Option 2, unit in Extra. The
+                // Guide sheet documents this so a human editing the sheet knows
+                // the convention; the importer reads it back the same way.
+                values[QuizSheetSchema.Option(1)] = q.Target.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                values[QuizSheetSchema.Option(2)] = q.Tolerance.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (!string.IsNullOrWhiteSpace(q.Unit))
+                    values[QuizSheetSchema.Extra] = q.Unit;
+                break;
         }
 
         sb.Append($"""<row r="{rowNumber}">""");

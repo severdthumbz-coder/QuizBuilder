@@ -70,6 +70,57 @@ public class ExcelExporterTests
         return result.Document!.Sections[0].Questions[0];
     }
 
+    // --- Numeric + Dropdown round-trips (v3 types) --------------------------
+
+    [Fact]
+    public void NumericRoundTripsTargetToleranceAndUnit()
+    {
+        var result = RoundTrip(DocWith(new NumericQuestion
+        {
+            Prompt = "Speed of light (approx, ×10^8 m/s)?",
+            Points = 2,
+            Target = 3.0,
+            Tolerance = 0.1,
+            Unit = "×10^8 m/s",
+        }));
+
+        var q = Assert.IsType<NumericQuestion>(First(result));
+        Assert.Equal(3.0, q.Target);
+        Assert.Equal(0.1, q.Tolerance);
+        Assert.Equal("×10^8 m/s", q.Unit);
+        Assert.Equal(2, q.Points);
+    }
+
+    [Fact]
+    public void NumericRoundTripsWithoutToleranceOrUnit()
+    {
+        var result = RoundTrip(DocWith(new NumericQuestion
+        {
+            Prompt = "2 + 2?",
+            Target = 4.0,
+        }));
+
+        var q = Assert.IsType<NumericQuestion>(First(result));
+        Assert.Equal(4.0, q.Target);
+        Assert.Equal(0, q.Tolerance);
+        Assert.True(string.IsNullOrEmpty(q.Unit));
+    }
+
+    [Fact]
+    public void DropdownRoundTripsChoicesAndCorrect()
+    {
+        var dropdown = new DropdownQuestion { Prompt = "Which year?", Points = 1 };
+        dropdown.Choices.Add(new Choice { Text = "1990" });
+        dropdown.Choices.Add(new Choice { Text = "2000", IsCorrect = true });
+        dropdown.Choices.Add(new Choice { Text = "2010" });
+
+        var q = Assert.IsType<DropdownQuestion>(First(RoundTrip(DocWith(dropdown))));
+
+        Assert.Equal(3, q.Choices.Count);
+        Assert.Equal("2000", q.Choices.Single(c => c.IsCorrect).Text);
+        Assert.Equal(new[] { "1990", "2000", "2010" }, q.Choices.Select(c => c.Text).ToArray());
+    }
+
     // --- Package ------------------------------------------------------------
 
     [Fact]

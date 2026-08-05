@@ -557,6 +557,70 @@ public sealed class ExcelImporter : IExcelImporter
                 return q;
             }
 
+            case "dropdown":
+            case "select":
+            {
+                // Identical shape to single-choice: options + one Correct.
+                var q = new DropdownQuestion();
+                AddChoices(q.Choices, options, corrects);
+
+                if (q.Choices.Count == 0)
+                {
+                    problems.Add($"Row {rowNumber}: no options, so this question was skipped.");
+                    return null;
+                }
+
+                var correctCount = q.Choices.Count(c => c.IsCorrect);
+                if (correctCount == 0)
+                    problems.Add($"Row {rowNumber}: no option marked TRUE, so no answer is set.");
+                else if (correctCount > 1)
+                {
+                    problems.Add($"Row {rowNumber}: {correctCount} options marked TRUE on a dropdown "
+                                 + "(single-answer) question, so only the first was kept.");
+                    var seen = false;
+                    foreach (var choice in q.Choices.Where(c => c.IsCorrect))
+                    {
+                        if (seen) choice.IsCorrect = false;
+                        seen = true;
+                    }
+                }
+
+                return q;
+            }
+
+            case "numeric":
+            case "number":
+            {
+                // Target in Option 1, tolerance in Option 2, unit in Extra —
+                // matching the exporter. A missing/blank tolerance means exact.
+                var q = new NumericQuestion();
+
+                var targetText = options.ElementAtOrDefault(0);
+                if (string.IsNullOrWhiteSpace(targetText) ||
+                    !double.TryParse(targetText.Trim(),
+                        System.Globalization.NumberStyles.Float | System.Globalization.NumberStyles.AllowLeadingSign,
+                        System.Globalization.CultureInfo.InvariantCulture, out var target))
+                {
+                    problems.Add($"Row {rowNumber}: numeric question needs a number in Option 1, so it was skipped.");
+                    return null;
+                }
+                q.Target = target;
+
+                var tolText = options.ElementAtOrDefault(1);
+                if (!string.IsNullOrWhiteSpace(tolText) &&
+                    double.TryParse(tolText.Trim(),
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var tol) && tol > 0)
+                {
+                    q.Tolerance = tol;
+                }
+
+                var unit = Value(cells, headers, QuizSheetSchema.Extra);
+                if (!string.IsNullOrWhiteSpace(unit)) q.Unit = unit.Trim();
+
+                return q;
+            }
+
             default:
                 problems.Add($"Row {rowNumber}: \"{typeText}\" is not a question type, so this row was skipped.");
                 return null;
