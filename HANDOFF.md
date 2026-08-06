@@ -1,29 +1,29 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 41 (stage `spaced-repetition`)
-**Deliverable:** `QuizBuilder_v0.26.0.41.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b40 (version-history grouping) green. **b41 adds the DESKTOP review UI
-for spaced repetition — a new "Review" tab (the app's 12th).** `ReviewViewModel`
-(thin wrapper over `ReviewSession`, like `FlashCardsViewModel`): exposes the current
-due card, reveal-then-grade flow, four grade commands (Again/Hard/Good/Easy →
-`ReviewSession.Grade`), RemainingLabel, and NothingDue/IsDone states.
-`ReviewView.xaml` + code-behind (IsVisibleChanged → OnActivated/OnDeactivated, the
-established pattern). Integration: `NavDestination.Review` added (safe —
-NavDestination is JSON-serialized BY NAME via JsonStringEnumConverter, so inserting
-mid-enum doesn't renumber anything, unlike QuestionKind); nav item in ShellViewModel;
-ctor param + `RegisterView` in ShellWindow.xaml.cs; DI registration of VM + View.
-**[DESIGN] A dedicated Review tab, not folded into Flash Cards** (scheduled study vs
-free browsing are different activities). **[DESIGN] Four grade buttons** (the SM-2
-engine uses four quality levels; two would waste half the algorithm). **CAUGHT
-HERE:** I first used invented resource keys (`PrimaryButton`/`SecondaryButton`/
-`Brush.SurfaceAlt`) that exist nowhere; cross-checked every DynamicResource key
-against working views and replaced them with real ones (inline button styling like
-FlashCards; `Brush.Surface`/`Brush.Accent`/`Brush.OnAccent`). **VERIFIED (structural):**
-ReviewView.xaml well-formed; all 14 bindings resolve to VM members; every
-DynamicResource key used in ≥1 other view; NavigationServiceTests auto-covers the
-new destination; validate 12/12; balance clean. **NOT verified: WPF compile +
-runtime — J's.** **Next: mobile review UI** (MAUI, structural-verify only), then
-spaced repetition is complete. Then iOS scaffolding if a Mac path appears.
+**Last shipped:** v0.26.0 build 42 (stage `spaced-repetition`)
+**Deliverable:** `QuizBuilder_v0.26.0.42.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b41 (desktop Review tab) green. **b42 adds the MOBILE review UI —
+spaced repetition is now COMPLETE on desktop + Android.** Player `ReviewViewModel`
+(CommunityToolkit `ObservableObject`, `[ObservableProperty] ShowingBack`,
+`[RelayCommand]` Reveal/GradeAgain/Hard/Good/Easy) wraps Core `ReviewSession` —
+same scheduler as desktop, shared directly, so grades advance identically.
+`ReviewPage.xaml` + code-behind (tap-to-reveal card, four grade buttons via
+`CanGrade`, NothingDue/IsDone states) matching the StudyCardsPage idiom.
+**Integration:** `IReviewProgressStore` registered in `MauiProgram` pointed at
+`FileSystem.AppDataDirectory` (the sandbox-path adaptation — mobile review-progress.json
+lives in the app sandbox, NOT beside-exe); VM + Page registered; `review` route in
+`AppShell`; a "Spaced repetition" button + `SpacedRepetitionCommand` on HomePage.
+**[NAMING] The player already had a `ReviewCommand` meaning "review as study cards"
+(the flip feature)** — to avoid collision, the new command is `SpacedRepetitionCommand`
+and the button reads "Spaced repetition", distinct from "Review as study cards".
+**VERIFIED (structural):** ReviewPage.xaml well-formed; all 5 `[RelayCommand]`s
+generate the 5 `...Command` names bound in XAML; all 9 bound properties exist;
+`OnShowingBackChanged` partial hook matches the generated property; `x:DataType`
+correct; class is `public partial`; every Style/converter key
+(Card/PrimaryButton/SecondaryButton/Headline/Muted/FieldLabel/Body/BytesToImage/
+HasFaceImage) exists in player resources; validate 12/12; balance clean. **NOT
+verified: MAUI compile + emulator runtime — J's.** **Spaced repetition DONE. Next:
+iOS scaffolding if a Mac path appears, or another feature.**
 **[DECISION] SM-2** (classic Anki-style algorithm), chosen over Leitner because its
 per-card ease is the proven standard and the complexity hides entirely in Core
 behind a friendly 4-button grade (Again/Hard/Good/Easy → quality 2/3/4/5; Again is

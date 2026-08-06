@@ -188,6 +188,20 @@ public partial class HomeViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task SpacedRepetitionAsync()
+    {
+        if (!HasQuiz)
+        {
+            StatusMessage = "Load a quiz first.";
+            return;
+        }
+
+        // Like study cards, spaced-repetition review reads the document directly
+        // (via ReviewSession); an empty/nothing-due state is handled on the page.
+        await Shell.Current.GoToAsync("review");
+    }
+
+    [RelayCommand]
     private async Task HistoryAsync()
     {
         if (!HasQuiz)

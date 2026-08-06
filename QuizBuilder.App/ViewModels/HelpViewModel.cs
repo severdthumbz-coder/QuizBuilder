@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 42, "2026-08-04", new[]
+        {
+            "Spaced repetition now works on the Android player too, from a new \"Spaced repetition\" button on the home screen. It shows the cards that are due, one at a time — tap to reveal the answer, then grade it (Again/Hard/Good/Easy). It uses exactly the same scheduling as the desktop, so a card graded on your phone comes back at the same time it would on the computer, and your progress is stored privately in the app. This completes spaced repetition across desktop and mobile.",
+        }),
         new VersionEntry("0.26.0", 41, "2026-08-04", new[]
         {
             "Spaced repetition comes to the desktop: a new Review tab. It shows the cards the schedule says are due, one at a time — click to reveal the answer, then grade how well you knew it (Again, Hard, Good, Easy). Your grade sets when the card returns: miss it and it's back tomorrow, find it easy and it won't reappear for a good while. When you've cleared the due cards, it says you're done for today. Progress is saved privately on your device, so it never travels with a shared quiz.",

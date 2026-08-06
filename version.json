@@ -2,7 +2,7 @@
   "major": 0,
   "minor": 26,
   "patch": 0,
-  "build": 41,
+  "build": 42,
   "stage": "maui-android-player",
   "_comment": "Central version source. build.bat reads this and passes it to dotnet build via -p:Version. The Help/About tab reads it back off the assembly at runtime. Bump 'build' on every CI run; bump major/minor/patch by hand."
 }

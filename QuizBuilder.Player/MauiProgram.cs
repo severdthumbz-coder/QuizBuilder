@@ -46,6 +46,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<IPausedAttemptService>(
             _ => new PausedAttemptService(FileSystem.AppDataDirectory));
 
+        // Spaced-repetition progress, same sandbox-path adaptation: on a phone
+        // review-progress.json lives in the app sandbox, not "beside the exe".
+        // Singleton so a grade recorded on the Review screen is visible to any
+        // other screen that reads due counts.
+        builder.Services.AddSingleton<IReviewProgressStore>(
+            _ => new ReviewProgressStore(FileSystem.AppDataDirectory));
+
         // --- View models (transient: a fresh VM per navigation) ---
         builder.Services.AddTransient<IdentityViewModel>();
         builder.Services.AddTransient<LibraryViewModel>();
@@ -53,6 +60,7 @@ public static class MauiProgram
         builder.Services.AddTransient<TakeViewModel>();
         builder.Services.AddTransient<ResultsViewModel>();
         builder.Services.AddTransient<StudyCardsViewModel>();
+        builder.Services.AddTransient<ReviewViewModel>();
         builder.Services.AddTransient<HistoryViewModel>();
         builder.Services.AddTransient<AttemptDetailViewModel>();
 
@@ -63,6 +71,7 @@ public static class MauiProgram
         builder.Services.AddTransient<TakePage>();
         builder.Services.AddTransient<ResultsPage>();
         builder.Services.AddTransient<StudyCardsPage>();
+        builder.Services.AddTransient<ReviewPage>();
         builder.Services.AddTransient<HistoryPage>();
         builder.Services.AddTransient<AttemptDetailPage>();
 

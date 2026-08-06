@@ -79,6 +79,11 @@
                         Command="{Binding ReviewCommand}" />
 
                     <Button
+                        Text="Spaced repetition"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding SpacedRepetitionCommand}" />
+
+                    <Button
                         Text="View history"
                         Style="{StaticResource SecondaryButton}"
                         Command="{Binding HistoryCommand}" />

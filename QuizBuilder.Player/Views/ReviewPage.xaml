@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuizBuilder.Player.Views.ReviewPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuizBuilder.Player.ViewModels"
+    x:DataType="vm:ReviewViewModel"
+    Title="Review">
+
+    <Grid Padding="20" RowDefinitions="Auto,*,Auto" RowSpacing="16"
+          MaximumWidthRequest="640" HorizontalOptions="Center">
+
+        <!-- Header: how many are left -->
+        <HorizontalStackLayout Grid.Row="0" Spacing="10" IsVisible="{Binding HasCard}">
+            <Label Text="Due now" Style="{StaticResource FieldLabel}" VerticalOptions="Center" />
+            <Label Text="{Binding RemainingLabel}" Style="{StaticResource Muted}"
+                   FontSize="12" VerticalOptions="Center" />
+        </HorizontalStackLayout>
+
+        <!-- The card. Tapping reveals the answer. -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" IsVisible="{Binding HasCard}"
+                VerticalOptions="Fill">
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding RevealCommand}" />
+            </Border.GestureRecognizers>
+
+            <Grid RowDefinitions="*,Auto" RowSpacing="12">
+                <ScrollView Grid.Row="0" VerticalOptions="Center">
+                    <VerticalStackLayout Spacing="14">
+                        <Image Source="{Binding FaceImage, Converter={StaticResource BytesToImage}}"
+                               Aspect="AspectFit"
+                               MaximumHeightRequest="220"
+                               IsVisible="{Binding HasFaceImage}" />
+                        <Label Text="{Binding FaceText}"
+                               Style="{StaticResource Headline}"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <Label Grid.Row="1" Text="{Binding Hint}" Style="{StaticResource Muted}"
+                       FontSize="12" HorizontalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Nothing due -->
+        <Border Grid.Row="1" Style="{StaticResource Card}"
+                IsVisible="{Binding NothingDue}"
+                VerticalOptions="Center">
+            <Label Text="Nothing to review right now. Come back when more cards are due."
+                   Style="{StaticResource Body}" HorizontalTextAlignment="Center" />
+        </Border>
+
+        <!-- Done for today -->
+        <Border Grid.Row="1" Style="{StaticResource Card}"
+                IsVisible="{Binding IsDone}"
+                VerticalOptions="Center">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="All done for today" Style="{StaticResource Headline}"
+                       HorizontalTextAlignment="Center" />
+                <Label Text="You've reviewed every card that was due."
+                       Style="{StaticResource Body}" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Grade buttons: only after the answer is revealed -->
+        <VerticalStackLayout Grid.Row="2" Spacing="10" IsVisible="{Binding CanGrade}">
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                <Button Grid.Column="0" Text="Again"
+                        Command="{Binding GradeAgainCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Grid.Column="1" Text="Hard"
+                        Command="{Binding GradeHardCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Grid.Column="2" Text="Good"
+                        Command="{Binding GradeGoodCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Grid.Column="3" Text="Easy"
+                        Command="{Binding GradeEasyCommand}"
+                        Style="{StaticResource PrimaryButton}" />
+            </Grid>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
