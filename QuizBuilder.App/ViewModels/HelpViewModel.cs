@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 36, "2026-08-04", new[]
+        {
+            "The interactive web export now handles Numeric and Dropdown questions — the last export surface. A dropdown becomes a real dropdown in the exported page; a numeric question gets a number box with its unit. Both are graded live in the browser exactly as they are on the desktop: the numeric grader uses a strict number check (so a stray '3.14abc' is marked wrong, not silently accepted as 3.14) and the same tolerance rule, verified against the desktop grader case-for-case. With this, numeric and dropdown questions work everywhere except the Android player — authoring, taking, grading, and all four exports (Word, HTML, Excel, and interactive web).",
+        }),
         new VersionEntry("0.26.0", 35, "2026-08-04", new[]
         {
             "Fix for the b34 Excel round-trip: numeric and dropdown questions were being written to the spreadsheet's Type column as 'Essay', so they came back as essays on import. The exporter had a separate type-label list that hadn't been updated for the two new types. Fixed — they now export with the correct Type and round-trip properly. Word and HTML exports were unaffected.",

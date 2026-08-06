@@ -157,6 +157,31 @@ public sealed class QuizWebExporter : IQuizWebExporter
                     });
                     break;
 
+                case DropdownQuestion dd:
+                    // Single-choice presented as a dropdown; same data as "single".
+                    questions.Add(new
+                    {
+                        n = compiled.Number,
+                        type = "dropdown",
+                        points = q.Points,
+                        prompt = q.Prompt,
+                        choices = dd.Choices.Select(c => new { text = c.Text, correct = c.IsCorrect }).ToArray(),
+                    });
+                    break;
+
+                case NumericQuestion nq:
+                    questions.Add(new
+                    {
+                        n = compiled.Number,
+                        type = "numeric",
+                        points = q.Points,
+                        prompt = q.Prompt,
+                        target = nq.Target,
+                        tolerance = nq.Tolerance,
+                        unit = nq.Unit ?? string.Empty,
+                    });
+                    break;
+
                 case FillInTheBlankQuestion fb:
                     questions.Add(new
                     {
@@ -267,6 +292,21 @@ public sealed class QuizWebExporter : IQuizWebExporter
                 sb.Append($"<input type=\"text\" class=\"short\" name=\"q{n}\" autocomplete=\"off\">\n");
                 break;
 
+            case DropdownQuestion dd:
+                sb.Append($"<select class=\"dropdown\" name=\"q{n}\">\n");
+                sb.Append("<option value=\"\">— choose —</option>\n");
+                for (var i = 0; i < dd.Choices.Count; i++)
+                    sb.Append($"<option value=\"{i}\">{Escape(dd.Choices[i].Text)}</option>\n");
+                sb.Append("</select>\n");
+                break;
+
+            case NumericQuestion numeric:
+                sb.Append($"<input type=\"text\" inputmode=\"decimal\" class=\"numeric\" name=\"q{n}\" autocomplete=\"off\">");
+                if (!string.IsNullOrWhiteSpace(numeric.Unit))
+                    sb.Append($" <span class=\"unit\">{Escape(numeric.Unit)}</span>");
+                sb.Append('\n');
+                break;
+
             case FillInTheBlankQuestion fb:
                 var ordered = fb.Blanks.OrderBy(b => b.Ordinal).ToList();
                 for (var i = 0; i < ordered.Count; i++)
@@ -337,6 +377,8 @@ public sealed class QuizWebExporter : IQuizWebExporter
         FillInTheBlankQuestion => "blanks",
         MatchingQuestion => "matching",
         SequenceQuestion => "sequence",
+        NumericQuestion => "numeric",
+        DropdownQuestion => "dropdown",
         EssayQuestion => "essay",
         _ => "unknown",
     };
@@ -477,6 +519,22 @@ public sealed class QuizWebExporter : IQuizWebExporter
           return accepted.some(a => g === norm(a, cs));
         }
 
+        // Strict number parse matching C# double.TryParse(Float|AllowLeadingSign,
+        // Invariant): the WHOLE trimmed string must be a plain decimal/scientific
+        // number with optional sign. Returns null for anything else. NOT
+        // parseFloat (which accepts "3.14abc") and NOT Number (which turns "" and
+        // "  " into 0 and "0x10" into 16). Proved to match the C# grader in
+        // tools/port/web_numeric_grader_port.py.
+        function strictNum(text) {
+          if (text == null) return null;
+          const s = String(text).trim();
+          if (!s) return null;
+          if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(s)) return null;
+          const v = Number(s);
+          if (!Number.isFinite(v)) return null;
+          return v;
+        }
+
         // Mirrors QuizGrader.Score: one rule per type, essay handled by caller.
         function scoreQuestion(q, ans) {
           const pts = q.points;
@@ -506,6 +564,22 @@ public sealed class QuizWebExporter : IQuizWebExporter
             case "short":
               if (!ans.text || !ans.text.trim()) return 0;
               return matches(ans.text, q.accepted, q.caseSensitive) ? pts : 0;
+            case "dropdown": {
+              // Identical to "single": one chosen index.
+              const i = ans.choiceIndex;
+              if (i == null || i < 0 || i >= q.choices.length) return 0;
+              return q.choices[i].correct ? pts : 0;
+            }
+            case "numeric": {
+              // Mirrors QuizGrader.ScoreNumeric. Uses a STRICT parse (not
+              // parseFloat, which would accept "3.14abc") so the browser scores
+              // exactly as the desktop does. Proved in
+              // tools/port/web_numeric_grader_port.py.
+              const v = strictNum(ans.text);
+              if (v === null) return 0;
+              const tol = q.tolerance > 0 ? q.tolerance : 0;
+              return Math.abs(v - q.target) <= tol ? pts : 0;
+            }
             case "blanks": {
               if (q.blanks.length === 0) return 0;
               let hits = 0;
@@ -597,6 +671,12 @@ public sealed class QuizWebExporter : IQuizWebExporter
             } else if (q.type === "short") {
               const el = document.querySelector(`input[name="q${n}"]`);
               answers[idx] = { text: el ? el.value : "" };
+            } else if (q.type === "dropdown") {
+              const el = document.querySelector(`select[name="q${n}"]`);
+              answers[idx] = { choiceIndex: el && el.value !== "" ? parseInt(el.value, 10) : null };
+            } else if (q.type === "numeric") {
+              const el = document.querySelector(`input[name="q${n}"]`);
+              answers[idx] = { text: el ? el.value : "" };
             } else if (q.type === "blanks") {
               const b = {};
               q.blanks.forEach((_, i) => {
@@ -640,6 +720,11 @@ public sealed class QuizWebExporter : IQuizWebExporter
             case "multiple": return q.choices.filter(c => c.correct).map(c => c.text).join(", ");
             case "truefalse": return q.correct ? "True" : "False";
             case "short": return q.accepted.join(" / ");
+            case "dropdown": { const c = q.choices.find(x => x.correct); return c ? c.text : ""; }
+            case "numeric": {
+              const base = q.tolerance > 0 ? `${fmt(q.target)} (± ${fmt(q.tolerance)})` : fmt(q.target);
+              return q.unit ? `${base} ${q.unit}` : base;
+            }
             case "blanks": return q.blanks.map((b, i) => `${i + 1}: ${b.accepted.join(" / ")}`).join(", ");
             case "matching": return q.pairs.map(p => `${p.left} \u2192 ${p.right}`).join(", ");
             case "sequence":

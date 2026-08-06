@@ -45,6 +45,77 @@ public class QuizWebExporterTests
         return q;
     }
 
+    private static NumericQuestion Numeric()
+    {
+        return new NumericQuestion
+        {
+            Prompt = "Acceleration due to gravity?",
+            Points = 1,
+            Target = 9.8,
+            Tolerance = 0.1,
+            Unit = "m/s²",
+        };
+    }
+
+    private static DropdownQuestion Dropdown()
+    {
+        var q = new DropdownQuestion { Prompt = "Which year?", Points = 1 };
+        q.Choices.Add(new Choice { Text = "1990" });
+        q.Choices.Add(new Choice { Text = "2000", IsCorrect = true });
+        q.Choices.Add(new Choice { Text = "2010" });
+        return q;
+    }
+
+    [Fact]
+    public void NumericRendersDecimalInputAndUnit()
+    {
+        var html = Render(Numeric());
+        Assert.Contains("class=\"numeric\"", html);
+        Assert.Contains("inputmode=\"decimal\"", html);
+        Assert.Contains("m/s²", html);
+        Assert.Contains("data-type=\"numeric\"", html);
+    }
+
+    [Fact]
+    public void NumericEmitsTargetToleranceUnitInModel()
+    {
+        var packed = Render(Numeric()).Replace(" ", "");
+        Assert.Contains("\"type\":\"numeric\"", packed);
+        Assert.Contains("\"target\":9.8", packed);
+        Assert.Contains("\"tolerance\":0.1", packed);
+    }
+
+    [Fact]
+    public void NumericGraderUsesStrictParseNotParseFloat()
+    {
+        // The embedded grader must use the strict number parse, never the lenient
+        // parseFloat, or the browser would score "3.14abc" as correct while the
+        // desktop scores it wrong. Proved equivalent in web_numeric_grader_port.py.
+        var html = Render(Numeric());
+        Assert.Contains("function strictNum", html);
+        Assert.Contains("strictNum(ans.text)", html);
+        Assert.DoesNotContain("parseFloat(ans.text)", html);
+    }
+
+    [Fact]
+    public void DropdownRendersSelectWithChoices()
+    {
+        var html = Render(Dropdown());
+        Assert.Contains("class=\"dropdown\"", html);
+        Assert.Contains("<select", html);
+        Assert.Contains("1990", html);
+        Assert.Contains("2000", html);
+        Assert.Contains("data-type=\"dropdown\"", html);
+    }
+
+    [Fact]
+    public void DropdownEmitsChoicesInModel()
+    {
+        var packed = Render(Dropdown()).Replace(" ", "");
+        Assert.Contains("\"type\":\"dropdown\"", packed);
+        Assert.Contains("\"correct\":true", packed);
+    }
+
     [Fact]
     public void ThePageIsWellFormedAndSelfContained()
     {
