@@ -33,6 +33,7 @@ public partial class ShellWindow : Window
         TakeView takeView,
         FlashCardsView flashCardsView,
         StudyCardsView studyCardsView,
+        ReviewView reviewView,
         QuestionBankView questionBankView)
     {
         _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
@@ -55,6 +56,7 @@ public partial class ShellWindow : Window
         RegisterView(NavDestination.QuestionBank, questionBankView);
         RegisterView(NavDestination.FlashCards, flashCardsView);
         RegisterView(NavDestination.StudyCards, studyCardsView);
+        RegisterView(NavDestination.Review, reviewView);
 
         foreach (var destination in Enum.GetValues<NavDestination>())
         {

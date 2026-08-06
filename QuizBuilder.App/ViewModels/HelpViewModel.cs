@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 41, "2026-08-04", new[]
+        {
+            "Spaced repetition comes to the desktop: a new Review tab. It shows the cards the schedule says are due, one at a time — click to reveal the answer, then grade how well you knew it (Again, Hard, Good, Easy). Your grade sets when the card returns: miss it and it's back tomorrow, find it easy and it won't reappear for a good while. When you've cleared the due cards, it says you're done for today. Progress is saved privately on your device, so it never travels with a shared quiz.",
+        }),
         new VersionEntry("0.26.0", 40, "2026-08-04", new[]
         {
             "Version history now groups builds under one version heading instead of repeating the version on every entry. Each version shows once as a card, with its builds stacked inside (newest first), each build showing its number and date above its notes. Presentation only — the underlying changelog is unchanged.",

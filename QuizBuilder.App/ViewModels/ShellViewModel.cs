@@ -72,6 +72,7 @@ public sealed class ShellViewModel : ViewModelBase
             new NavItem(NavDestination.Take,        "Take",         "\uE73E", "Sit the quiz and see past results"),
             new NavItem(NavDestination.StudyCards,  "Study Cards",  "\uE70B", "Author front/back cards for the flash cards"),
             new NavItem(NavDestination.FlashCards,  "Flash Cards",  "\uE8F1", "Flip through questions and answers"),
+            new NavItem(NavDestination.Review,      "Review",       "\uE81C", "Spaced-repetition study of your cards"),
             new NavItem(NavDestination.QuestionBank, "Question Bank", "\uE8F4", "A reusable pool of questions"),
             new NavItem(NavDestination.Publish,     "Publish",      "\uEDE1", "Export to PDF, Word, Excel or web"),
             new NavItem(NavDestination.GitHub,      "GitHub",       "\uE8AB", "Push and publish to GitHub Pages"),

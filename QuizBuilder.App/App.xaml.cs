@@ -51,12 +51,14 @@ public partial class App : Application
         services.AddSingleton<TakeViewModel>();
         services.AddSingleton<FlashCardsViewModel>();
         services.AddSingleton<StudyCardsViewModel>();
+        services.AddSingleton<ReviewViewModel>();
         services.AddSingleton<QuestionBankViewModel>();
         services.AddSingleton<PublishView>();
         services.AddSingleton<GitHubView>();
         services.AddSingleton<TakeView>();
         services.AddSingleton<FlashCardsView>();
         services.AddSingleton<StudyCardsView>();
+        services.AddSingleton<ReviewView>();
         services.AddSingleton<QuestionBankView>();
 
         // Offline spell-check (feature B). Dictionary is a singleton: loading

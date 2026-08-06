@@ -1,0 +1,195 @@
+<UserControl x:Class="QuizBuilder.App.Views.ReviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:QuizBuilder.App.Converters">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolVis" />
+        <conv:BoolToVisibilityConverter x:Key="BoolVisInv" Invert="True" />
+        <conv:BytesToImageConverter x:Key="BytesToImage" />
+    </UserControl.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Review"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Title}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextPrimary}" />
+
+                <Border Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource Radius.Sm}"
+                        Padding="10,2"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasCard, Converter={StaticResource BoolVis}}">
+                    <TextBlock Text="{Binding RemainingLabel}"
+                               FontFamily="{DynamicResource Font.Family}"
+                               FontSize="{DynamicResource Font.Size.Caption}"
+                               Foreground="{DynamicResource Brush.TextSecondary}" />
+                </Border>
+            </StackPanel>
+
+            <TextBlock Text="Study the cards the schedule says are due. Grade how well you knew each one — the harder it was, the sooner it comes back."
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Nothing due (all caught up, or no cards) -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1"
+                CornerRadius="{DynamicResource Radius.Md}"
+                Padding="40"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                MaxWidth="440"
+                Visibility="{Binding NothingDue, Converter={StaticResource BoolVis}}">
+            <TextBlock Text="Nothing to review right now. Add study cards, or come back when more are due."
+                       FontFamily="{DynamicResource Font.Family}"
+                       FontSize="{DynamicResource Font.Size.Body}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center" />
+        </Border>
+
+        <!-- Done for today -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1"
+                CornerRadius="{DynamicResource Radius.Md}"
+                Padding="40"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                MaxWidth="440"
+                Visibility="{Binding IsDone, Converter={StaticResource BoolVis}}">
+            <StackPanel>
+                <TextBlock Text="All done for today"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextPrimary}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="You've reviewed every card that was due. Come back later for the next batch."
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Body}"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,8,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- The card -->
+        <Button Grid.Row="1"
+                Command="{Binding RevealCommand}"
+                Visibility="{Binding HasCard, Converter={StaticResource BoolVis}}"
+                Cursor="Hand"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Background="Transparent"
+                BorderThickness="0"
+                Padding="0"
+                AutomationProperties.Name="Reveal answer">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource Radius.Lg}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            MinWidth="360"
+                            MinHeight="260"
+                            MaxWidth="1100"
+                            MaxHeight="800"
+                            Padding="32">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding FaceText}"
+                                       FontFamily="{DynamicResource Font.Family}"
+                                       FontSize="{DynamicResource Font.Size.Subtitle}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center" />
+
+                            <Image Source="{Binding CurrentImageBytes, Converter={StaticResource BytesToImage}}"
+                                   MaxHeight="200"
+                                   Stretch="Uniform"
+                                   Margin="0,16,0,0"
+                                   Visibility="{Binding HasCurrentImage, Converter={StaticResource BoolVis}}" />
+
+                            <TextBlock Text="{Binding FlipHint}"
+                                       FontFamily="{DynamicResource Font.Family}"
+                                       FontSize="{DynamicResource Font.Size.Caption}"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,24,0,0" />
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+
+        <!-- Grade buttons: only after the answer is revealed -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Margin="0,16,0,0"
+                    Visibility="{Binding ShowingBack, Converter={StaticResource BoolVis}}">
+            <Button Content="Again"
+                    Command="{Binding AgainCommand}"
+                    MinWidth="96" Margin="0,0,8,0" Padding="16,8" Cursor="Hand"
+                    FontFamily="{DynamicResource Font.Family}"
+                    FontSize="{DynamicResource Font.Size.Body}"
+                    Background="Transparent"
+                    Foreground="{DynamicResource Brush.TextPrimary}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    ToolTip="You forgot it — see it again tomorrow" />
+            <Button Content="Hard"
+                    Command="{Binding HardCommand}"
+                    MinWidth="96" Margin="0,0,8,0" Padding="16,8" Cursor="Hand"
+                    FontFamily="{DynamicResource Font.Family}"
+                    FontSize="{DynamicResource Font.Size.Body}"
+                    Background="Transparent"
+                    Foreground="{DynamicResource Brush.TextPrimary}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    ToolTip="Recalled, but with difficulty" />
+            <Button Content="Good"
+                    Command="{Binding GoodCommand}"
+                    MinWidth="96" Margin="0,0,8,0" Padding="16,8" Cursor="Hand"
+                    FontFamily="{DynamicResource Font.Family}"
+                    FontSize="{DynamicResource Font.Size.Body}"
+                    Background="Transparent"
+                    Foreground="{DynamicResource Brush.TextPrimary}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    ToolTip="Recalled correctly" />
+            <Button Content="Easy"
+                    Command="{Binding EasyCommand}"
+                    MinWidth="96" Padding="16,8" Cursor="Hand"
+                    FontFamily="{DynamicResource Font.Family}"
+                    FontSize="{DynamicResource Font.Size.Body}"
+                    Background="{DynamicResource Brush.Accent}"
+                    Foreground="{DynamicResource Brush.OnAccent}"
+                    BorderThickness="0"
+                    ToolTip="Knew it easily — longer until it returns" />
+        </StackPanel>
+    </Grid>
+</UserControl>

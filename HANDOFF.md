@@ -1,20 +1,29 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 40 (stage `spaced-repetition`)
-**Deliverable:** `QuizBuilder_v0.26.0.40.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b39 (spaced-repetition Core) green on CI + build. **b40 is a small UI
-polish: the Help tab's version history now GROUPS builds under one version card**
-instead of repeating the `v0.26.0` header on every build. Added `VersionGroup`
-record + `GroupedHistory` property (groups the flat `History` by version via
-`GroupBy`, preserving newest-first order) in HelpViewModel.cs; restructured the
-`HelpView.xaml` history ItemsControl to bind `GroupedHistory` → one card per
-version with an inner ItemsControl over `Builds` (each build: bold `build N` + date
-above its bullet notes). `History` stays the single source of truth (build entries
-still added there). **Verified:** HelpView.xaml well-formed, GroupedHistory +
-VersionGroup(Version, Builds) resolve, HelpContentTests unaffected (it tests
-VersionInfo, not History), validate 12/12, balance clean. WPF compile/runtime is
-J's. **Spaced repetition remains Core-only; next up its desktop review UI**, then
-mobile review UI. Then iOS scaffolding if a Mac path appears.
+**Last shipped:** v0.26.0 build 41 (stage `spaced-repetition`)
+**Deliverable:** `QuizBuilder_v0.26.0.41.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b40 (version-history grouping) green. **b41 adds the DESKTOP review UI
+for spaced repetition — a new "Review" tab (the app's 12th).** `ReviewViewModel`
+(thin wrapper over `ReviewSession`, like `FlashCardsViewModel`): exposes the current
+due card, reveal-then-grade flow, four grade commands (Again/Hard/Good/Easy →
+`ReviewSession.Grade`), RemainingLabel, and NothingDue/IsDone states.
+`ReviewView.xaml` + code-behind (IsVisibleChanged → OnActivated/OnDeactivated, the
+established pattern). Integration: `NavDestination.Review` added (safe —
+NavDestination is JSON-serialized BY NAME via JsonStringEnumConverter, so inserting
+mid-enum doesn't renumber anything, unlike QuestionKind); nav item in ShellViewModel;
+ctor param + `RegisterView` in ShellWindow.xaml.cs; DI registration of VM + View.
+**[DESIGN] A dedicated Review tab, not folded into Flash Cards** (scheduled study vs
+free browsing are different activities). **[DESIGN] Four grade buttons** (the SM-2
+engine uses four quality levels; two would waste half the algorithm). **CAUGHT
+HERE:** I first used invented resource keys (`PrimaryButton`/`SecondaryButton`/
+`Brush.SurfaceAlt`) that exist nowhere; cross-checked every DynamicResource key
+against working views and replaced them with real ones (inline button styling like
+FlashCards; `Brush.Surface`/`Brush.Accent`/`Brush.OnAccent`). **VERIFIED (structural):**
+ReviewView.xaml well-formed; all 14 bindings resolve to VM members; every
+DynamicResource key used in ≥1 other view; NavigationServiceTests auto-covers the
+new destination; validate 12/12; balance clean. **NOT verified: WPF compile +
+runtime — J's.** **Next: mobile review UI** (MAUI, structural-verify only), then
+spaced repetition is complete. Then iOS scaffolding if a Mac path appears.
 **[DECISION] SM-2** (classic Anki-style algorithm), chosen over Leitner because its
 per-card ease is the proven standard and the complexity hides entirely in Core
 behind a friendly 4-button grade (Again/Hard/Good/Easy → quality 2/3/4/5; Again is
@@ -884,7 +893,7 @@ fresh Id via `CopyBaseTo`):
 Base members: `Id`, `Prompt`, `Points`, `Hint`, `ImageRelativePath?`,
 `KindDisplayName`.
 
-### The 11 tabs (`NavDestination`)
+### The 12 tabs (`NavDestination`)
 `QuizBuilder`, `Settings`, `Theme`, `Preview`, `Take`, `StudyCards`,
 `FlashCards`, `QuestionBank`, `Publish`, `GitHub`, `Help`
 

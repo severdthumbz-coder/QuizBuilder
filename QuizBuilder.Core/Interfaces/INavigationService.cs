@@ -20,6 +20,9 @@ public enum NavDestination
     /// <summary>Review questions as flip cards. No grading.</summary>
     FlashCards,
 
+    /// <summary>Spaced-repetition study of the flash cards, with grading.</summary>
+    Review,
+
     /// <summary>A reusable pool of questions to draw into quizzes.</summary>
     QuestionBank,
 
