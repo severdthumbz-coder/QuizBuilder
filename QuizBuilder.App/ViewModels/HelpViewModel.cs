@@ -1,3 +1,4 @@
+using System.Linq;
 using QuizBuilder.Core;
 
 namespace QuizBuilder.App.ViewModels;
@@ -11,6 +12,15 @@ public sealed record VersionEntry(
     int Build,
     string ReleaseDate,
     IReadOnlyList<string> Changes);
+
+/// <summary>
+/// One version and all the builds shipped under it, newest build first. The
+/// version history groups by this so a version's header shows once and its
+/// builds stack beneath, rather than repeating the version on every build.
+/// </summary>
+public sealed record VersionGroup(
+    string Version,
+    IReadOnlyList<VersionEntry> Builds);
 
 /// <summary>
 /// Help / About.
@@ -112,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 40, "2026-08-04", new[]
+        {
+            "Version history now groups builds under one version heading instead of repeating the version on every entry. Each version shows once as a card, with its builds stacked inside (newest first), each build showing its number and date above its notes. Presentation only — the underlying changelog is unchanged.",
+        }),
         new VersionEntry("0.26.0", 39, "2026-08-04", new[]
         {
             "Groundwork for spaced repetition — the study feature that shows you cards just as you're about to forget them. This build adds the engine (the proven SM-2 algorithm, the same approach Anki uses): cards you find easy come back after longer and longer gaps, while ones you miss return the next day. Your review progress is saved privately on your device, separate from the quiz file, so sharing a quiz never carries your personal history and never changes the shared file. No visible change yet — the study screens that use this arrive next. All of it is covered by tests.",
@@ -436,4 +450,16 @@ public sealed class HelpViewModel : ViewModelBase
             "Version-stamped build output and single-file portable publish",
         }),
     };
+
+    /// <summary>
+    /// <see cref="History"/> grouped by version for display: each version appears
+    /// once with its builds nested (newest build first, matching History's order).
+    /// Grouping here keeps the flat History as the single source of truth — build
+    /// entries are still added there — while the UI shows them grouped.
+    /// </summary>
+    public IReadOnlyList<VersionGroup> GroupedHistory =>
+        History
+            .GroupBy(entry => entry.Version)
+            .Select(group => new VersionGroup(group.Key, group.ToList()))
+            .ToList();
 }

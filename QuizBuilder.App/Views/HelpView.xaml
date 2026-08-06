@@ -143,7 +143,7 @@
                        FontWeight="{DynamicResource Font.Weight.Bold}"
                        Foreground="{DynamicResource Brush.TextPrimary}" />
 
-            <ItemsControl ItemsSource="{Binding History}" Margin="0,12,0,24"
+            <ItemsControl ItemsSource="{Binding GroupedHistory}" Margin="0,12,0,24"
                           Focusable="False">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -154,47 +154,58 @@
                                 Padding="{DynamicResource Thickness.Md}"
                                 Margin="0,0,0,8">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="{DynamicResource Font.Family}"
-                                               FontSize="{DynamicResource Font.Size.Subtitle}"
-                                               FontWeight="{DynamicResource Font.Weight.Bold}"
-                                               Foreground="{DynamicResource Brush.TextPrimary}">
-                                        <Run Text="v" /><Run Text="{Binding Version, Mode=OneWay}" />
-                                    </TextBlock>
-                                    <TextBlock Margin="8,0,0,0"
-                                               VerticalAlignment="Center"
-                                               FontFamily="{DynamicResource Font.Family}"
-                                               FontSize="{DynamicResource Font.Size.Caption}"
-                                               Foreground="{DynamicResource Brush.TextSecondary}">
-                                        <Run Text="build " /><Run Text="{Binding Build, Mode=OneWay}" />
-                                    </TextBlock>
-                                    <TextBlock Text="{Binding ReleaseDate}"
-                                               Margin="12,0,0,0"
-                                               VerticalAlignment="Center"
-                                               FontFamily="{DynamicResource Font.Family}"
-                                               FontSize="{DynamicResource Font.Size.Caption}"
-                                               Foreground="{DynamicResource Brush.TextSecondary}" />
-                                </StackPanel>
+                                <!-- Version header, shown once per version. -->
+                                <TextBlock FontFamily="{DynamicResource Font.Family}"
+                                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                                           Foreground="{DynamicResource Brush.TextPrimary}">
+                                    <Run Text="v" /><Run Text="{Binding Version, Mode=OneWay}" />
+                                </TextBlock>
 
-                                <ItemsControl ItemsSource="{Binding Changes}" Margin="0,8,0,0"
+                                <!-- Each build shipped under this version. -->
+                                <ItemsControl ItemsSource="{Binding Builds}" Margin="0,4,0,0"
                                               Focusable="False">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Grid Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="&#x2022;"
-                                                           Foreground="{DynamicResource Brush.Accent}"
-                                                           FontSize="{DynamicResource Font.Size.Body}" />
-                                                <TextBlock Grid.Column="1" Text="{Binding}"
-                                                           Margin="8,0,0,0"
-                                                           TextWrapping="Wrap"
-                                                           FontFamily="{DynamicResource Font.Family}"
-                                                           FontSize="{DynamicResource Font.Size.Caption}"
-                                                           Foreground="{DynamicResource Brush.TextSecondary}" />
-                                            </Grid>
+                                            <StackPanel Margin="0,8,0,0">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock FontFamily="{DynamicResource Font.Family}"
+                                                               FontSize="{DynamicResource Font.Size.Caption}"
+                                                               FontWeight="{DynamicResource Font.Weight.Bold}"
+                                                               Foreground="{DynamicResource Brush.TextPrimary}">
+                                                        <Run Text="build " /><Run Text="{Binding Build, Mode=OneWay}" />
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding ReleaseDate}"
+                                                               Margin="12,0,0,0"
+                                                               VerticalAlignment="Center"
+                                                               FontFamily="{DynamicResource Font.Family}"
+                                                               FontSize="{DynamicResource Font.Size.Caption}"
+                                                               Foreground="{DynamicResource Brush.TextSecondary}" />
+                                                </StackPanel>
+
+                                                <ItemsControl ItemsSource="{Binding Changes}" Margin="0,4,0,0"
+                                                              Focusable="False">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,0,0,4">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Column="0" Text="&#x2022;"
+                                                                           Foreground="{DynamicResource Brush.Accent}"
+                                                                           FontSize="{DynamicResource Font.Size.Body}" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding}"
+                                                                           Margin="8,0,0,0"
+                                                                           TextWrapping="Wrap"
+                                                                           FontFamily="{DynamicResource Font.Family}"
+                                                                           FontSize="{DynamicResource Font.Size.Caption}"
+                                                                           Foreground="{DynamicResource Brush.TextSecondary}" />
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

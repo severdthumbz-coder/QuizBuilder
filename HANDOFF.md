@@ -1,10 +1,20 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 39 (stage `spaced-repetition`)
-**Deliverable:** `QuizBuilder_v0.26.0.39.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** Numeric + Dropdown complete on every surface as of b38. **b39 begins a
-NEW feature: spaced repetition for flash cards — this build is Core-complete, no UI
-yet** (agreed sequencing: Core first, then desktop UI, then mobile UI).
+**Last shipped:** v0.26.0 build 40 (stage `spaced-repetition`)
+**Deliverable:** `QuizBuilder_v0.26.0.40.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b39 (spaced-repetition Core) green on CI + build. **b40 is a small UI
+polish: the Help tab's version history now GROUPS builds under one version card**
+instead of repeating the `v0.26.0` header on every build. Added `VersionGroup`
+record + `GroupedHistory` property (groups the flat `History` by version via
+`GroupBy`, preserving newest-first order) in HelpViewModel.cs; restructured the
+`HelpView.xaml` history ItemsControl to bind `GroupedHistory` → one card per
+version with an inner ItemsControl over `Builds` (each build: bold `build N` + date
+above its bullet notes). `History` stays the single source of truth (build entries
+still added there). **Verified:** HelpView.xaml well-formed, GroupedHistory +
+VersionGroup(Version, Builds) resolve, HelpContentTests unaffected (it tests
+VersionInfo, not History), validate 12/12, balance clean. WPF compile/runtime is
+J's. **Spaced repetition remains Core-only; next up its desktop review UI**, then
+mobile review UI. Then iOS scaffolding if a Mac path appears.
 **[DECISION] SM-2** (classic Anki-style algorithm), chosen over Leitner because its
 per-card ease is the proven standard and the complexity hides entirely in Core
 behind a friendly 4-button grade (Again/Hard/Good/Easy → quality 2/3/4/5; Again is
