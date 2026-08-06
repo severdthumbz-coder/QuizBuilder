@@ -57,6 +57,8 @@ public abstract partial class QuestionPresenter : ObservableObject
             FillInTheBlankQuestion => new FillBlankPresenter(compiled, answer, image),
             MatchingQuestion => new MatchingPresenter(compiled, answer, image),
             SequenceQuestion => new SequencePresenter(compiled, answer, image),
+            NumericQuestion => new NumericPresenter(compiled, answer, image),
+            DropdownQuestion => new DropdownPresenter(compiled, answer, image),
             EssayQuestion => new EssayPresenter(compiled, answer, image),
             _ => new UnsupportedPresenter(compiled, answer, image),
         };
@@ -187,8 +189,57 @@ public sealed partial class ShortAnswerPresenter : QuestionPresenter
 }
 
 // ---------------------------------------------------------------------------
-// Fill in the blank
+// Numeric (typed number, graded by tolerance in Core)
 // ---------------------------------------------------------------------------
+
+public sealed partial class NumericPresenter : QuestionPresenter
+{
+    public NumericPresenter(CompiledQuestion c, QuestionAnswer a, byte[]? img) : base(c, a, img)
+    {
+        var q = (NumericQuestion)c.Question;
+        Unit = q.Unit ?? string.Empty;
+        _text = a.TextAnswer ?? string.Empty;
+    }
+
+    /// <summary>Optional unit label shown beside the entry (may be empty).</summary>
+    public string Unit { get; }
+
+    public bool HasUnit => !string.IsNullOrWhiteSpace(Unit);
+
+    // The taker types the number as text; Core parses and grades it (invariant
+    // culture, tolerance). Storing it in TextAnswer keeps the answer model the
+    // same as short-answer, so grading is exactly the desktop path.
+    [ObservableProperty] private string _text;
+
+    partial void OnTextChanged(string value) => Answer.TextAnswer = value;
+}
+
+// ---------------------------------------------------------------------------
+// Dropdown (single choice presented as a picker)
+// ---------------------------------------------------------------------------
+
+public sealed partial class DropdownPresenter : QuestionPresenter
+{
+    public DropdownPresenter(CompiledQuestion c, QuestionAnswer a, byte[]? img) : base(c, a, img)
+    {
+        var q = (DropdownQuestion)c.Question;
+        Options = new ObservableCollection<string>(q.Choices.Select(choice => choice.Text));
+
+        // Reflect any prior selection (revisiting the question).
+        if (a.ChoiceIndex is { } sel && sel >= 0 && sel < Options.Count)
+            _selectedIndex = sel;
+    }
+
+    public ObservableCollection<string> Options { get; }
+
+    // Picker.SelectedIndex binds here two-way. -1 means nothing chosen. We write
+    // ChoiceIndex (the same answer field single-choice uses), so grading matches
+    // the desktop single-choice path exactly.
+    [ObservableProperty] private int _selectedIndex = -1;
+
+    partial void OnSelectedIndexChanged(int value)
+        => Answer.ChoiceIndex = value >= 0 ? value : null;
+}
 public sealed partial class FillBlankPresenter : QuestionPresenter
 {
     public FillBlankPresenter(CompiledQuestion c, QuestionAnswer a, byte[]? img) : base(c, a, img)

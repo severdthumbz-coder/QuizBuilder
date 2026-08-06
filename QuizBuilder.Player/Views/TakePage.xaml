@@ -221,6 +221,36 @@
                 </VerticalStackLayout>
             </DataTemplate>
 
+            <!-- Numeric: a number entry with an optional unit label. -->
+            <DataTemplate x:Key="NumericTemplate" x:DataType="vm:NumericPresenter">
+                <Border Style="{StaticResource FieldFrame}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0"
+                               Text="{Binding Text}"
+                               Placeholder="Type a number"
+                               Keyboard="Numeric"
+                               ReturnType="Done" />
+                        <Label Grid.Column="1"
+                               Text="{Binding Unit}"
+                               IsVisible="{Binding HasUnit}"
+                               Style="{StaticResource Body}"
+                               VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+            </DataTemplate>
+
+            <!-- Dropdown: single choice presented as a picker. -->
+            <DataTemplate x:Key="DropdownTemplate" x:DataType="vm:DropdownPresenter">
+                <Border Style="{StaticResource FieldFrame}" Padding="8,0">
+                    <Picker Title="Choose an answer"
+                            ItemsSource="{Binding Options}"
+                            SelectedIndex="{Binding SelectedIndex}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
+                            TitleColor="{AppThemeBinding Light={StaticResource OnSurfaceMutedLight}, Dark={StaticResource OnSurfaceMutedDark}}"
+                            MinimumHeightRequest="48" />
+                </Border>
+            </DataTemplate>
+
             <DataTemplate x:Key="FallbackTemplate" x:DataType="vm:QuestionPresenter">
                 <Label Text="This question type can't be shown in the player."
                        Style="{StaticResource Muted}" />
@@ -236,6 +266,8 @@
                 FillBlank="{StaticResource FillBlankTemplate}"
                 Matching="{StaticResource MatchingTemplate}"
                 Sequence="{StaticResource SequenceTemplate}"
+                Numeric="{StaticResource NumericTemplate}"
+                Dropdown="{StaticResource DropdownTemplate}"
                 Essay="{StaticResource EssayTemplate}"
                 Fallback="{StaticResource FallbackTemplate}" />
 

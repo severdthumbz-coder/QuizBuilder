@@ -1,19 +1,25 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 37 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.37.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b36 (Numeric+Dropdown in web exporter) compiled clean, 710/711 passed;
-the 1 failure was my own web test `NumericRendersDecimalInputAndUnit`, which looked
-for the raw unit char `m/s²` in the page — but the exporter correctly HTML-encodes
-units (`WebUtility.HtmlEncode` turns `²` into `&#178;`), so the raw char isn't
-present. Product code was right; the test made a wrong assumption. **b37 fixes the
-test** (switched to a plain `kg` unit; added `NumericUnitIsHtmlEscaped` proving a
-`<b>`-containing unit is encoded to `&lt;b&gt;`). Note: `WordExporterTests` also
-uses `m/s²` but PASSES and is correct — the DOCX stores the unit as a plain XML
-string value (not HTML-encoded), so the raw char legitimately appears there. **With
-b37, Numeric + Dropdown are complete on desktop + all four exports.** Last remaining
-surface: **Android player take UI** (MAUI, structural-verify only). Then: spaced
-repetition, iOS scaffolding (build needs a Mac).
+**Last shipped:** v0.26.0 build 38 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.38.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b37 (web-export test fix) green. **b38 adds Numeric + Dropdown to the
+Android player take UI — the LAST remaining surface.** In `QuestionPresenters.cs`:
+`NumericPresenter` (binds Text→Answer.TextAnswer like short-answer, exposes
+Unit/HasUnit) and `DropdownPresenter` (Options list + SelectedIndex→Answer.ChoiceIndex,
+same answer field as single-choice, so grading is the desktop path). Factory +
+`QuestionTemplateSelector` (property + switch case) + two `TakePage.xaml`
+DataTemplates (numeric = Entry Keyboard=Numeric + unit Label; dropdown = Picker)
+wired into the selector. The attempt-review path already handled both (it reads
+pre-built GivenAnswer/CorrectAnswer strings from Core's AttemptRecordBuilder/
+AnswerDescriber, updated back in b32). **VERIFIED HERE (structural only):** all
+Player XAML well-formed; every new binding (Text/Unit/HasUnit, Options/SelectedIndex)
+resolves to a real presenter member; selector has 11 props = 11 XAML assignments;
+both types present in all 5 spots (presenter, factory, selector prop, selector case,
+XAML template+wiring); validate 12/12; balance clean. **NOT verifiable here: MAUI
+compile + emulator runtime — J's to confirm.** With b38, **Numeric + Dropdown are
+COMPLETE on every surface.** Next: bigger items — spaced repetition (mostly Core,
+differentiates vs Anki) or iOS scaffolding (build needs a Mac: cloud/CI mac runner
+or borrowed Mac).
 **b31 adds the Claude provider — the AI grammar review is now FEATURE-COMPLETE.**
 A `DispatchingGrammarProvider` reads the active `AiProvider` from settings and
 routes each check to the local-endpoint or Claude transport; both share the Core

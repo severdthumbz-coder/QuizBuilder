@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 38, "2026-08-04", new[]
+        {
+            "The Android player now shows Numeric and Dropdown questions when taking a quiz — a numeric question gets a number pad and its unit, a dropdown gets a picker. This was the last place these two types weren't yet handled. With it, numeric and dropdown questions work everywhere: authoring and taking on the desktop, all four export formats, and now the mobile player. (Reviewing past attempts already showed them correctly.)",
+        }),
         new VersionEntry("0.26.0", 37, "2026-08-04", new[]
         {
             "Test fix for b36: one of the new web-export tests looked for a numeric unit's raw character (m/s²) in the page, but the exporter correctly HTML-encodes units for safety, so the raw character isn't there. The web export itself was fine — this was the test making a wrong assumption. Switched that test to a plain unit and added a dedicated test proving units with special characters are safely encoded. No product code changed.",

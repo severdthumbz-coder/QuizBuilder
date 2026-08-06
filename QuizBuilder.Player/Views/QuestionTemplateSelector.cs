@@ -16,6 +16,8 @@ public sealed class QuestionTemplateSelector : DataTemplateSelector
     public DataTemplate? FillBlank { get; set; }
     public DataTemplate? Matching { get; set; }
     public DataTemplate? Sequence { get; set; }
+    public DataTemplate? Numeric { get; set; }
+    public DataTemplate? Dropdown { get; set; }
     public DataTemplate? Essay { get; set; }
     public DataTemplate? Fallback { get; set; }
 
@@ -28,6 +30,8 @@ public sealed class QuestionTemplateSelector : DataTemplateSelector
         FillBlankPresenter => FillBlank,
         MatchingPresenter => Matching,
         SequencePresenter => Sequence,
+        NumericPresenter => Numeric,
+        DropdownPresenter => Dropdown,
         EssayPresenter => Essay,
         _ => Fallback,
     };
