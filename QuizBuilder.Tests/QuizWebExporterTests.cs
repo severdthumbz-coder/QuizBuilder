@@ -49,11 +49,11 @@ public class QuizWebExporterTests
     {
         return new NumericQuestion
         {
-            Prompt = "Acceleration due to gravity?",
+            Prompt = "How heavy?",
             Points = 1,
             Target = 9.8,
             Tolerance = 0.1,
-            Unit = "m/s²",
+            Unit = "kg",
         };
     }
 
@@ -72,8 +72,20 @@ public class QuizWebExporterTests
         var html = Render(Numeric());
         Assert.Contains("class=\"numeric\"", html);
         Assert.Contains("inputmode=\"decimal\"", html);
-        Assert.Contains("m/s²", html);
+        Assert.Contains("kg", html);
         Assert.Contains("data-type=\"numeric\"", html);
+    }
+
+    [Fact]
+    public void NumericUnitIsHtmlEscaped()
+    {
+        // A unit can contain characters that must be encoded for the page to be
+        // safe and valid HTML. The exporter HTML-encodes it, so a literal "<b>"
+        // must never appear as markup — it must be encoded to "&lt;b&gt;".
+        var q = new NumericQuestion { Prompt = "P", Target = 1, Unit = "x <b>" };
+        var html = Render(q);
+        Assert.Contains("&lt;b&gt;", html);
+        Assert.DoesNotContain("x <b>", html);
     }
 
     [Fact]

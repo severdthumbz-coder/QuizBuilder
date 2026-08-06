@@ -1,24 +1,19 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 36 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.36.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b35 (Excel TypeName fix) green. **b36 adds Numeric + Dropdown to the
-interactive web exporter — the last export surface.** Five touch-points in
-`QuizWebExporter`: (1) data-model emit (type/points/prompt + target/tolerance/unit
-or choices), (2) HTML render (numeric = text input inputmode=decimal + unit span;
-dropdown = <select> with "— choose —"), (3) JS grader (`numeric` uses new
-`strictNum` helper + tolerance/clamp; `dropdown` mirrors `single`), (4) JS
-collect() + describeCorrect, (5) the `TypeOf` data-type label switch (the b34/b35
-"second switch" lesson — caught and handled). **The JS numeric grader must match C#
-`ScoreNumeric` exactly**; the risk is JS `parseFloat`/`Number` leniency
-(`parseFloat("3.14abc")===3.14`, `Number("")===0`). Solved with a strict regex
-parse, PROVED equivalent to C# on 33 cases in
-`tools/port/web_numeric_grader_port.py`. Web-exporter tests added (render, model
-emit, strict-parse-not-parseFloat, data-type). **Numeric + Dropdown are now complete
-everywhere except the Android player take UI** — authoring, taking, grading, and all
-four exports done. **Next: Android player rendering** (last surface; MAUI, so
-structural-verify only — J compiles/runs). Then bigger items: spaced repetition,
-iOS scaffolding (iOS build needs a Mac — cloud/CI mac runner or borrowed Mac).
+**Last shipped:** v0.26.0 build 37 (stage `maui-android-player`)
+**Deliverable:** `QuizBuilder_v0.26.0.37.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b36 (Numeric+Dropdown in web exporter) compiled clean, 710/711 passed;
+the 1 failure was my own web test `NumericRendersDecimalInputAndUnit`, which looked
+for the raw unit char `m/s²` in the page — but the exporter correctly HTML-encodes
+units (`WebUtility.HtmlEncode` turns `²` into `&#178;`), so the raw char isn't
+present. Product code was right; the test made a wrong assumption. **b37 fixes the
+test** (switched to a plain `kg` unit; added `NumericUnitIsHtmlEscaped` proving a
+`<b>`-containing unit is encoded to `&lt;b&gt;`). Note: `WordExporterTests` also
+uses `m/s²` but PASSES and is correct — the DOCX stores the unit as a plain XML
+string value (not HTML-encoded), so the raw char legitimately appears there. **With
+b37, Numeric + Dropdown are complete on desktop + all four exports.** Last remaining
+surface: **Android player take UI** (MAUI, structural-verify only). Then: spaced
+repetition, iOS scaffolding (build needs a Mac).
 **b31 adds the Claude provider — the AI grammar review is now FEATURE-COMPLETE.**
 A `DispatchingGrammarProvider` reads the active `AiProvider` from settings and
 routes each check to the local-endpoint or Claude transport; both share the Core
