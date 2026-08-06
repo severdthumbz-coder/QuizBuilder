@@ -112,6 +112,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 39, "2026-08-04", new[]
+        {
+            "Groundwork for spaced repetition — the study feature that shows you cards just as you're about to forget them. This build adds the engine (the proven SM-2 algorithm, the same approach Anki uses): cards you find easy come back after longer and longer gaps, while ones you miss return the next day. Your review progress is saved privately on your device, separate from the quiz file, so sharing a quiz never carries your personal history and never changes the shared file. No visible change yet — the study screens that use this arrive next. All of it is covered by tests.",
+        }),
         new VersionEntry("0.26.0", 38, "2026-08-04", new[]
         {
             "The Android player now shows Numeric and Dropdown questions when taking a quiz — a numeric question gets a number pad and its unit, a dropdown gets a picker. This was the last place these two types weren't yet handled. With it, numeric and dropdown questions work everywhere: authoring and taking on the desktop, all four export formats, and now the mobile player. (Reviewing past attempts already showed them correctly.)",

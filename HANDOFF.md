@@ -1,25 +1,32 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 38 (stage `maui-android-player`)
-**Deliverable:** `QuizBuilder_v0.26.0.38.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b37 (web-export test fix) green. **b38 adds Numeric + Dropdown to the
-Android player take UI — the LAST remaining surface.** In `QuestionPresenters.cs`:
-`NumericPresenter` (binds Text→Answer.TextAnswer like short-answer, exposes
-Unit/HasUnit) and `DropdownPresenter` (Options list + SelectedIndex→Answer.ChoiceIndex,
-same answer field as single-choice, so grading is the desktop path). Factory +
-`QuestionTemplateSelector` (property + switch case) + two `TakePage.xaml`
-DataTemplates (numeric = Entry Keyboard=Numeric + unit Label; dropdown = Picker)
-wired into the selector. The attempt-review path already handled both (it reads
-pre-built GivenAnswer/CorrectAnswer strings from Core's AttemptRecordBuilder/
-AnswerDescriber, updated back in b32). **VERIFIED HERE (structural only):** all
-Player XAML well-formed; every new binding (Text/Unit/HasUnit, Options/SelectedIndex)
-resolves to a real presenter member; selector has 11 props = 11 XAML assignments;
-both types present in all 5 spots (presenter, factory, selector prop, selector case,
-XAML template+wiring); validate 12/12; balance clean. **NOT verifiable here: MAUI
-compile + emulator runtime — J's to confirm.** With b38, **Numeric + Dropdown are
-COMPLETE on every surface.** Next: bigger items — spaced repetition (mostly Core,
-differentiates vs Anki) or iOS scaffolding (build needs a Mac: cloud/CI mac runner
-or borrowed Mac).
+**Last shipped:** v0.26.0 build 39 (stage `spaced-repetition`)
+**Deliverable:** `QuizBuilder_v0.26.0.39.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** Numeric + Dropdown complete on every surface as of b38. **b39 begins a
+NEW feature: spaced repetition for flash cards — this build is Core-complete, no UI
+yet** (agreed sequencing: Core first, then desktop UI, then mobile UI).
+**[DECISION] SM-2** (classic Anki-style algorithm), chosen over Leitner because its
+per-card ease is the proven standard and the complexity hides entirely in Core
+behind a friendly 4-button grade (Again/Hard/Good/Easy → quality 2/3/4/5; Again is
+a lapse). **[DECISION] Review state lives in a SEPARATE per-user local store, NOT
+the .qbx** — progress is personal, has a different lifecycle than shared content,
+and keeping it out means no format bump (stays v3) and a shared quiz never carries
+one person's history. Mirrors the `PausedAttemptService` persistence pattern.
+**Delivered (all in Core, all tested):** `ReviewState` model + `ReviewGrade` enum
+(Models/ReviewState.cs); `Sm2Scheduler` (Services/Sm2Scheduler.cs — pure, mirrors
+`tools/port/sm2_scheduler_port.py`); `IReviewProgressStore` +
+`ReviewProgressStore` (JSON file, keyed by quiz+card, corrupt-file-tolerant);
+`ReviewSession` (due-queue + grade-and-persist, seeds new cards as due). Registered
+in DI. `SpacedRepetitionTests` covers scheduler (1→6→I*EF, ease drift + 1.3 floor,
+lapse lowers ease, due arithmetic, queue order), store round-trip/scope/clear/
+corrupt-tolerance, and session due-count/grade/unknown-id.
+**[PORT NOTE] The port caught a real design bug**: my first lapse branch disagreed
+with its own test on whether EF is preserved; resolved to classic SM-2 (lapse
+LOWERS ease). **Verified here:** validate 12/12, all ports green, xUnit
+anti-patterns clean, Assert forms match existing usage, balance clean. **Not here:**
+runtime (but this is pure Core, so CI's `core-tests` fully exercises it).
+**Next builds:** (1) desktop review UI (a study screen with the 4 grade buttons +
+due count), (2) mobile review UI. Then iOS scaffolding if a Mac path appears.
 **b31 adds the Claude provider — the AI grammar review is now FEATURE-COMPLETE.**
 A `DispatchingGrammarProvider` reads the active `AiProvider` from settings and
 routes each check to the local-endpoint or Claude transport; both share the Core

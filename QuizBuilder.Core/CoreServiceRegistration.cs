@@ -71,6 +71,7 @@ public static class CoreServiceRegistration
         services.AddSingleton<IQuizGrader, QuizGrader>();
         services.AddSingleton<IAttemptHistoryService, AttemptHistoryService>();
         services.AddSingleton<IPausedAttemptService, PausedAttemptService>();
+        services.AddSingleton<IReviewProgressStore, ReviewProgressStore>();
         services.AddSingleton<IQuestionBankService, QuestionBankService>();
         services.AddSingleton<IQuizWebExporter, QuizWebExporter>();
 
