@@ -42,12 +42,28 @@
             </Grid>
         </Border>
 
-        <!-- Nothing due -->
+        <!-- No study cards authored in this quiz -->
         <Border Grid.Row="1" Style="{StaticResource Card}"
-                IsVisible="{Binding NothingDue}"
+                IsVisible="{Binding NoStudyCards}"
                 VerticalOptions="Center">
-            <Label Text="Nothing to review right now. Come back when more cards are due."
-                   Style="{StaticResource Body}" HorizontalTextAlignment="Center" />
+            <VerticalStackLayout Spacing="8">
+                <Label Text="No study cards yet"
+                       Style="{StaticResource Headline}" HorizontalTextAlignment="Center" />
+                <Label Text="Spaced repetition reviews front/back study cards. This quiz doesn't have any yet — add some in the Study Cards tab on the desktop, then reload it here."
+                       Style="{StaticResource Body}" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Study cards exist, but none are due right now -->
+        <Border Grid.Row="1" Style="{StaticResource Card}"
+                IsVisible="{Binding AllCaughtUp}"
+                VerticalOptions="Center">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="All caught up"
+                       Style="{StaticResource Headline}" HorizontalTextAlignment="Center" />
+                <Label Text="No cards are due right now. Come back later and the next batch will be waiting."
+                       Style="{StaticResource Body}" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
         </Border>
 
         <!-- Done for today -->

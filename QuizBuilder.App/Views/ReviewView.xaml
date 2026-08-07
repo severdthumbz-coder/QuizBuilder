@@ -48,7 +48,7 @@
                        Margin="0,4,0,0" />
         </StackPanel>
 
-        <!-- Nothing due (all caught up, or no cards) -->
+        <!-- No study cards authored in this quiz -->
         <Border Grid.Row="1"
                 Background="{DynamicResource Brush.Surface}"
                 BorderBrush="{DynamicResource Brush.Border}"
@@ -58,13 +58,50 @@
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
                 MaxWidth="440"
-                Visibility="{Binding NothingDue, Converter={StaticResource BoolVis}}">
-            <TextBlock Text="Nothing to review right now. Add study cards, or come back when more are due."
-                       FontFamily="{DynamicResource Font.Family}"
-                       FontSize="{DynamicResource Font.Size.Body}"
-                       Foreground="{DynamicResource Brush.TextSecondary}"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center" />
+                Visibility="{Binding NoStudyCards, Converter={StaticResource BoolVis}}">
+            <StackPanel>
+                <TextBlock Text="No study cards yet"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextPrimary}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Spaced repetition reviews front/back study cards. Add some in the Study Cards tab, then come back here to start reviewing."
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Body}"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,8,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Study cards exist, but none are due right now -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1"
+                CornerRadius="{DynamicResource Radius.Md}"
+                Padding="40"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                MaxWidth="440"
+                Visibility="{Binding AllCaughtUp, Converter={StaticResource BoolVis}}">
+            <StackPanel>
+                <TextBlock Text="All caught up"
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Subtitle}"
+                           FontWeight="{DynamicResource Font.Weight.Bold}"
+                           Foreground="{DynamicResource Brush.TextPrimary}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="No cards are due right now. Come back later and the next batch will be waiting."
+                           FontFamily="{DynamicResource Font.Family}"
+                           FontSize="{DynamicResource Font.Size.Body}"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,8,0,0" />
+            </StackPanel>
         </Border>
 
         <!-- Done for today -->

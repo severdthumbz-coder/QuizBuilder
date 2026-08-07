@@ -73,6 +73,7 @@ public sealed class ReviewViewModel : ViewModelBase
 
     private void Rebuild()
     {
+        _hasAnyStudyCards = _document.Current.StudyCards.Count > 0;
         var session = new ReviewSession(_store, _document.Current);
         _due = new List<StudyCard>(session.DueCards());
         _index = 0;
@@ -80,6 +81,8 @@ public sealed class ReviewViewModel : ViewModelBase
         _isStale = false;
         RaiseAll();
     }
+
+    private bool _hasAnyStudyCards;
 
     private ReviewSession CurrentSession() => new(_store, _document.Current);
 
@@ -94,7 +97,8 @@ public sealed class ReviewViewModel : ViewModelBase
     public bool IsDone => !HasCard && _reviewedAny;
 
     /// <summary>True when nothing was due to begin with (fresh, all caught up).</summary>
-    public bool NothingDue => !HasCard && !_reviewedAny;
+    public bool NoStudyCards => !HasCard && !_reviewedAny && !_hasAnyStudyCards;
+    public bool AllCaughtUp => !HasCard && !_reviewedAny && _hasAnyStudyCards;
 
     private bool _reviewedAny;
 
@@ -158,7 +162,8 @@ public sealed class ReviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(Current));
         OnPropertyChanged(nameof(ShowingBack));
         OnPropertyChanged(nameof(IsDone));
-        OnPropertyChanged(nameof(NothingDue));
+        OnPropertyChanged(nameof(NoStudyCards));
+        OnPropertyChanged(nameof(AllCaughtUp));
         OnPropertyChanged(nameof(FaceText));
         OnPropertyChanged(nameof(CurrentImageBytes));
         OnPropertyChanged(nameof(HasCurrentImage));

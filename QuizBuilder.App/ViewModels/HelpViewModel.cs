@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 43, "2026-08-04", new[]
+        {
+            "Clearer wording around study cards vs. spaced repetition. When you open Review (or Spaced repetition on mobile) for a quiz with no study cards, it now says so plainly — \"No study cards yet\", with a nudge to add some in the Study Cards tab — instead of the ambiguous \"nothing to review\", which looked like a glitch. When cards exist but none are due, it now says \"All caught up\". On mobile, the \"Review as study cards\" button is renamed \"Flash cards\" so it no longer sounds like the spaced-repetition Review. No behaviour changed — just labels and empty-state messages.",
+        }),
         new VersionEntry("0.26.0", 42, "2026-08-04", new[]
         {
             "Spaced repetition now works on the Android player too, from a new \"Spaced repetition\" button on the home screen. It shows the cards that are due, one at a time — tap to reveal the answer, then grade it (Again/Hard/Good/Easy). It uses exactly the same scheduling as the desktop, so a card graded on your phone comes back at the same time it would on the computer, and your progress is stored privately in the app. This completes spaced repetition across desktop and mobile.",

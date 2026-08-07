@@ -41,9 +41,11 @@ public partial class ReviewViewModel : ObservableObject
         if (doc is null)
         {
             _due = new List<StudyCard>();
+            _hasAnyStudyCards = false;
         }
         else
         {
+            _hasAnyStudyCards = doc.StudyCards.Count > 0;
             var session = new ReviewSession(_store, doc);
             _due = new List<StudyCard>(session.DueCards());
         }
@@ -53,6 +55,8 @@ public partial class ReviewViewModel : ObservableObject
         ShowingBack = false;
         RaiseAll();
     }
+
+    private bool _hasAnyStudyCards;
 
     // ----- State ------------------------------------------------------------
 
@@ -67,8 +71,18 @@ public partial class ReviewViewModel : ObservableObject
     /// <summary>Cards were due and we've graded the last one.</summary>
     public bool IsDone => !HasCard && _reviewedAny;
 
-    /// <summary>Nothing was due to begin with.</summary>
-    public bool NothingDue => !HasCard && !_reviewedAny;
+    /// <summary>
+    /// The quiz has no study cards at all — the person needs to author some (in
+    /// the Study Cards tab on the desktop), not just wait. Distinct from
+    /// <see cref="AllCaughtUp"/>, which means cards exist but none are due yet.
+    /// </summary>
+    public bool NoStudyCards => !HasCard && !_reviewedAny && !_hasAnyStudyCards;
+
+    /// <summary>
+    /// The quiz has study cards, but none are due right now — everything's been
+    /// reviewed recently. Coming back later will surface the next batch.
+    /// </summary>
+    public bool AllCaughtUp => !HasCard && !_reviewedAny && _hasAnyStudyCards;
 
     /// <summary>The text on the face currently showing.</summary>
     public string FaceText => Current is null
@@ -151,7 +165,8 @@ public partial class ReviewViewModel : ObservableObject
         OnPropertyChanged(nameof(HasCard));
         OnPropertyChanged(nameof(Current));
         OnPropertyChanged(nameof(IsDone));
-        OnPropertyChanged(nameof(NothingDue));
+        OnPropertyChanged(nameof(NoStudyCards));
+        OnPropertyChanged(nameof(AllCaughtUp));
         OnPropertyChanged(nameof(FaceText));
         OnPropertyChanged(nameof(FaceImage));
         OnPropertyChanged(nameof(HasFaceImage));

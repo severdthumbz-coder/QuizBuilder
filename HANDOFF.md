@@ -1,29 +1,24 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 42 (stage `spaced-repetition`)
-**Deliverable:** `QuizBuilder_v0.26.0.42.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b41 (desktop Review tab) green. **b42 adds the MOBILE review UI —
-spaced repetition is now COMPLETE on desktop + Android.** Player `ReviewViewModel`
-(CommunityToolkit `ObservableObject`, `[ObservableProperty] ShowingBack`,
-`[RelayCommand]` Reveal/GradeAgain/Hard/Good/Easy) wraps Core `ReviewSession` —
-same scheduler as desktop, shared directly, so grades advance identically.
-`ReviewPage.xaml` + code-behind (tap-to-reveal card, four grade buttons via
-`CanGrade`, NothingDue/IsDone states) matching the StudyCardsPage idiom.
-**Integration:** `IReviewProgressStore` registered in `MauiProgram` pointed at
-`FileSystem.AppDataDirectory` (the sandbox-path adaptation — mobile review-progress.json
-lives in the app sandbox, NOT beside-exe); VM + Page registered; `review` route in
-`AppShell`; a "Spaced repetition" button + `SpacedRepetitionCommand` on HomePage.
-**[NAMING] The player already had a `ReviewCommand` meaning "review as study cards"
-(the flip feature)** — to avoid collision, the new command is `SpacedRepetitionCommand`
-and the button reads "Spaced repetition", distinct from "Review as study cards".
-**VERIFIED (structural):** ReviewPage.xaml well-formed; all 5 `[RelayCommand]`s
-generate the 5 `...Command` names bound in XAML; all 9 bound properties exist;
-`OnShowingBackChanged` partial hook matches the generated property; `x:DataType`
-correct; class is `public partial`; every Style/converter key
-(Card/PrimaryButton/SecondaryButton/Headline/Muted/FieldLabel/Body/BytesToImage/
-HasFaceImage) exists in player resources; validate 12/12; balance clean. **NOT
-verified: MAUI compile + emulator runtime — J's.** **Spaced repetition DONE. Next:
-iOS scaffolding if a Mac path appears, or another feature.**
+**Last shipped:** v0.26.0 build 43 (stage `spaced-repetition`)
+**Deliverable:** `QuizBuilder_v0.26.0.43.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** Spaced repetition complete (b39 Core, b41 desktop, b42 mobile), all green.
+**b43 is a small UX-clarity fix** prompted by a real confusion: a quiz with quiz
+*questions* but no authored *study cards* showed "nothing to review", which looked
+like a bug (it wasn't — SR only reviews authored StudyCards, by design, confirmed
+by J). Fix: split the single `NothingDue` empty state into `NoStudyCards` ("No
+study cards yet" + nudge to author some in the Study Cards tab) vs `AllCaughtUp`
+("All caught up" — cards exist, none due now). Applied to BOTH the desktop
+`ReviewViewModel`/`ReviewView.xaml` and the mobile `ReviewViewModel`/`ReviewPage.xaml`
+(both VMs now capture `_hasAnyStudyCards` at Rebuild). Also renamed the mobile home
+button "Review as study cards" → "Flash cards" so it no longer collides with the
+spaced-repetition "Review". No behaviour change — labels + empty-state messages only.
+**Verified:** validate 12/12; both ReviewView.xaml + ReviewPage.xaml + HomePage.xaml
+well-formed; NoStudyCards/AllCaughtUp resolve on both VMs; no lingering NothingDue;
+balance clean. WPF + MAUI compile/runtime are J's. **NEXT (agreed): iOS scaffolding**
+— prepare `net10.0-ios` TFM + `Platforms/iOS` folder; J has a realistic Mac path to
+build/verify it. Core is platform-neutral and the `.qbx` format is settled, so the
+architecture is ready. I can prep structurally; the build/sign/run is Mac-only.
 **[DECISION] SM-2** (classic Anki-style algorithm), chosen over Leitner because its
 per-card ease is the proven standard and the complexity hides entirely in Core
 behind a friendly 4-button grade (Again/Hard/Good/Easy → quality 2/3/4/5; Again is
