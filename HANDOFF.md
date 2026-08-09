@@ -1,24 +1,34 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 43 (stage `spaced-repetition`)
-**Deliverable:** `QuizBuilder_v0.26.0.43.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** Spaced repetition complete (b39 Core, b41 desktop, b42 mobile), all green.
-**b43 is a small UX-clarity fix** prompted by a real confusion: a quiz with quiz
-*questions* but no authored *study cards* showed "nothing to review", which looked
-like a bug (it wasn't — SR only reviews authored StudyCards, by design, confirmed
-by J). Fix: split the single `NothingDue` empty state into `NoStudyCards` ("No
-study cards yet" + nudge to author some in the Study Cards tab) vs `AllCaughtUp`
-("All caught up" — cards exist, none due now). Applied to BOTH the desktop
-`ReviewViewModel`/`ReviewView.xaml` and the mobile `ReviewViewModel`/`ReviewPage.xaml`
-(both VMs now capture `_hasAnyStudyCards` at Rebuild). Also renamed the mobile home
-button "Review as study cards" → "Flash cards" so it no longer collides with the
-spaced-repetition "Review". No behaviour change — labels + empty-state messages only.
-**Verified:** validate 12/12; both ReviewView.xaml + ReviewPage.xaml + HomePage.xaml
-well-formed; NoStudyCards/AllCaughtUp resolve on both VMs; no lingering NothingDue;
-balance clean. WPF + MAUI compile/runtime are J's. **NEXT (agreed): iOS scaffolding**
-— prepare `net10.0-ios` TFM + `Platforms/iOS` folder; J has a realistic Mac path to
-build/verify it. Core is platform-neutral and the `.qbx` format is settled, so the
-architecture is ready. I can prep structurally; the build/sign/run is Mac-only.
+**Last shipped:** v0.26.0 build 44 (stage `ios-scaffolding`)
+**Deliverable:** `QuizBuilder_v0.26.0.44.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b43 (study-cards UX clarity) green. **b44 adds iOS SCAFFOLDING to the
+mobile player — structurally prepared, now with CI compile-verification.** The
+player can target iOS alongside Android; all screens/grading/.qbx logic are shared
+(Core is platform-neutral), so iOS behaves like Android with native iOS controls.
+**Key safety design:** the iOS TFM is CONDITIONAL on building on macOS —
+`<TargetFrameworks>net10.0-android</TargetFrameworks>` unconditionally, plus
+`<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">net10.0-android;net10.0-ios</TargetFrameworks>`.
+So Windows/CI-Android see the IDENTICAL Android-only project as before (restore/build
+never touch iOS, which would fail without the Apple workload); a Mac picks up both
+automatically. **Files added (Platforms/iOS/):** `PlatformUri.iOS.cs` (the
+structurally-required partial impl — iOS has no ContentResolver, opens file:// or
+plain paths directly), `AppDelegate.cs` (MauiUIApplicationDelegate → CreateMauiApp,
+mirrors Android MainApplication), `Program.cs` (UIApplication.Main entry),
+`Info.plist` (app identity + .qbx document-type registration via
+UTImportedTypeDeclarations + CFBundleDocumentTypes — the iOS equivalent of Android's
+intent filters; NO XSAppIconAssets, MAUI generates the icon catalog from the shared
+MauiIcon). iOS floor 15.0. **NEW CI JOB `ios-build`** on `macos-latest` — installs
+ios+android+maui workloads, `dotnet build -f net10.0-ios` Debug (simulator, no
+signing). This is the FIRST automated iOS verification; it compiles the scaffolding
+on every push. **VERIFIED here:** plist well-formed, workflow valid YAML, partial
+signature matches, validate 12/12. **NOT verified here (Mac/CI-only):** actual iOS
+compile + device run — but the new macOS CI job now covers compile. **iOS caveat
+stands:** build/sign/run to a real device is Mac-only; the layout will need a
+safe-area/native-control polish pass once seen on a real iPhone. Also did a tiny
+label fix: StudyCardsPage title "Study cards" → "Flash cards" to match the button.
+**Next: watch the new ios-build CI job's first run — if it's red, the error points to
+the scaffolding fix. Then device testing on J's Mac.**
 **[DECISION] SM-2** (classic Anki-style algorithm), chosen over Leitner because its
 per-card ease is the proven standard and the complexity hides entirely in Core
 behind a friendly 4-button grade (Again/Hard/Good/Easy → quality 2/3/4/5; Again is

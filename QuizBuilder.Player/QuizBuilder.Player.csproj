@@ -2,17 +2,22 @@
 
   <PropertyGroup>
     <!--
-      Android only, on purpose. The HANDOFF records that iOS needs a Mac to
-      build (Apple's rule, any framework) and is deferred; Android builds on
-      Windows alone. Adding net10.0-ios later is a one-line change here plus a
-      Platforms/iOS folder — the shared UI and the Core reference are already
-      iOS-ready because nothing in them is Android-specific.
+      Android everywhere; iOS only when building ON a Mac. Apple's toolchain,
+      simulator, and signing are macOS-only (for every framework, not just
+      MAUI), and the iOS workload isn't installed on the Windows CI runner or a
+      typical Windows dev box. If the iOS TFM were unconditional, `dotnet
+      restore`/`build` on Windows would try to restore the iOS workload and fail
+      — breaking the Android build for everyone. So the iOS TFM is added ONLY
+      when the build host is macOS. On a Mac it appears automatically; build it
+      with `dotnet build -f net10.0-ios`. On Windows/CI the project is Android-
+      only exactly as before, so nothing there changes.
 
       MAUI 10 ships in lockstep with .NET 10, which is why Core was
-      multi-targeted to add net10.0 (see QuizBuilder.Core.csproj). This project
-      consumes Core's net10.0 target.
+      multi-targeted to add net10.0 (see QuizBuilder.Core.csproj). Both mobile
+      TFMs consume Core's net10.0 target.
     -->
     <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">net10.0-android;net10.0-ios</TargetFrameworks>
 
     <OutputType>Exe</OutputType>
     <RootNamespace>QuizBuilder.Player</RootNamespace>
@@ -44,6 +49,14 @@
       silently, as that changes which devices can install.
     -->
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+
+    <!--
+      iOS 15 floor: covers every device Apple still supports (iPhone 6s and
+      later) and is the practical modern baseline. Only applies to the iOS TFM;
+      the Android floor above is independent. Raise later if a newer iOS API is
+      needed; never lower it silently, as that changes which devices can install.
+    -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <!--

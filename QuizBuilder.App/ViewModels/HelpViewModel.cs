@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 44, "2026-08-04", new[]
+        {
+            "iOS groundwork for the mobile player. The project can now target iPhone and iPad alongside Android, sharing all the same screens, grading, and .qbx handling — an iOS build behaves the same as Android, just with native iOS controls and styling. Because Apple only allows iOS builds on a Mac, the iOS target activates automatically when building on macOS and stays out of the way on Windows, so the Android build is completely unchanged. A new macOS build check was added to CI so the iOS code is verified to compile on every push. Also a small tidy-up: the mobile Flash cards screen's title now matches its button.",
+        }),
         new VersionEntry("0.26.0", 43, "2026-08-04", new[]
         {
             "Clearer wording around study cards vs. spaced repetition. When you open Review (or Spaced repetition on mobile) for a quiz with no study cards, it now says so plainly — \"No study cards yet\", with a nudge to add some in the Study Cards tab — instead of the ambiguous \"nothing to review\", which looked like a glitch. When cards exist but none are due, it now says \"All caught up\". On mobile, the \"Review as study cards\" button is renamed \"Flash cards\" so it no longer sounds like the spaced-repetition Review. No behaviour changed — just labels and empty-state messages.",

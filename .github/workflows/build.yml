@@ -103,3 +103,41 @@ jobs:
           --configuration Debug
           -f net10.0-android
           --no-restore
+
+  # iOS build verification. Runs on a macOS runner because Apple's toolchain is
+  # macOS-only — this is the ONE place iOS actually compiles, so it's our only
+  # automated check that the iOS scaffolding (Platforms/iOS, the PlatformUri
+  # partial, Info.plist) is sound. No signing: a Debug build for the simulator
+  # doesn't need a provisioning profile, so it runs without any Apple account
+  # secrets. This is compile-only verification; running on a real device still
+  # needs signing set up locally.
+  ios-build:
+    runs-on: macos-latest
+    needs: core-tests
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET (from global.json)
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # On macOS the csproj evaluates to BOTH TFMs (android;ios), so restore
+      # touches the Android target too — install both workloads. This also
+      # mirrors a real Mac dev box, which would have both to build either
+      # platform.
+      - name: Install MAUI workloads (iOS + Android)
+        run: dotnet workload install ios android maui --ignore-failed-sources
+
+      - name: Restore
+        run: dotnet restore QuizBuilder.Player/QuizBuilder.Player.csproj
+
+      # Debug build targeting the iOS TFM. Compiles the shared UI, the
+      # Platforms/iOS files, and Core. No -p:RuntimeIdentifier, so it builds for
+      # the simulator toolchain and needs no signing.
+      - name: Build iOS (Debug)
+        run: >
+          dotnet build QuizBuilder.Player/QuizBuilder.Player.csproj
+          --configuration Debug
+          -f net10.0-ios
+          --no-restore

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+		<integer>2</integer>
+	</array>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!--
+	  No XSAppIconAssets / app-icon entry here on purpose: MAUI generates the
+	  iOS app-icon asset catalog from the shared <MauiIcon> SVG in the csproj at
+	  build time (the same source Android uses), so hardcoding a catalog path
+	  would conflict with what the build produces.
+	-->
+
+	<!--
+	  Register the .qbx file type so Quiz Player appears in the iOS share sheet
+	  and "Open in" list, and can be launched by tapping a .qbx. This is the iOS
+	  equivalent of the Android intent filters in MainActivity.cs. Because .qbx
+	  is an app-specific format with no system UTI, we declare our own imported
+	  type (com.severdthumbz.qbx) conforming to public.data, and claim it as a
+	  document type the app can open (LSHandlerRank = Owner).
+	-->
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.severdthumbz.qbx</string>
+			<key>UTTypeDescription</key>
+			<string>Quiz Builder Package</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>qbx</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Quiz Builder Package</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.severdthumbz.qbx</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
