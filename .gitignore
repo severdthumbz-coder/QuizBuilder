@@ -7,3 +7,5 @@ publish/
 .build-preserve/
 
 *.zip
+
+*.zip
