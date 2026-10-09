@@ -1,0 +1,78 @@
+<!--
+    Full-window dimmed overlay with the centered tour card.
+    Put it as the LAST child of your window's root Grid:
+        <ob:TourOverlay Grid.RowSpan="99" Grid.ColumnSpan="99" Panel.ZIndex="500"/>
+    Keys: → / Enter = Next, ← = Back, Esc = Skip.
+-->
+<UserControl x:Class="OnboardingKit.TourOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ob="clr-namespace:OnboardingKit"
+             Focusable="False">
+    <UserControl.Resources>
+        <ob:OnbBoolToVisibilityConverter x:Key="BoolVis"/>
+        <ob:OnbInverseBoolConverter x:Key="InverseBool"/>
+    </UserControl.Resources>
+
+    <Grid x:Name="Root"
+          DataContext="{x:Static ob:OnboardingController.Current}"
+          Background="{DynamicResource OnbScrimBrush}"
+          Visibility="{Binding IsTourActive, Converter={StaticResource BoolVis}}"
+          KeyboardNavigation.TabNavigation="Cycle"
+          KeyboardNavigation.DirectionalNavigation="None"
+          PreviewKeyDown="Root_PreviewKeyDown">
+
+        <Border x:Name="Card"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                Margin="24" MaxWidth="460" MinWidth="340"
+                Padding="24" CornerRadius="10" BorderThickness="1"
+                Background="{DynamicResource OnbSurfaceBrush}"
+                BorderBrush="{DynamicResource OnbAccentBrush}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="30" ShadowDepth="6" Opacity="0.5" Color="Black"/>
+            </Border.Effect>
+
+            <StackPanel>
+                <DockPanel LastChildFill="False">
+                    <TextBlock DockPanel.Dock="Left" Text="{Binding Progress}"
+                               FontSize="11" Foreground="{DynamicResource OnbMutedBrush}"/>
+                    <TextBlock DockPanel.Dock="Right" Text="Esc to skip"
+                               FontSize="11" Foreground="{DynamicResource OnbMutedBrush}"/>
+                </DockPanel>
+
+                <TextBlock Text="{Binding CurrentStep.Title}" Margin="0,8,0,0"
+                           FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"
+                           Foreground="{DynamicResource OnbForegroundBrush}"/>
+
+                <TextBlock Text="{Binding CurrentStep.Body}" Margin="0,10,0,0"
+                           FontSize="13" LineHeight="20" TextWrapping="Wrap"
+                           Foreground="{DynamicResource OnbForegroundBrush}"/>
+
+                <DockPanel Margin="0,22,0,0" LastChildFill="False">
+                    <Button DockPanel.Dock="Left" Content="Skip tour"
+                            Style="{DynamicResource OnbLinkButton}"
+                            Command="{Binding SkipCommand}"/>
+
+                    <Button x:Name="NextButton" DockPanel.Dock="Right"
+                            Command="{Binding NextCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource OnbPrimaryButton}">
+                                <Setter Property="Content" Value="Next →"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsLastStep}" Value="True">
+                                        <Setter Property="Content" Value="Finish ✓"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <Button DockPanel.Dock="Right" Content="← Back"
+                            Style="{DynamicResource OnbSecondaryButton}"
+                            IsEnabled="{Binding IsFirstStep, Converter={StaticResource InverseBool}}"
+                            Command="{Binding BackCommand}"/>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

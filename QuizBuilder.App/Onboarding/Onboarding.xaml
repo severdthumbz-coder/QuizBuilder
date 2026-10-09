@@ -1,0 +1,90 @@
+<!--
+    OnboardingKit resources.
+    Merge this FIRST in App.xaml's MergedDictionaries (before your theme dictionaries),
+    so any Onb* keys your theme defines override these defaults. See HANDOFF.md → "Theming".
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ob="clr-namespace:OnboardingKit">
+
+    <!-- ── Default palette (dark). Override any of these keys in your theme. ── -->
+    <SolidColorBrush x:Key="OnbSurfaceBrush"    Color="#FF23262E"/>
+    <SolidColorBrush x:Key="OnbForegroundBrush" Color="#FFE8EAED"/>
+    <SolidColorBrush x:Key="OnbMutedBrush"      Color="#FF9AA0A6"/>
+    <SolidColorBrush x:Key="OnbBorderBrush"     Color="#FF3A3F4B"/>
+    <SolidColorBrush x:Key="OnbAccentBrush"     Color="#FF4F8EF7"/>
+    <SolidColorBrush x:Key="OnbOnAccentBrush"   Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="OnbScrimBrush"      Color="#B0000000"/>
+
+    <ob:OnbBoolToVisibilityConverter x:Key="OnbBoolVis"/>
+    <ob:OnbInverseBoolConverter      x:Key="OnbInverseBool"/>
+
+    <!-- ── Buttons used by the tour card ── -->
+    <Style x:Key="OnbButtonBase" TargetType="Button">
+        <Setter Property="Padding" Value="14,6"/>
+        <Setter Property="Margin" Value="6,0,0,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="6"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.88"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource OnbForegroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="OnbPrimaryButton" TargetType="Button" BasedOn="{StaticResource OnbButtonBase}">
+        <Setter Property="Background" Value="{DynamicResource OnbAccentBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource OnbAccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnbOnAccentBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="OnbSecondaryButton" TargetType="Button" BasedOn="{StaticResource OnbButtonBase}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource OnbBorderBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnbForegroundBrush}"/>
+    </Style>
+
+    <Style x:Key="OnbLinkButton" TargetType="Button" BasedOn="{StaticResource OnbButtonBase}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnbMutedBrush}"/>
+        <Setter Property="Margin" Value="0"/>
+    </Style>
+
+    <!--
+        Same look as VME's original HintMarker style, for people who prefer a plain TextBlock
+        with a rich ToolTip. Most of the time use <ob:HintMarker Hint="..."/> instead.
+    -->
+    <Style x:Key="HintMarker" TargetType="TextBlock">
+        <Setter Property="Text" Value="&#x24D8;"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Help"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnbAccentBrush}"/>
+        <Setter Property="Visibility"
+                Value="{Binding ShowHelpers, Source={x:Static ob:OnboardingController.Current}, Converter={StaticResource OnbBoolVis}}"/>
+        <Setter Property="ToolTipService.InitialShowDelay" Value="200"/>
+        <Setter Property="ToolTipService.ShowDuration" Value="20000"/>
+    </Style>
+
+</ResourceDictionary>

@@ -205,6 +205,15 @@ def check_resource_keys():
         registered.add(f"Color.{n}")
         registered.add(f"Brush.{n}")
 
+    # The OnboardingKit ships its own ResourceDictionary (Onboarding.xaml) that
+    # ThemeResourceBuilder merges into the runtime dictionary. Keys it defines
+    # (the Onb* styles and converters, plus its default Onb* brushes) are
+    # therefore registered at runtime even though they aren't literal d["..."]
+    # entries. Collect its x:Key definitions so they count as registered.
+    kit = os.path.join(ROOT, "QuizBuilder.App", "Onboarding", "Onboarding.xaml")
+    if os.path.exists(kit):
+        registered |= set(re.findall(r'x:Key="([\w.]+)"', open(kit).read()))
+
     for f in sorted(glob.glob(os.path.join(ROOT, "**/*.xaml"), recursive=True)):
         if os.sep + "obj" + os.sep in f:
             continue

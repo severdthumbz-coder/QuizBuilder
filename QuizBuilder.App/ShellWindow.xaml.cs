@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using OnboardingKit;
 using QuizBuilder.App.ViewModels;
 using QuizBuilder.App.Views;
 using QuizBuilder.Core.Interfaces;
@@ -69,6 +70,13 @@ public partial class ShellWindow : Window
         ShowOnly(_navigation.Current);
 
         RestoreWindowPlacement();
+
+        // First-run guided tour. ScheduleAutoStart queues the check at
+        // ApplicationIdle, so the card appears only after the window has drawn;
+        // it starts the tour only when helpers are on and the tour hasn't been
+        // seen. The tab selector was already wired in App startup, so this is
+        // the only onboarding hook the window itself needs.
+        Loaded += (_, _) => OnboardingController.Current.ScheduleAutoStart(Dispatcher);
 
         // Note: no focus juggling here. The nav rail's ring is driven by
         // Controls.FocusVisible, which tracks the last input device, so it

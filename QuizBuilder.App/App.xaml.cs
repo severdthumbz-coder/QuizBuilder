@@ -1,5 +1,7 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using OnboardingKit;
+using QuizBuilder.App.Onboarding;
 using QuizBuilder.App.Services;
 using QuizBuilder.App.Theming;
 using QuizBuilder.App.ViewModels;
@@ -113,6 +115,26 @@ public partial class App : Application
 
         // Start the autosave timer from the restored settings.
         _services.GetRequiredService<IAutoSaveService>().Reconfigure();
+
+        // Onboarding: wire the kit to our settings and navigation. The store
+        // reads/writes the two flags on the live AppSettings and saves through
+        // SettingsService, so the kit never references Core directly. The tab
+        // selector maps a tour step's integer TabIndex (a NavDestination value)
+        // back to a navigation call. Done after settings load so the flags are
+        // real; the first-run auto-start itself is scheduled in ShellWindow once
+        // the window has drawn.
+        var navigation = _services.GetRequiredService<INavigationService>();
+        var onboardingStore = new DelegateOnboardingStore(
+            () => settings.Current.Onboarding.ShowOnboardingHelpers,
+            v => settings.Current.Onboarding.ShowOnboardingHelpers = v,
+            () => settings.Current.Onboarding.HasSeenTour,
+            v => settings.Current.Onboarding.HasSeenTour = v,
+            () => settings.Save());
+        OnboardingController.Current.Initialize(
+            onboardingStore,
+            OnboardingContent.TourSteps,
+            OnboardingContent.LegendItems,
+            selectTab: i => navigation.NavigateTo((NavDestination)i));
 
         _services.GetRequiredService<ShellWindow>().Show();
     }

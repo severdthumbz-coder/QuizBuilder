@@ -1,6 +1,7 @@
 <Window x:Class="QuizBuilder.App.ShellWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ob="clr-namespace:OnboardingKit"
         Title="{Binding Title}"
         Height="800" Width="1280"
         MinHeight="560" MinWidth="900"
@@ -30,13 +31,18 @@
                 BorderBrush="{DynamicResource Brush.Border}"
                 BorderThickness="0,0,1,0">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Margin="16,20,16,16">
+                <Grid DockPanel.Dock="Top" Margin="16,20,16,16">
                     <TextBlock Text="Quiz Builder"
+                               VerticalAlignment="Center"
                                FontFamily="{DynamicResource Font.Family}"
                                FontSize="{DynamicResource Font.Size.Subtitle}"
                                FontWeight="{DynamicResource Font.Weight.Bold}"
                                Foreground="{DynamicResource Brush.TextPrimary}" />
-                </StackPanel>
+                    <!-- The ❔ legend button. Hides itself when onboarding
+                         helpers are turned off; Replay (on Help) still works. -->
+                    <ob:LegendButton HorizontalAlignment="Right"
+                                     VerticalAlignment="Center" />
+                </Grid>
 
                 <!-- Version pinned to the bottom of the rail -->
                 <TextBlock DockPanel.Dock="Bottom"
@@ -77,5 +83,11 @@
               Focusable="True"
               FocusVisualStyle="{x:Null}"
               KeyboardNavigation.TabNavigation="Local" />
+
+        <!-- Guided-tour overlay: the LAST child of the root Grid and spanning
+             both columns, so the dim and the centred card cover the whole
+             window (rail included) when the tour runs. Inert and invisible when
+             no tour is active. -->
+        <ob:TourOverlay Grid.Column="0" Grid.ColumnSpan="2" Panel.ZIndex="500" />
     </Grid>
 </Window>

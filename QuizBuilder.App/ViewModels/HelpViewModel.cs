@@ -122,47 +122,55 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
-        new VersionEntry("0.26.0", 44, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 46, "2026-10-09", new[]
+        {
+            "New guided onboarding. The first time you open the app, a short tour walks you through building a quiz, setting it up, previewing and taking it, the study tools, and sharing — seven steps you can move through with the arrow keys or skip with Esc. A ❔ legend button (top of the sidebar) explains the icons, small ⓘ markers beside key headers give a one-line explanation on hover, and you can replay the tour any time from the Help tab. All of it can be turned off under Settings → Help & onboarding; replay still works when it's off. Turned on by default for new users; nothing is sent anywhere.",
+        }),
+        new VersionEntry("0.26.0", 45, "2026-08-09", new[]
+        {
+            "Corrected the dates shown next to earlier builds in this version history — several had been stamped with the wrong day. They now reflect when each build was actually made.",
+        }),
+        new VersionEntry("0.26.0", 44, "2026-08-09", new[]
         {
             "iOS groundwork for the mobile player. The project can now target iPhone and iPad alongside Android, sharing all the same screens, grading, and .qbx handling — an iOS build behaves the same as Android, just with native iOS controls and styling. Because Apple only allows iOS builds on a Mac, the iOS target activates automatically when building on macOS and stays out of the way on Windows, so the Android build is completely unchanged. A new macOS build check was added to CI so the iOS code is verified to compile on every push. Also a small tidy-up: the mobile Flash cards screen's title now matches its button.",
         }),
-        new VersionEntry("0.26.0", 43, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 43, "2026-08-07", new[]
         {
             "Clearer wording around study cards vs. spaced repetition. When you open Review (or Spaced repetition on mobile) for a quiz with no study cards, it now says so plainly — \"No study cards yet\", with a nudge to add some in the Study Cards tab — instead of the ambiguous \"nothing to review\", which looked like a glitch. When cards exist but none are due, it now says \"All caught up\". On mobile, the \"Review as study cards\" button is renamed \"Flash cards\" so it no longer sounds like the spaced-repetition Review. No behaviour changed — just labels and empty-state messages.",
         }),
-        new VersionEntry("0.26.0", 42, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 42, "2026-08-06", new[]
         {
             "Spaced repetition now works on the Android player too, from a new \"Spaced repetition\" button on the home screen. It shows the cards that are due, one at a time — tap to reveal the answer, then grade it (Again/Hard/Good/Easy). It uses exactly the same scheduling as the desktop, so a card graded on your phone comes back at the same time it would on the computer, and your progress is stored privately in the app. This completes spaced repetition across desktop and mobile.",
         }),
-        new VersionEntry("0.26.0", 41, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 41, "2026-08-06", new[]
         {
             "Spaced repetition comes to the desktop: a new Review tab. It shows the cards the schedule says are due, one at a time — click to reveal the answer, then grade how well you knew it (Again, Hard, Good, Easy). Your grade sets when the card returns: miss it and it's back tomorrow, find it easy and it won't reappear for a good while. When you've cleared the due cards, it says you're done for today. Progress is saved privately on your device, so it never travels with a shared quiz.",
         }),
-        new VersionEntry("0.26.0", 40, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 40, "2026-08-06", new[]
         {
             "Version history now groups builds under one version heading instead of repeating the version on every entry. Each version shows once as a card, with its builds stacked inside (newest first), each build showing its number and date above its notes. Presentation only — the underlying changelog is unchanged.",
         }),
-        new VersionEntry("0.26.0", 39, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 39, "2026-08-06", new[]
         {
             "Groundwork for spaced repetition — the study feature that shows you cards just as you're about to forget them. This build adds the engine (the proven SM-2 algorithm, the same approach Anki uses): cards you find easy come back after longer and longer gaps, while ones you miss return the next day. Your review progress is saved privately on your device, separate from the quiz file, so sharing a quiz never carries your personal history and never changes the shared file. No visible change yet — the study screens that use this arrive next. All of it is covered by tests.",
         }),
-        new VersionEntry("0.26.0", 38, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 38, "2026-08-05", new[]
         {
             "The Android player now shows Numeric and Dropdown questions when taking a quiz — a numeric question gets a number pad and its unit, a dropdown gets a picker. This was the last place these two types weren't yet handled. With it, numeric and dropdown questions work everywhere: authoring and taking on the desktop, all four export formats, and now the mobile player. (Reviewing past attempts already showed them correctly.)",
         }),
-        new VersionEntry("0.26.0", 37, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 37, "2026-08-05", new[]
         {
             "Test fix for b36: one of the new web-export tests looked for a numeric unit's raw character (m/s²) in the page, but the exporter correctly HTML-encodes units for safety, so the raw character isn't there. The web export itself was fine — this was the test making a wrong assumption. Switched that test to a plain unit and added a dedicated test proving units with special characters are safely encoded. No product code changed.",
         }),
-        new VersionEntry("0.26.0", 36, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 36, "2026-08-05", new[]
         {
             "The interactive web export now handles Numeric and Dropdown questions — the last export surface. A dropdown becomes a real dropdown in the exported page; a numeric question gets a number box with its unit. Both are graded live in the browser exactly as they are on the desktop: the numeric grader uses a strict number check (so a stray '3.14abc' is marked wrong, not silently accepted as 3.14) and the same tolerance rule, verified against the desktop grader case-for-case. With this, numeric and dropdown questions work everywhere except the Android player — authoring, taking, grading, and all four exports (Word, HTML, Excel, and interactive web).",
         }),
-        new VersionEntry("0.26.0", 35, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 35, "2026-08-05", new[]
         {
             "Fix for the b34 Excel round-trip: numeric and dropdown questions were being written to the spreadsheet's Type column as 'Essay', so they came back as essays on import. The exporter had a separate type-label list that hadn't been updated for the two new types. Fixed — they now export with the correct Type and round-trip properly. Word and HTML exports were unaffected.",
         }),
-        new VersionEntry("0.26.0", 34, "2026-08-04", new[]
+        new VersionEntry("0.26.0", 34, "2026-08-05", new[]
         {
             "Exporters now handle the Numeric and Dropdown question types. Word, HTML, and Excel exports render both types and show their answers in the answer key. Excel is a full round-trip: a numeric question stores its correct value, tolerance, and unit; a dropdown stores its options and correct choice — and both import back correctly, with the Guide sheet explaining the format. The interactive web export handles them in a follow-on update. Combined with the desktop authoring from before, numeric and dropdown questions now work across authoring, taking, grading, and document export.",
         }),

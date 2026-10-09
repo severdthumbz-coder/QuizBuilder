@@ -98,6 +98,7 @@ public sealed class AppSettings
     public ShellSettings Shell { get; set; } = new();
     public AutoSaveSettings AutoSave { get; set; } = new();
     public UndoSettings Undo { get; set; } = new();
+    public OnboardingSettings Onboarding { get; set; } = new();
 
     /// <summary>Opt-in AI grammar review configuration (non-secret; the key is
     /// protected separately). Defaults to Off, so upgrading adds nothing that
@@ -109,6 +110,23 @@ public sealed class AppSettings
     /// class. Keys should be namespaced, e.g. "preview.zoomLevel".
     /// </summary>
     public Dictionary<string, string> Extra { get; set; } = new();
+}
+
+/// <summary>
+/// Onboarding helpers: the first-run guided tour, the ⓘ hint markers, and the
+/// ❔ legend. Both flags are read and written by the OnboardingKit through a
+/// DelegateOnboardingStore wired in App startup — the kit never touches this
+/// class directly, so Core stays WPF-free.
+/// </summary>
+public sealed class OnboardingSettings
+{
+    /// <summary>Master switch for the helpers. Default on, so a new user gets
+    /// the tour and hints; turning it off hides them (Replay still works).</summary>
+    public bool ShowOnboardingHelpers { get; set; } = true;
+
+    /// <summary>Whether the first-run tour has been completed or skipped. Starts
+    /// false so the tour auto-starts once; set true after the first run.</summary>
+    public bool HasSeenTour { get; set; }
 }
 
 /// <summary>

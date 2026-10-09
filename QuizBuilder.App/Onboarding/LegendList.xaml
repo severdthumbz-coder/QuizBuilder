@@ -1,0 +1,41 @@
+<!--
+    The legend rows (glyph or colour swatch + meaning). Used inside the ❔ popup,
+    and you can drop it on your Help tab too:  <ob:LegendList/>
+-->
+<UserControl x:Class="OnboardingKit.LegendList"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ob="clr-namespace:OnboardingKit">
+    <UserControl.Resources>
+        <ob:OnbBoolToVisibilityConverter x:Key="BoolVis"/>
+    </UserControl.Resources>
+
+    <ItemsControl ItemsSource="{Binding LegendItems, Source={x:Static ob:OnboardingController.Current}}"
+                  Focusable="False">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type ob:LegendItem}">
+                <Grid Margin="0,3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="34"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Width="22" Height="14" CornerRadius="3"
+                            HorizontalAlignment="Left" VerticalAlignment="Center"
+                            BorderThickness="1" BorderBrush="{DynamicResource OnbBorderBrush}"
+                            Background="{Binding Swatch}"
+                            Visibility="{Binding HasSwatch, Converter={StaticResource BoolVis}}"/>
+
+                    <TextBlock Text="{Binding Glyph}" FontSize="14"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource OnbForegroundBrush}"
+                               Visibility="{Binding HasGlyph, Converter={StaticResource BoolVis}}"/>
+
+                    <TextBlock Grid.Column="1" Text="{Binding Meaning}" TextWrapping="Wrap"
+                               VerticalAlignment="Center" FontSize="12"
+                               Foreground="{DynamicResource OnbForegroundBrush}"/>
+                </Grid>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

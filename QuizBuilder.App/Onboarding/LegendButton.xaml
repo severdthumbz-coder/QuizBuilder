@@ -1,0 +1,84 @@
+<!--
+    The ❔ toolbar button + its Legend flyout. Drop it in your toolbar:  <ob:LegendButton/>
+    Hidden automatically when "Show onboarding helpers" is off.
+    Glyph="…" changes the icon (default ❔); ButtonStyle="{StaticResource YourToggleStyle}"
+    swaps in your own toolbar look (Style TargetType="ToggleButton").
+-->
+<UserControl x:Class="OnboardingKit.LegendButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ob="clr-namespace:OnboardingKit">
+    <UserControl.Resources>
+        <ob:OnbBoolToVisibilityConverter x:Key="BoolVis"/>
+        <ob:OnbInverseBoolConverter x:Key="InverseBool"/>
+
+        <!-- Flat glyph button: transparent, subtle hover/checked background. -->
+        <Style x:Key="OnbLegendToggle" TargetType="ToggleButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnbForegroundBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bd" CornerRadius="5" Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource OnbBorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource OnbBorderBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid DataContext="{x:Static ob:OnboardingController.Current}"
+          Visibility="{Binding ShowHelpers, Converter={StaticResource BoolVis}}">
+
+        <!--
+            IsHitTestVisible is OFF while the popup is open. Without this, clicking the button to
+            close the flyout first closes it (StaysOpen=False) and then the same click re-opens it.
+        -->
+        <ToggleButton x:Name="Toggle"
+                      Style="{StaticResource OnbLegendToggle}"
+                      ToolTip="Legend — what the icons and colours mean"
+                      IsChecked="{Binding IsLegendOpen, Mode=TwoWay}"
+                      IsHitTestVisible="{Binding IsOpen, ElementName=Flyout, Converter={StaticResource InverseBool}}"
+                      Content="{Binding Glyph, RelativeSource={RelativeSource AncestorType=ob:LegendButton}}"/>
+
+        <Popup x:Name="Flyout"
+               PlacementTarget="{Binding ElementName=Toggle}"
+               Placement="Bottom" HorizontalOffset="-180" VerticalOffset="4"
+               StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
+               IsOpen="{Binding IsLegendOpen, Mode=TwoWay}">
+            <!-- Margin leaves room for the drop shadow inside the transparent popup. -->
+            <Border Margin="0,0,14,14" Padding="14" MaxWidth="420" CornerRadius="6"
+                    BorderThickness="1"
+                    Background="{DynamicResource OnbSurfaceBrush}"
+                    BorderBrush="{DynamicResource OnbBorderBrush}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="16" ShadowDepth="4" Opacity="0.45" Color="Black"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="Legend" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource OnbForegroundBrush}"/>
+                    <ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto">
+                        <ob:LegendList/>
+                    </ScrollViewer>
+                    <TextBlock Margin="0,10,0,0" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource OnbMutedBrush}"
+                               Text="Hide these helpers any time in Settings."/>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

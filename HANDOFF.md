@@ -1,11 +1,55 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 44 (stage `ios-scaffolding`)
-**Deliverable:** `QuizBuilder_v0.26.0.44.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b43 (study-cards UX clarity) green. **b44 adds iOS SCAFFOLDING to the
-mobile player — structurally prepared, now with CI compile-verification.** The
-player can target iOS alongside Android; all screens/grading/.qbx logic are shared
-(Core is platform-neutral), so iOS behaves like Android with native iOS controls.
+**Last shipped:** v0.26.0 build 46 (stage `onboarding`)
+**Deliverable:** `QuizBuilder_v0.26.0.46.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b45 (changelog dates) green. **b46 incorporates the OnboardingKit**
+(a drop-in WPF guided-tour / ⓘ-hints / ❔-legend system from Video Metadata Editor,
+shipped as a zip with its own HANDOFF; integrated per that handoff's §2 + §8 prompt).
+**What was added:** copied `Onboarding/` into `QuizBuilder.App/` (namespace
+`OnboardingKit`, self-contained, no new package refs — SDK auto-includes its
+*.xaml/*.cs). `OnboardingSettings` (ShowOnboardingHelpers=true, HasSeenTour=false)
+added to Core `AppSettings`; wired via `DelegateOnboardingStore` in App.OnStartup
+against `SettingsService`. 7-step tour in `Onboarding/OnboardingContent.cs` grouping
+the 12 NavDestinations in workflow order (Welcome · QuizBuilder · Settings · Preview ·
+StudyCards · QuestionBank · Help); the tab selector maps a step's int TabIndex →
+`(NavDestination)i` → `INavigationService.NavigateTo`. `TourOverlay` (last child of
+shell root Grid, ColumnSpan=2, ZIndex 500) + `LegendButton` (sidebar header) in
+ShellWindow; `ScheduleAutoStart(Dispatcher)` on shell Loaded. Settings got a "Help &
+onboarding" card with the ShowHelpers checkbox; Help got a "▶ Replay guided tour"
+button + `LegendList`; ⓘ `HintMarker`s on StudyCards + Review headers (the
+questions-vs-study-cards confusion spot) + the Settings onboarding section.
+**[KEY ADAPTATION] Theming:** this app has NO static theme dictionary — App.OnStartup
+CLEARS `Resources.MergedDictionaries` and installs only the runtime-built dictionary
+from `ThemeResourceBuilder`. So the handoff's "merge Onboarding.xaml in App.xaml
+before your theme" would be WIPED. Instead `ThemeResourceBuilder.AddOnboarding(d)`
+merges Onboarding.xaml into the BUILT dictionary and then aliases the 7 Onb* brushes
+to the theme's own Brush.* (Surface/TextPrimary/TextSecondary/Border/Accent/OnAccent/
+Scrim) with literal d["..."] assignments — so onboarding colours follow theme
+switches, and the literals are visible to validate.py's key check.
+**[VALIDATE]** Extended `tools/validate.py` check [5] to also treat Onboarding.xaml's
+own x:Key defs as registered (its styles/converters live in that merged dict, not
+ThemeResourceBuilder). validate 12/12 green. **NOT verified here: WPF compile +
+runtime — J's** (I can't build WPF; the kit's own first-build is also the real
+compile check per its handoff, which couldn't compile in its sandbox either). Test
+checklist to run on the machine: OnboardingKit HANDOFF §6 (12 items). Also a tiny
+earlier-fix note folded in: StudyCardsPage mobile title already "Flash cards".
+--- prior iOS status below ---
+**b44 (iOS scaffolding) — ALL FOUR CI JOBS GREEN, including the new
+`ios-build` on macOS: iOS compiles.** The conditional-iOS-TFM design worked —
+android-build was unaffected. iOS is now compile-verified by CI; remaining iOS work
+is the Mac-side visual/safe-area polish + signing for a real device.
+**b45 is a data-only fix: corrected changelog dates.** Builds 32–44 had all been
+stamped "2026-08-04" (I'd been copying the date string forward each build instead of
+using the real date). Pulled the true commit dates from `git log` and set each:
+b32–33=08-04, b34–38=08-05, b39–42=08-06, b43=08-07, b44–45=08-09. Now monotonic and
+accurate. **[LESSON] The changelog date is hand-typed (no automation) — READ THE REAL
+DATE each build (`date +%Y-%m-%d`), do not copy the previous entry's string.** Can't
+easily add a test guard: HelpViewModel is in the WPF project, which the test project
+can't reference (only VersionInfo is testable). **Verified:** validate 12/12, 65
+entries, balanced, exactly 2 remaining 08-04 (correct: b32/33). **iOS next:** build +
+run on J's Mac (visual polish, native-control pass, signing). Pending housekeeping:
+`.gitignore` still has no `*.zip` rule; the 66 MB zip remains in git history (optional
+purge).
 **Key safety design:** the iOS TFM is CONDITIONAL on building on macOS —
 `<TargetFrameworks>net10.0-android</TargetFrameworks>` unconditionally, plus
 `<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">net10.0-android;net10.0-ios</TargetFrameworks>`.

@@ -35,8 +35,43 @@ public static class ThemeResourceBuilder
         AddSpacing(d, tokens.Spacing);
         AddShape(d, tokens.Shape);
         AddMotion(d, tokens.Motion);
+        AddOnboarding(d);
 
         return d;
+    }
+
+    /// <summary>
+    /// Wires the OnboardingKit into the theme. The kit draws with its own
+    /// Onb*Brush keys and expects Onboarding.xaml merged before the theme — but
+    /// this app has no static theme dictionary (App.OnStartup clears
+    /// MergedDictionaries and installs only this built dictionary), so a merge
+    /// in App.xaml would be wiped on the first theme apply. Instead we merge the
+    /// kit's styles/converters into THIS dictionary, then alias each Onb* brush
+    /// to one of the theme's own Brush.* entries. Because the aliases are added
+    /// after the merge, they override the kit's hardcoded dark defaults, and
+    /// because everything resolves by DynamicResource, rebuilding this
+    /// dictionary on a theme switch moves the onboarding colours with it.
+    /// </summary>
+    private static void AddOnboarding(ResourceDictionary d)
+    {
+        // The kit's converters, button styles and HintMarker style.
+        d.MergedDictionaries.Add(new ResourceDictionary
+        {
+            Source = new System.Uri("/QuizBuilder.App;component/Onboarding/Onboarding.xaml", System.UriKind.Relative),
+        });
+
+        // Theme-aware aliases, added after the merge so they win over the kit's
+        // built-in defaults. Each points at a brush the theme already defines.
+        // Written as literal d["..."] assignments (not a loop) so both a reader
+        // and tools/validate.py's key check can see exactly which Onb* keys are
+        // registered here.
+        d["OnbSurfaceBrush"] = d["Brush.Surface"];
+        d["OnbForegroundBrush"] = d["Brush.TextPrimary"];
+        d["OnbMutedBrush"] = d["Brush.TextSecondary"];
+        d["OnbBorderBrush"] = d["Brush.Border"];
+        d["OnbAccentBrush"] = d["Brush.Accent"];
+        d["OnbOnAccentBrush"] = d["Brush.OnAccent"];
+        d["OnbScrimBrush"] = d["Brush.Scrim"];
     }
 
     private static void AddColors(ResourceDictionary d, ColorTokens c)
