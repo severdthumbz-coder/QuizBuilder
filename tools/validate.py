@@ -60,7 +60,7 @@ def check_xml():
     for f in glob.glob(os.path.join(ROOT, "*.json")):
         rel = os.path.relpath(f, ROOT)
         try:
-            json.load(open(f))
+            json.load(open(f, encoding="utf-8"))
             ok(rel)
         except Exception as e:
             fail(f"{rel}: {e}")
@@ -147,7 +147,7 @@ def check_xaml_classes():
         if os.sep + "obj" + os.sep in f:
             continue
         rel = os.path.relpath(f, ROOT)
-        src = open(f).read()
+        src = open(f, encoding="utf-8").read()
         m = re.search(r'x:Class="([\w.]+)"', src)
         if not m:
             continue  # resource dictionary
@@ -155,7 +155,7 @@ def check_xaml_classes():
         if not os.path.exists(cb):
             fail(f"{rel}: declares x:Class but has no code-behind")
             continue
-        s2 = open(cb).read()
+        s2 = open(cb, encoding="utf-8").read()
         ns = re.search(r"namespace ([\w.]+);", s2)
         cls = re.search(r"public partial class (\w+)", s2)
         if not ns or not cls:
@@ -174,7 +174,7 @@ def check_pack_uris():
     if not os.path.exists(csproj):
         print("  --   App project not present, skipping")
         return
-    asm = re.search(r"<AssemblyName>([\w.]+)</AssemblyName>", open(csproj).read())
+    asm = re.search(r"<AssemblyName>([\w.]+)</AssemblyName>", open(csproj, encoding="utf-8").read())
     if not asm:
         fail("csproj has no explicit AssemblyName")
         return
@@ -183,7 +183,7 @@ def check_pack_uris():
     for f in glob.glob(os.path.join(ROOT, "**/*.xaml"), recursive=True):
         if os.sep + "obj" + os.sep in f:
             continue
-        for uri in re.findall(r'Source="/([\w.]+);component', open(f).read()):
+        for uri in re.findall(r'Source="/([\w.]+);component', open(f, encoding="utf-8").read()):
             found += 1
             if uri != name:
                 fail(f"{os.path.relpath(f, ROOT)}: pack URI '{uri}' != AssemblyName '{name}'")
@@ -199,7 +199,7 @@ def check_resource_keys():
     if not os.path.exists(builder):
         print("  --   ThemeResourceBuilder not present, skipping")
         return
-    b = open(builder).read()
+    b = open(builder, encoding="utf-8").read()
     registered = set(re.findall(r'd\[\s*"([\w.]+)"\s*\]', b))
     for n in re.findall(r'AddColorPair\(d,\s*"(\w+)"', b):
         registered.add(f"Color.{n}")
@@ -212,13 +212,13 @@ def check_resource_keys():
     # entries. Collect its x:Key definitions so they count as registered.
     kit = os.path.join(ROOT, "QuizBuilder.App", "Onboarding", "Onboarding.xaml")
     if os.path.exists(kit):
-        registered |= set(re.findall(r'x:Key="([\w.]+)"', open(kit).read()))
+        registered |= set(re.findall(r'x:Key="([\w.]+)"', open(kit, encoding="utf-8").read()))
 
     for f in sorted(glob.glob(os.path.join(ROOT, "**/*.xaml"), recursive=True)):
         if os.sep + "obj" + os.sep in f:
             continue
         rel = os.path.relpath(f, ROOT)
-        used = set(re.findall(r"\{DynamicResource\s+([\w.]+)\}", open(f).read()))
+        used = set(re.findall(r"\{DynamicResource\s+([\w.]+)\}", open(f, encoding="utf-8").read()))
         if not used:
             continue
         missing = used - registered
@@ -252,7 +252,7 @@ def check_collating_assertions():
     checked = 0
 
     for f in sorted(glob.glob(os.path.join(ROOT, "QuizBuilder.Tests", "*.cs"))):
-        src = open(f).read()
+        src = open(f, encoding="utf-8").read()
         rel = os.path.relpath(f, ROOT)
 
         for m in re.finditer(r'Assert\.(?:Contains|DoesNotContain)\("((?:[^"\\]|\\.)*)"', src):
@@ -294,7 +294,7 @@ def check_itemssource_types():
         if os.sep + "obj" + os.sep in xaml_path:
             continue
 
-        xaml = open(xaml_path).read()
+        xaml = open(xaml_path, encoding="utf-8").read()
         names = set(re.findall(r'ItemsSource="\{Binding ([\w.]+)[,}]', xaml))
         if not names:
             continue
@@ -306,7 +306,7 @@ def check_itemssource_types():
         for cs in glob.glob(os.path.join(ROOT, "QuizBuilder.App", "**", "*.cs"), recursive=True):
             if os.sep + "obj" + os.sep in cs:
                 continue
-            src = open(cs).read()
+            src = open(cs, encoding="utf-8").read()
             for m in re.finditer(r"public\s+([\w<>?\[\], ]+?)\s+(\w+)\s*(?:=>|\{\s*get)", src):
                 props.setdefault(m.group(2), m.group(1).strip())
 
@@ -348,7 +348,7 @@ def check_call_signatures():
     # name -> list of param type lists (a name may be overloaded)
     sigs = {}
     for f in glob.glob(os.path.join(iface_dir, "*.cs")):
-        src = open(f).read()
+        src = open(f, encoding="utf-8").read()
         # Collapse multi-line signatures onto one line first.
         flat = re.sub(r"\s*\n\s*", " ", src)
         for m in re.finditer(r"(?:^|;|\}|\{)\s*([\w<>?\[\], ]+?)\s+(\w+)\(([^)]*)\)\s*;", flat):
@@ -371,7 +371,7 @@ def check_call_signatures():
     for f in glob.glob(os.path.join(ROOT, "QuizBuilder.App", "**", "*.cs"), recursive=True):
         if os.sep + "obj" + os.sep in f:
             continue
-        src = open(f).read()
+        src = open(f, encoding="utf-8").read()
         rel = os.path.relpath(f, ROOT)
 
         # Local declarations: "var x = new Foo" / "Foo x = "
@@ -446,7 +446,7 @@ def check_markup_extensions():
             continue
         rel = os.path.relpath(f, ROOT)
         problems = []
-        for i, line in enumerate(open(f).read().splitlines(), 1):
+        for i, line in enumerate(open(f, encoding="utf-8").read().splitlines(), 1):
             for m in re.finditer(r'(\w+)="(\{[^"]*)"', line):
                 val = m.group(2)
                 if val.startswith("{}"):
@@ -475,7 +475,7 @@ def check_attached_properties():
     for f in sorted(glob.glob(os.path.join(ROOT, "**/*.cs"), recursive=True)):
         if os.sep + "obj" + os.sep in f or os.sep + "bin" + os.sep in f:
             continue
-        src = open(f).read()
+        src = open(f, encoding="utf-8").read()
         regs = re.findall(r'RegisterAttached\(\s*"(\w+)"', src)
         if not regs:
             continue
