@@ -1,8 +1,17 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 48 (stage `crash-recovery`)
-**Deliverable:** `QuizBuilder_v0.26.0.48.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** **b48 is a one-line build fix to b47.** b47's `CrashRecoveryCoordinator`
+**Last shipped:** v0.26.0 build 49 (stage `crash-recovery`)
+**Deliverable:** `QuizBuilder_v0.26.0.49.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** **b49: made `ios-build` CI non-blocking (`continue-on-error: true`).**
+Root cause of the red iOS job is now CONFIRMED from the log — NOT our code: the
+macOS runner's .NET-for-iOS workload updated to 27.x which requires Xcode 27.0, but
+the runner ships Xcode 26.6 (`Xamarin.Shared.Sdk.targets(2998,3)`). Pure
+runner/toolchain drift. core-tests + app-build + android-build were all GREEN on b48,
+confirming crash recovery compiles and the CS0103 fix worked. The iOS job is a
+compile canary only (real iOS builds are Mac-side), so it now reports without failing
+the whole run; the three real gates stay blocking. If iOS CI is wanted green again
+later: pin Xcode on the runner, or pin the iOS workload band to match — deferred.
+**b48 is a one-line build fix to b47.** b47's `CrashRecoveryCoordinator`
 wrote a bare `Path.GetFileName`, but this App project does NOT have `System.IO` in
 implicit usings (the WPF markup-compile temp project `*_wpftmp` drops it) — existing
 App code fully-qualifies `System.IO.*` as the house style, which b47 didn't follow.

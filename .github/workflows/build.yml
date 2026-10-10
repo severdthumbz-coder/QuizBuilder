@@ -114,6 +114,17 @@ jobs:
   ios-build:
     runs-on: macos-latest
     needs: core-tests
+    # Non-blocking on purpose. This job is a COMPILE CANARY for the iOS
+    # scaffolding, not a gate: real iOS builds happen on a Mac we control. The
+    # hosted macOS runner's Xcode and the .NET-for-iOS workload version drift
+    # independently of this repo — e.g. a workload update that requires a newer
+    # Xcode than the runner has yet (seen 2026-10: iOS workload 27.x needed
+    # Xcode 27.0, runner had 26.6). That's outside our control and must not mark
+    # the whole build failed. continue-on-error keeps the green/red signal for
+    # information while letting core-tests / app-build / android-build decide the
+    # run's result. If this stays red across several runs for a reason that ISN'T
+    # a known Xcode/workload mismatch, investigate — it could be a real break.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
 

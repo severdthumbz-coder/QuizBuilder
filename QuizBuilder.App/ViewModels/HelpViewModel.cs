@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 49, "2026-10-10", new[]
+        {
+            "Build-pipeline housekeeping: the automated iOS compile check now reports on its own without being able to fail the whole build. It runs on a shared Apple machine whose toolchain occasionally gets ahead of what the iOS build needs — a situation outside this project — and that should no longer block the desktop and Android results. No change to the app itself.",
+        }),
         new VersionEntry("0.26.0", 48, "2026-10-10", new[]
         {
             "Build fix for b47: the crash-recovery code referenced a file-path helper without the right namespace in scope, so the desktop app wouldn't compile. Corrected. No change to how crash recovery behaves.",
