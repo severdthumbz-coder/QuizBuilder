@@ -91,7 +91,7 @@ public sealed class CrashRecoveryCoordinator
 
         var where = string.IsNullOrEmpty(snapshot.OriginalPath)
             ? "a quiz that had not been saved yet"
-            : $"\"{Path.GetFileName(snapshot.OriginalPath)}\"";
+            : $"\"{System.IO.Path.GetFileName(snapshot.OriginalPath)}\"";
 
         var when = snapshot.SavedAtUtc.ToLocalTime().ToString("f");
 

@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 48, "2026-10-10", new[]
+        {
+            "Build fix for b47: the crash-recovery code referenced a file-path helper without the right namespace in scope, so the desktop app wouldn't compile. Corrected. No change to how crash recovery behaves.",
+        }),
         new VersionEntry("0.26.0", 47, "2026-10-10", new[]
         {
             "Crash recovery. If Quiz Builder is closed unexpectedly — a crash, a power loss, a force-quit — while you have unsaved changes, it now offers to bring that work back the next time you open it. A recovery snapshot is kept quietly while you have unsaved edits (including a brand-new quiz you haven't saved to a file yet) and is deleted the moment you save or close normally, so it only ever has something to restore after an unclean shutdown. On the next launch you'll be asked whether to restore or discard it. This works alongside autosave, not instead of it: autosave writes to your real file when the quiz has one, while crash recovery also covers the window before a quiz has ever been saved.",

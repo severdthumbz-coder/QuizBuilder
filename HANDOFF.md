@@ -1,9 +1,20 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 47 (stage `crash-recovery`)
-**Deliverable:** `QuizBuilder_v0.26.0.47.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b46 (onboarding) + the validate.py UTF-8 fix both green. **b47 adds CRASH
-RECOVERY (desktop).** Core-first, proven before C#. **[DESIGN, J-confirmed]** full
+**Last shipped:** v0.26.0 build 48 (stage `crash-recovery`)
+**Deliverable:** `QuizBuilder_v0.26.0.48.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** **b48 is a one-line build fix to b47.** b47's `CrashRecoveryCoordinator`
+wrote a bare `Path.GetFileName`, but this App project does NOT have `System.IO` in
+implicit usings (the WPF markup-compile temp project `*_wpftmp` drops it) — existing
+App code fully-qualifies `System.IO.*` as the house style, which b47 didn't follow.
+CS0103 killed `app-build`. **Fix:** fully-qualified to `System.IO.Path.GetFileName`
+(matching GitHubView/StudyCardsView). **[LESSON] In QuizBuilder.App, fully-qualify
+`System.IO.*` — do not rely on an implicit `using System.IO`; balance/validate checks
+can't catch a missing namespace, only the compiler can.** **[iOS NOTE] The `ios-build`
+job also went red on b47, but that is NOT from this code** — iOS builds only
+Player+Core, b47 touched only Core/App/Tests, and `core-tests` (same Core) was GREEN.
+Most likely macOS-runner SDK/workload drift (SDK 10.0.302→303, `rollForward:
+latestFeature`). Needs the ios-build log to confirm; flagged for J, not fixed here.
+**b47 adds CRASH RECOVERY (desktop).** Core-first, proven before C#. **[DESIGN, J-confirmed]** full
 protection (snapshots never-saved quizzes too) + a Restore/Discard dialog at startup.
 **How it works:** the snapshot's mere EXISTENCE at startup is the crash signal — a
 clean exit/save deletes it, so a leftover = unclean shutdown. **Atomic write**
