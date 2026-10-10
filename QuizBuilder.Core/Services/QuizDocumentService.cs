@@ -63,6 +63,16 @@ public sealed class QuizDocumentService : IQuizDocumentService
         IsDirty = false;
     }
 
+    public void RestoreRecoveredDocument(QuizDocument document, string? filePath)
+    {
+        _current = document ?? throw new ArgumentNullException(nameof(document));
+        _currentFilePath = filePath;
+        Raise(DocumentChangeKind.DocumentReplaced);
+        // Dirty on purpose: the recovered work predates any save to this file,
+        // so the close/save prompts must treat it as unsaved.
+        IsDirty = true;
+    }
+
     public void MarkSaved(string filePath)
     {
         _currentFilePath = filePath;

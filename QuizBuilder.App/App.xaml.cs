@@ -30,6 +30,10 @@ public partial class App : Application
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<ShellWindow>();
 
+        // Desktop glue for Core's crash-recovery service (snapshot while dirty,
+        // clear on clean save/exit, restore prompt at startup).
+        services.AddSingleton<CrashRecoveryCoordinator>();
+
         // Tabs. Each View and its ViewModel are singletons so a tab keeps its
         // state across navigation; transient registration would rebuild the
         // tab (and lose scroll position and unsaved input) on every switch.
@@ -137,6 +141,17 @@ public partial class App : Application
             selectTab: i => navigation.NavigateTo((NavDestination)i));
 
         _services.GetRequiredService<ShellWindow>().Show();
+
+        // Crash recovery. Check for a snapshot left by a previous session that
+        // did not close cleanly, and offer to restore it — after the window is
+        // shown so the prompt has an owner. Then start watching the document so
+        // new edits (including a just-restored one) are snapshotted. Order
+        // matters: the prompt runs before Start(), and Start() re-captures if
+        // the restore left the document dirty, keeping a crash-after-restore
+        // covered.
+        var crashRecovery = _services.GetRequiredService<CrashRecoveryCoordinator>();
+        crashRecovery.CheckForRecovery();
+        crashRecovery.Start();
     }
 
     /// <summary>
@@ -159,6 +174,11 @@ public partial class App : Application
         // Stop the timer before tearing down the container: a tick firing
         // mid-disposal would resolve services that are already gone.
         _services?.GetService<IAutoSaveService>()?.Stop();
+
+        // Clean exit: delete the recovery snapshot, so its presence at the next
+        // launch unambiguously means a crash. Only reached on a normal shutdown;
+        // a crash never runs OnExit, which is exactly why the snapshot survives.
+        _services?.GetService<CrashRecoveryCoordinator>()?.ClearForCleanExit();
 
         _services?.Dispose();
         base.OnExit(e);

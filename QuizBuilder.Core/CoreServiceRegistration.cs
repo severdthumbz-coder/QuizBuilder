@@ -59,6 +59,7 @@ public static class CoreServiceRegistration
         // Singleton: owns one timer for the whole app. A second instance would
         // mean two timers writing the same .qbx file concurrently.
         services.AddSingleton<IAutoSaveService, AutoSaveService>();
+        services.AddSingleton<ICrashRecoveryService, CrashRecoveryService>();
         services.AddSingleton<IQuizCompiler, QuizCompiler>();
         services.AddSingleton<IHtmlExporter, HtmlExporter>();
         services.AddSingleton<IWordExporter, WordExporter>();

@@ -1,8 +1,40 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 46 (stage `onboarding`)
-**Deliverable:** `QuizBuilder_v0.26.0.46.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** b45 (changelog dates) green. **b46 incorporates the OnboardingKit**
+**Last shipped:** v0.26.0 build 47 (stage `crash-recovery`)
+**Deliverable:** `QuizBuilder_v0.26.0.47.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** b46 (onboarding) + the validate.py UTF-8 fix both green. **b47 adds CRASH
+RECOVERY (desktop).** Core-first, proven before C#. **[DESIGN, J-confirmed]** full
+protection (snapshots never-saved quizzes too) + a Restore/Discard dialog at startup.
+**How it works:** the snapshot's mere EXISTENCE at startup is the crash signal — a
+clean exit/save deletes it, so a leftover = unclean shutdown. **Atomic write**
+(temp file → `File.Move(overwrite:true)`) so a crash mid-write never leaves a torn
+snapshot. **Complements autosave** (autosave → real file when one exists; crash
+recovery → separate snapshot, also covers the never-saved window where autosave bails
+with `NoFilePath`). **Files:** `Models/RecoverySnapshot.cs` (DocumentJson +
+OriginalPath + SavedAtUtc); `Interfaces/ICrashRecoveryService.cs` +
+`Services/CrashRecoveryService.cs` (atomic snapshot, corrupt-tolerant, keyed file
+`recovery-snapshot.json` beside exe via overrideDirectory seam, uses
+`SettingsService.JsonOptions`); new `IQuizDocumentService.RestoreRecoveredDocument(doc,
+path)` (loads dirty + reattaches path); App `Services/CrashRecoveryCoordinator.cs`
+(subscribes DocumentChanged/DirtyStateChanged → capture while dirty / clear on clean;
+startup Restore/Discard MessageBox; ClearForCleanExit in App.OnExit). Registered in
+Core DI + App DI; wired in App.OnStartup (CheckForRecovery then Start, after window
+Show) and OnExit. **[CAUGHT] cross-assembly:** `SettingsService.JsonOptions` is
+`internal`, and `InternalsVisibleTo` exposes ONLY to QuizBuilder.Tests, NOT the App —
+so the App serializing QuizDocument would NOT compile. Fixed by moving ALL
+(de)serialization into Core: added `ICrashRecoveryService.TryRecoverDocument()` →
+returns `(QuizDocument, string?)`; the coordinator no longer references
+JsonSerializer/JsonOptions at all. **Port:** `tools/port/crash_recovery_port.py`
+(8 tests: existence-is-signal, clean-exit-clears, save-clears, path-reattach,
+atomic-no-torn-snapshot, corrupt-tolerance, crash-after-restore-covered, discard).
+`CrashRecoveryTests.cs` (12 tests). validate 12/12, all ports green, balance clean.
+**NOT verified here: WPF compile + runtime — J's** (the MessageBox flow + actual
+crash/restart cycle are the device-side check). **Test idea for J:** edit a new
+unsaved quiz, kill the app via Task Manager, relaunch → expect the Restore prompt →
+Restore → the work is back, dirty. Repeat choosing Discard. Also: save normally,
+kill, relaunch → NO prompt (clean save cleared it).
+--- prior onboarding status below ---
+**b46 incorporates the OnboardingKit**
 (a drop-in WPF guided-tour / ⓘ-hints / ❔-legend system from Video Metadata Editor,
 shipped as a zip with its own HANDOFF; integrated per that handoff's §2 + §8 prompt).
 **What was added:** copied `Onboarding/` into `QuizBuilder.App/` (namespace

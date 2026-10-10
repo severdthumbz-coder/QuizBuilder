@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 47, "2026-10-10", new[]
+        {
+            "Crash recovery. If Quiz Builder is closed unexpectedly — a crash, a power loss, a force-quit — while you have unsaved changes, it now offers to bring that work back the next time you open it. A recovery snapshot is kept quietly while you have unsaved edits (including a brand-new quiz you haven't saved to a file yet) and is deleted the moment you save or close normally, so it only ever has something to restore after an unclean shutdown. On the next launch you'll be asked whether to restore or discard it. This works alongside autosave, not instead of it: autosave writes to your real file when the quiz has one, while crash recovery also covers the window before a quiz has ever been saved.",
+        }),
         new VersionEntry("0.26.0", 46, "2026-10-09", new[]
         {
             "New guided onboarding. The first time you open the app, a short tour walks you through building a quiz, setting it up, previewing and taking it, the study tools, and sharing — seven steps you can move through with the arrow keys or skip with Esc. A ❔ legend button (top of the sidebar) explains the icons, small ⓘ markers beside key headers give a one-line explanation on hover, and you can replay the tour any time from the Help tab. All of it can be turned off under Settings → Help & onboarding; replay still works when it's off. Turned on by default for new users; nothing is sent anywhere.",

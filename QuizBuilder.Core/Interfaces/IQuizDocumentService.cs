@@ -73,6 +73,15 @@ public interface IQuizDocumentService
     /// </summary>
     void RestoreDocument(QuizDocument document);
 
+    /// <summary>
+    /// Loads a document recovered from a crash snapshot: sets it as current,
+    /// reattaches its original file path (or null for a never-saved quiz), and
+    /// marks it DIRTY. Unlike <see cref="LoadDocument"/> it does not clear the
+    /// dirty flag — the recovered work has not yet been written to that file, so
+    /// the user is correctly prompted to save it.
+    /// </summary>
+    void RestoreRecoveredDocument(QuizDocument document, string? filePath);
+
     void MarkSaved(string filePath);
 
     void SetTitle(string title);
