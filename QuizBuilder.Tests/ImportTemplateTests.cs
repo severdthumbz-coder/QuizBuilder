@@ -1,4 +1,5 @@
 using System.Text;
+using QuizBuilder.Core.Interfaces;
 using QuizBuilder.Core.Models;
 using QuizBuilder.Core.Services;
 using Xunit;

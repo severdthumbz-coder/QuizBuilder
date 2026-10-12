@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 51, "2026-10-12", new[]
+        {
+            "Build fix for b50: a test file was missing a namespace import, so the test project wouldn't compile. Corrected. No change to the app itself.",
+        }),
         new VersionEntry("0.26.0", 50, "2026-10-12", new[]
         {
             "New: a \"Download import template\" button on the Publish tab. It saves a ready-to-edit file — as Excel (.xlsx) or CSV — laid out exactly the way the importer expects, so you can see the required format at a glance. The template is pre-filled: a worked \"Example questions\" section showing one of each question type, followed by your current quiz's questions as a real example. Fill in your own rows, delete the example section, and import it back.",

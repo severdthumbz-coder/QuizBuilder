@@ -1,8 +1,15 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 50 (stage `import-template`)
-**Deliverable:** `QuizBuilder_v0.26.0.50.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** **b50 adds the IMPORT TEMPLATE feature + CSV import.** Core-first: the
+**Last shipped:** v0.26.0 build 51 (stage `import-template`)
+**Deliverable:** `QuizBuilder_v0.26.0.51.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** **b51 is a one-line build fix to b50:** `ImportTemplateTests.cs` was missing
+`using QuizBuilder.Core.Interfaces;`, where `ImportResult` lives — its helper methods
+return `ImportResult`, so `core-tests` failed to compile (CS0246). Added the using
+(now matches `ExcelExporterTests`' using set). **[LESSON] `ImportResult` is in
+`QuizBuilder.Core.Interfaces`, not `.Services` — a new test touching import results
+needs that using. validate.py can't catch a missing namespace, only the compiler can.**
+
+**b50 adds the IMPORT TEMPLATE feature + CSV import.** Core-first: the
 risk (RFC-4180 CSV quoting) was proven in `tools/port/csv_import_template_port.py`
 before any C#. **[DESIGN, J-confirmed]** template is "both" (blank examples +
 current quiz pre-filled) and offered in "both" formats (.xlsx + .csv).
