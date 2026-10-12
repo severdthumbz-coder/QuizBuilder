@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Text;
 using System.Xml.Linq;
 using QuizBuilder.Core.Interfaces;
 using QuizBuilder.Core.Models;
@@ -40,18 +41,107 @@ public sealed class ExcelImporter : IExcelImporter
     {
         ArgumentNullException.ThrowIfNull(stream);
 
+        // Sniff the first bytes rather than trusting a file extension. An .xlsx
+        // is a ZIP ("PK\x03\x04"); anything else we treat as CSV text. This lets
+        // one entry point serve both an exported workbook and a hand-made or
+        // template .csv, which is the whole point of offering a CSV template:
+        // the file the user edits must import back.
+        var looksLikeZip = PeekIsZip(stream);
+
+        if (looksLikeZip)
+        {
+            try
+            {
+                using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
+                return ReadArchive(archive);
+            }
+            catch (InvalidDataException)
+            {
+                return ImportResult.Failed(
+                    "That file is not a valid .xlsx. If it came from an older Excel, "
+                    + "open it and use Save As to make a .xlsx first.");
+            }
+        }
+
+        return ReadCsv(stream);
+    }
+
+    /// <summary>
+    /// Peeks the first two bytes for the ZIP local-file-header magic ("PK"),
+    /// then rewinds. A rewindable stream is required; the app always hands a
+    /// MemoryStream, and the tests a seekable one.
+    /// </summary>
+    private static bool PeekIsZip(Stream stream)
+    {
+        if (!stream.CanSeek) return false;
+
+        var start = stream.Position;
         try
         {
-            using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
-            return ReadArchive(archive);
+            var b0 = stream.ReadByte();
+            var b1 = stream.ReadByte();
+            return b0 == 'P' && b1 == 'K';
         }
-        catch (InvalidDataException)
+        finally
         {
-            // Not a zip at all -- a .xls, a .csv renamed, or a corrupt download.
-            return ImportResult.Failed(
-                "That file is not a valid .xlsx. If it came from an older Excel, "
-                + "open it and use Save As to make a .xlsx first.");
+            stream.Position = start;
         }
+    }
+
+    // --- CSV --------------------------------------------------------------- //
+
+    /// <summary>
+    /// Reads a CSV with the same schema as the workbook. The grid codec
+    /// (CsvGrid) handles RFC-4180 quoting; this maps the header row to column
+    /// indices and reuses the EXACT same row-to-question assembly as the .xlsx
+    /// path, so a question behaves identically whichever file it came from.
+    /// </summary>
+    private ImportResult ReadCsv(Stream stream)
+    {
+        string text;
+        using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true))
+            text = reader.ReadToEnd();
+
+        var grid = CsvGrid.Read(text);
+        if (grid.Count == 0)
+            return ImportResult.Failed("That file is empty.");
+
+        // Header row -> normalised name -> column index, first-wins (matching
+        // the workbook reader).
+        var headerCells = grid[0];
+        var headers = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var col = 0; col < headerCells.Count; col++)
+        {
+            var key = Normalise(headerCells[col]);
+            if (!string.IsNullOrEmpty(key)) headers.TryAdd(key, col);
+        }
+
+        if (!headers.ContainsKey(Normalise(QuizSheetSchema.Type))
+            || !headers.ContainsKey(Normalise(QuizSheetSchema.Prompt)))
+        {
+            return ImportResult.Failed(
+                "That file has no Type or Prompt column. Download an import template "
+                + "to see the expected layout.");
+        }
+
+        // Each data row becomes a column-index -> value map, exactly the shape
+        // the workbook path produces, so AssembleDocument is shared verbatim.
+        IEnumerable<(int RowNumber, Dictionary<int, string> Cells)> Rows()
+        {
+            for (var r = 1; r < grid.Count; r++)
+            {
+                var cells = new Dictionary<int, string>();
+                var rowCells = grid[r];
+                for (var col = 0; col < rowCells.Count; col++)
+                    cells[col] = rowCells[col];
+
+                // CSV has no sheet row number; use the 1-based file line so an
+                // error cites the row the user sees in a plain editor.
+                yield return (r + 1, cells);
+            }
+        }
+
+        return AssembleDocument(headers, Rows());
     }
 
     private ImportResult ReadArchive(ZipArchive archive)
@@ -84,19 +174,41 @@ public sealed class ExcelImporter : IExcelImporter
                 + "to see the expected layout.");
         }
 
+        // Project each worksheet row to the (rowNumber, column->value) shape the
+        // shared assembler consumes. The r= attribute, not the loop index: a
+        // deleted row leaves a gap in the numbering, and an error citing the
+        // wrong row number sends the user to the wrong place.
+        IEnumerable<(int RowNumber, Dictionary<int, string> Cells)> Projected()
+        {
+            foreach (var row in rows.Skip(1))
+            {
+                var cells = ReadRow(row, sharedStrings);
+                var rowNumber = (int?)row.Attribute("r") ?? 0;
+                yield return (rowNumber, cells);
+            }
+        }
+
+        return AssembleDocument(headers, Projected());
+    }
+
+    /// <summary>
+    /// The one place a set of rows becomes a quiz. Shared by the .xlsx and .csv
+    /// readers: both normalise to a header-name -> column-index map plus rows of
+    /// column-index -> value, so a question is built identically whichever file
+    /// it came from. Sections are created in first-seen order; a per-row failure
+    /// is reported and skipped rather than failing the whole import.
+    /// </summary>
+    private ImportResult AssembleDocument(
+        Dictionary<string, int> headers,
+        IEnumerable<(int RowNumber, Dictionary<int, string> Cells)> rows)
+    {
         var document = new QuizDocument();
         var sections = new Dictionary<string, Section>(StringComparer.OrdinalIgnoreCase);
         var problems = new List<string>();
 
-        foreach (var row in rows.Skip(1))
+        foreach (var (rowNumber, cells) in rows)
         {
-            var cells = ReadRow(row, sharedStrings);
             if (cells.Values.All(string.IsNullOrWhiteSpace)) continue;   // blank row
-
-            // The r= attribute, not the loop index: a deleted row leaves a gap
-            // in the numbering, and an error that cites the wrong row number
-            // sends the user to the wrong place.
-            var rowNumber = (int?)row.Attribute("r") ?? 0;
 
             try
             {
@@ -128,7 +240,7 @@ public sealed class ExcelImporter : IExcelImporter
         {
             return problems.Count > 0
                 ? ImportResult.Failed("No questions could be read.", problems)
-                : ImportResult.Failed("That sheet has a header row but no questions.");
+                : ImportResult.Failed("That file has a header row but no questions.");
         }
 
         return ImportResult.Succeeded(document, count, problems);

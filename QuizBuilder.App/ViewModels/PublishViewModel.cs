@@ -27,6 +27,7 @@ public sealed class PublishViewModel : ViewModelBase
     private readonly IQuizPackageService _package;
     private readonly IExcelExporter _excel;
     private readonly IExcelImporter _excelImport;
+    private readonly IImportTemplateService _importTemplate;
 
     private bool _includeAnswerKey;
     private bool _includePrintButton = true;
@@ -43,6 +44,7 @@ public sealed class PublishViewModel : ViewModelBase
         IWordExporter word,
         IExcelExporter excel,
         IExcelImporter excelImport,
+        IImportTemplateService importTemplate,
         IQuizPackageService package)
     {
         _document = document ?? throw new ArgumentNullException(nameof(document));
@@ -55,6 +57,7 @@ public sealed class PublishViewModel : ViewModelBase
         _package = package ?? throw new ArgumentNullException(nameof(package));
         _excel = excel ?? throw new ArgumentNullException(nameof(excel));
         _excelImport = excelImport ?? throw new ArgumentNullException(nameof(excelImport));
+        _importTemplate = importTemplate ?? throw new ArgumentNullException(nameof(importTemplate));
 
         // Same reasoning as the Preview tab: this ViewModel stays alive and
         // subscribed while the user types elsewhere, and RefreshSummary calls
@@ -324,6 +327,38 @@ public sealed class PublishViewModel : ViewModelBase
         {
             StatusMessage = $"Could not import: {ex.Message}";
             return ImportResult.Failed(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Writes an import template -- the exact layout the importer reads, with a
+    /// worked-example section plus the current quiz's questions as a filled
+    /// example. Unlike the exporters this does NOT require a non-empty quiz: the
+    /// whole point is to help someone who has not authored anything yet, so a
+    /// brand-new quiz still gets the examples and (for xlsx) the Guide sheet.
+    /// </summary>
+    /// <param name="asCsv">true for an RFC-4180 .csv, false for an .xlsx.</param>
+    public async Task<bool> DownloadImportTemplateAsync(string path, bool asCsv)
+    {
+        try
+        {
+            using var buffer = new MemoryStream();
+
+            if (asCsv)
+                _importTemplate.WriteCsv(buffer, _document.Current);
+            else
+                _importTemplate.WriteXlsx(buffer, _document.Current);
+
+            await File.WriteAllBytesAsync(path, buffer.ToArray());
+
+            LastExportPath = path;
+            StatusMessage = $"Saved import template to {Path.GetFileName(path)}.";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not save the template: {ex.Message}";
+            return false;
         }
     }
 

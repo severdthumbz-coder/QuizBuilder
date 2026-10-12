@@ -96,6 +96,31 @@ public partial class PublishView : UserControl
         await _viewModel.ExportExcelAsync(dialog.FileName);
     }
 
+    private async void OnDownloadTemplateClick(object sender, RoutedEventArgs e)
+    {
+        // Two formats in one dialog; the chosen filter decides which. CSV first
+        // only in the filter list order below -- xlsx stays the default because
+        // it carries the Guide sheet. The file is a template, so the suggested
+        // name says so rather than borrowing the quiz title.
+        var dialog = new SaveFileDialog
+        {
+            Filter = "Excel workbook (*.xlsx)|*.xlsx|CSV file (*.csv)|*.csv",
+            DefaultExt = ".xlsx",
+            AddExtension = true,
+            FileName = "quiz import template",
+            Title = "Download import template",
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        // FilterIndex is 1-based: 1 = xlsx, 2 = csv. Fall back to the extension
+        // in case a user types ".csv" under the xlsx filter.
+        var asCsv = dialog.FilterIndex == 2
+                    || dialog.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
+
+        await _viewModel.DownloadImportTemplateAsync(dialog.FileName, asCsv);
+    }
+
     private async void OnImportExcelClick(object sender, RoutedEventArgs e)
     {
         // Import replaces the whole quiz. Doing that to unsaved work without
@@ -116,9 +141,9 @@ public partial class PublishView : UserControl
 
         var dialog = new OpenFileDialog
         {
-            Filter = "Excel workbook (*.xlsx)|*.xlsx|All files (*.*)|*.*",
+            Filter = "Spreadsheet (*.xlsx;*.csv)|*.xlsx;*.csv|Excel workbook (*.xlsx)|*.xlsx|CSV file (*.csv)|*.csv|All files (*.*)|*.*",
             DefaultExt = ".xlsx",
-            Title = "Import spreadsheet",
+            Title = "Import questions",
         };
 
         if (dialog.ShowDialog() != true) return;

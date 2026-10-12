@@ -122,6 +122,11 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 50, "2026-10-12", new[]
+        {
+            "New: a \"Download import template\" button on the Publish tab. It saves a ready-to-edit file — as Excel (.xlsx) or CSV — laid out exactly the way the importer expects, so you can see the required format at a glance. The template is pre-filled: a worked \"Example questions\" section showing one of each question type, followed by your current quiz's questions as a real example. Fill in your own rows, delete the example section, and import it back.",
+            "Importing now accepts CSV files as well as Excel. A CSV opens in any spreadsheet (or a plain text editor) and imports back through the same rules as an .xlsx — with proper handling of answers that contain commas or quotes, so nothing gets split by accident.",
+        }),
         new VersionEntry("0.26.0", 49, "2026-10-10", new[]
         {
             "Build-pipeline housekeeping: the automated iOS compile check now reports on its own without being able to fail the whole build. It runs on a shared Apple machine whose toolchain occasionally gets ahead of what the iOS build needs — a situation outside this project — and that should no longer block the desktop and Android results. No change to the app itself.",

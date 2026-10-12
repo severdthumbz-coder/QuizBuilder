@@ -197,84 +197,11 @@ public sealed class ExcelExporter : IExcelExporter
 
     private static void AppendQuestionRow(StringBuilder sb, int rowNumber, string sectionTitle, Question question)
     {
-        var values = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            [QuizSheetSchema.Section] = sectionTitle,
-            [QuizSheetSchema.Type] = TypeName(question),
-            [QuizSheetSchema.Prompt] = question.Prompt,
-            [QuizSheetSchema.Hint] = question.Hint ?? string.Empty,
-        };
-
-        switch (question)
-        {
-            case MultipleChoiceSingleQuestion q:
-                AppendChoices(values, q.Choices);
-                break;
-
-            case MultipleChoiceMultipleQuestion q:
-                AppendChoices(values, q.Choices);
-                break;
-
-            case TrueFalseQuestion q:
-                values[QuizSheetSchema.Correct(1)] = q.CorrectAnswer ? "TRUE" : "FALSE";
-                break;
-
-            case ShortAnswerQuestion q:
-                for (var i = 0; i < Math.Min(q.AcceptedAnswers.Count, QuizSheetSchema.MaxOptions); i++)
-                    values[QuizSheetSchema.Option(i + 1)] = q.AcceptedAnswers[i];
-                break;
-
-            case FillInTheBlankQuestion q:
-                // One answer per blank. The model allows alternatives, but a
-                // second answer for blank 1 has nowhere to go in a rectangle
-                // without a delimiter -- and a delimiter collides with answers
-                // like "and/or". The Guide sheet says so rather than losing them
-                // quietly.
-                var ordered = q.Blanks.OrderBy(b => b.Ordinal).ToList();
-                for (var i = 0; i < Math.Min(ordered.Count, QuizSheetSchema.MaxOptions); i++)
-                    values[QuizSheetSchema.Option(i + 1)] = ordered[i].AcceptedAnswers.FirstOrDefault() ?? string.Empty;
-                break;
-
-            case MatchingQuestion q:
-                for (var i = 0; i < Math.Min(q.Pairs.Count, QuizSheetSchema.MaxOptions); i++)
-                {
-                    values[QuizSheetSchema.Option(i + 1)] = q.Pairs[i].Left;
-                    values[QuizSheetSchema.Match(i + 1)] = q.Pairs[i].Right;
-                }
-
-                for (var i = 0; i < Math.Min(q.Distractors.Count, QuizSheetSchema.MaxDistractors); i++)
-                    values[QuizSheetSchema.Distractor(i + 1)] = q.Distractors[i];
-
-                break;
-
-            case SequenceQuestion q:
-                // Items are written in their correct (authored) order into the
-                // Option columns. There is no separate "correct" marking: the
-                // order itself is the answer, and the importer reads it back in
-                // sheet order.
-                for (var i = 0; i < Math.Min(q.Items.Count, QuizSheetSchema.MaxOptions); i++)
-                    values[QuizSheetSchema.Option(i + 1)] = q.Items[i];
-                break;
-
-            case EssayQuestion q:
-                values[QuizSheetSchema.Extra] = q.RubricNotes ?? string.Empty;
-                break;
-
-            case DropdownQuestion q:
-                // Same shape as single choice: options + the matching Correct.
-                AppendChoices(values, q.Choices);
-                break;
-
-            case NumericQuestion q:
-                // Target in Option 1, tolerance in Option 2, unit in Extra. The
-                // Guide sheet documents this so a human editing the sheet knows
-                // the convention; the importer reads it back the same way.
-                values[QuizSheetSchema.Option(1)] = q.Target.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                values[QuizSheetSchema.Option(2)] = q.Tolerance.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                if (!string.IsNullOrWhiteSpace(q.Unit))
-                    values[QuizSheetSchema.Extra] = q.Unit;
-                break;
-        }
+        // The per-type column layout lives in QuizRowProjector, shared with the
+        // CSV template writer so the two cannot disagree about where a field
+        // goes. Points is in the map too, but this writer emits it as a NUMBER
+        // cell below rather than an inline string, so the loop skips it.
+        var values = QuizRowProjector.ToCells(question, sectionTitle);
 
         sb.Append($"""<row r="{rowNumber}">""");
 
@@ -298,17 +225,6 @@ public sealed class ExcelExporter : IExcelExporter
         }
 
         sb.AppendLine("</row>");
-    }
-
-    private static void AppendChoices(Dictionary<string, string> values, List<Choice> choices)
-    {
-        for (var i = 0; i < Math.Min(choices.Count, QuizSheetSchema.MaxOptions); i++)
-        {
-            values[QuizSheetSchema.Option(i + 1)] = choices[i].Text;
-
-            if (choices[i].IsCorrect)
-                values[QuizSheetSchema.Correct(i + 1)] = "TRUE";
-        }
     }
 
     // --- Guide sheet --------------------------------------------------------
@@ -402,24 +318,4 @@ public sealed class ExcelExporter : IExcelExporter
         || (c >= 0xE000 && c <= 0xFFFD);
 
     private static string Esc(string text) => SecurityElement.Escape(text) ?? string.Empty;
-
-    private static string TypeName(Question question) => question switch
-    {
-        MultipleChoiceSingleQuestion => "MultipleChoiceSingle",
-        MultipleChoiceMultipleQuestion => "MultipleChoiceMultiple",
-        TrueFalseQuestion => "TrueFalse",
-        ShortAnswerQuestion => "ShortAnswer",
-        FillInTheBlankQuestion => "FillInTheBlank",
-        MatchingQuestion => "Matching",
-        EssayQuestion => "Essay",
-        SequenceQuestion => "Sequence",
-        NumericQuestion => "Numeric",
-        DropdownQuestion => "Dropdown",
-
-        // Unreachable while every kind is listed above. Kept as Essay because
-        // it is the one type the importer treats as hand-graded, so an
-        // unrecognised question degrades to "needs a human" rather than being
-        // silently auto-marked wrong.
-        _ => "Essay",
-    };
 }

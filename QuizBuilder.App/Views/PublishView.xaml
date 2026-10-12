@@ -154,7 +154,7 @@
             <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="Spreadsheet" Style="{StaticResource Heading}" />
-                    <TextBlock Text="One row per question, for bulk editing. Export it, change it in Excel, then import it back. The workbook includes a Guide sheet explaining each column."
+                    <TextBlock Text="One row per question, for bulk editing. Export it, change it in Excel or any spreadsheet, then import it back — as .xlsx or .csv. New to importing? Download a template to see the exact layout, pre-filled with examples and your current quiz."
                                Style="{StaticResource Hint}" />
 
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
@@ -171,7 +171,7 @@
                                 BorderThickness="0" />
 
                         <Button x:Name="ImportExcelButton"
-                                Content="Import spreadsheet..."
+                                Content="Import questions..."
                                 Click="OnImportExcelClick"
                                 Margin="10,0,0,0"
                                 Padding="16,8"
@@ -184,7 +184,23 @@
                                 BorderThickness="1" />
                     </StackPanel>
 
-                    <TextBlock Text="Importing replaces every question in the current quiz."
+                    <!-- Always enabled: the template is most useful BEFORE there
+                         are any questions, so it must not depend on CanExport. -->
+                    <Button x:Name="DownloadTemplateButton"
+                            Content="Download import template..."
+                            Click="OnDownloadTemplateClick"
+                            HorizontalAlignment="Left"
+                            Margin="0,10,0,0"
+                            Padding="16,8"
+                            Cursor="Hand"
+                            FontFamily="{DynamicResource Font.Family}"
+                            FontSize="{DynamicResource Font.Size.Body}"
+                            Background="Transparent"
+                            Foreground="{DynamicResource Brush.TextPrimary}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1" />
+
+                    <TextBlock Text="Importing replaces every question in the current quiz. The template's &quot;Example questions&quot; section is there to show the format — delete it before importing your own."
                                Style="{StaticResource Hint}"
                                Margin="0,8,0,0" />
                 </StackPanel>

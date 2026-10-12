@@ -65,6 +65,7 @@ public static class CoreServiceRegistration
         services.AddSingleton<IWordExporter, WordExporter>();
         services.AddSingleton<IExcelExporter, ExcelExporter>();
         services.AddSingleton<IExcelImporter, ExcelImporter>();
+        services.AddSingleton<IImportTemplateService, ImportTemplateService>();
 
         // Singleton so the HttpClient inside is reused rather than one socket
         // per publish -- the classic HttpClient-per-call socket exhaustion.

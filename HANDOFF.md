@@ -1,8 +1,63 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 49 (stage `crash-recovery`)
-**Deliverable:** `QuizBuilder_v0.26.0.49.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** **b49: made `ios-build` CI non-blocking (`continue-on-error: true`).**
+**Last shipped:** v0.26.0 build 50 (stage `import-template`)
+**Deliverable:** `QuizBuilder_v0.26.0.50.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** **b50 adds the IMPORT TEMPLATE feature + CSV import.** Core-first: the
+risk (RFC-4180 CSV quoting) was proven in `tools/port/csv_import_template_port.py`
+before any C#. **[DESIGN, J-confirmed]** template is "both" (blank examples +
+current quiz pre-filled) and offered in "both" formats (.xlsx + .csv).
+
+**What shipped in b50:**
+- **New Core `CsvGrid`** (`Services/CsvGrid.cs`) — a dumb RFC-4180 read/write over
+  a grid of strings. Minimal quoting on write (quote iff comma/quote/CR/LF; inner
+  quotes doubled; CRLF record separator); a hand state machine on read (quoted
+  fields, doubled quotes, embedded commas/newlines, CRLF or lone LF/CR, final row
+  with no trailing newline). This exists so the per-column schema is not undone by
+  an in-cell delimiter at the file boundary. Proven in the port first.
+- **`ExcelImporter` now accepts CSV.** `Read(Stream)` sniffs the first two bytes:
+  `PK` → treat as .xlsx (ZIP); anything else → CSV. Both paths normalise to
+  `(header-name→col-index, rows of col-index→value)` and feed ONE shared
+  `AssembleDocument(...)`, so a question is built identically whichever file it
+  came from. CSV reader skips a UTF-8 BOM via `StreamReader(detectEncoding…)`.
+  **[NOTE] `PeekIsZip` needs a seekable stream** — the app always hands a
+  `MemoryStream`; tests too.
+- **New `QuizRowProjector`** (`Services/QuizRowProjector.cs`) — THE single source of
+  truth for "which cell does each field go in", by header name. Both the xlsx
+  exporter and the CSV template writer call it, killing the recurring "two switches
+  disagree" bug class (the exporter's old inlined per-type switch + separate
+  `TypeName` switch are GONE; `ExcelExporter.AppendQuestionRow` now calls
+  `QuizRowProjector.ToCells`). Points stays a NUMBER cell in xlsx (the writer's loop
+  still special-cases it), a string everywhere else.
+- **New `ImportTemplateService` + `IImportTemplateService`.** `BuildTemplateDocument`
+  = an "Example questions (delete this section)" section with one legal question per
+  common type, then a CLONE of the current quiz's non-empty sections (clone =
+  never mutate the live doc). `WriteXlsx` hands that doc to the real `ExcelExporter`
+  (so it inherits the Guide sheet + column widths, byte-shape-identical to an export).
+  `WriteCsv` builds the grid via `QuizRowProjector` + `CsvGrid`, with a UTF-8 BOM so
+  Excel opens non-ASCII correctly. Registered in `CoreServiceRegistration`.
+- **App wiring:** `PublishViewModel` gets `IImportTemplateService` injected +
+  `DownloadImportTemplateAsync(path, asCsv)` (always available, even on an empty
+  quiz — the template is most useful BEFORE authoring). `PublishView.xaml.cs`
+  `OnDownloadTemplateClick` → SaveFileDialog with `.xlsx`(default)/`.csv` filters;
+  FilterIndex (1=xlsx,2=csv) + extension fallback picks the format. Import dialog
+  filter widened to accept `*.csv`. New **"Download import template..."** button on
+  the Spreadsheet card (always enabled); import button relabelled "Import
+  questions..."; card copy mentions CSV + the template.
+- **Tests:** `QuizBuilder.Tests/ImportTemplateTests.cs` — CsvGrid adversarial
+  round-trip, CSV import (reordered/extra columns, quoted comma stays one field,
+  missing-column rejection), template shape (examples + quiz, empty-quiz still
+  usable, no mutation), xlsx+csv templates import with ZERO problems, every type
+  present, awkward prompt survives, xlsx/csv counts agree.
+
+validate.py: ALL 12 CHECKS PASS. **CI is the real gate** (no .NET SDK in the authoring
+env — expected; same as every prior build). Watch core-tests + app-build; android/ios
+unaffected (Core change is additive + compiles — the importer refactor keeps the same
+public surface). **[LESSON reinforced] CSV parsing is the ONE risk in a "just writes a
+file" feature — port it first.**
+
+---
+
+### Earlier status (b49): made `ios-build` CI non-blocking (`continue-on-error: true`).
 Root cause of the red iOS job is now CONFIRMED from the log — NOT our code: the
 macOS runner's .NET-for-iOS workload updated to 27.x which requires Xcode 27.0, but
 the runner ships Xcode 26.6 (`Xamarin.Shared.Sdk.targets(2998,3)`). Pure
