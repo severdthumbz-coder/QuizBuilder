@@ -1,8 +1,21 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 51 (stage `import-template`)
-**Deliverable:** `QuizBuilder_v0.26.0.51.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** **b51 is a one-line build fix to b50:** `ImportTemplateTests.cs` was missing
+**Last shipped:** v0.26.0 build 52 (stage `import-template`)
+**Deliverable:** `QuizBuilder_v0.26.0.52.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** **b52 is a one-line TEST fix to b50.** b50 made the importer accept CSV,
+so a non-ZIP file is now read as CSV instead of being rejected as "not a valid .xlsx".
+The existing `ExcelImporterTests.AFileThatIsNotAZipFailsWithAUsefulMessage` (in
+`ExcelExporterTests.cs`, ~line 823) still asserted the `.xlsx` wording and failed at
+RUNTIME (compile was green — this was a `dotnet test` failure, not a build one). Junk
+text now parses as a one-cell CSV with no Type/Prompt column and fails with "...no Type
+or Prompt column. Download an import template...". Updated the assertion to
+`Contains("Type or Prompt", …)` — still proves a junk file fails usefully. **[LESSON]
+Adding CSV accept-path changed the error for ALL non-ZIP input; an existing importer
+test pinned the old message. When you widen what an importer accepts, grep existing
+tests for the old rejection wording.** b50's own run confirmed everything else green:
+`ImportTemplateTests` all passed, Build ✓. **CI is the real gate.**
+
+**b51 was a one-line build fix to b50:** `ImportTemplateTests.cs` was missing
 `using QuizBuilder.Core.Interfaces;`, where `ImportResult` lives — its helper methods
 return `ImportResult`, so `core-tests` failed to compile (CS0246). Added the using
 (now matches `ExcelExporterTests`' using set). **[LESSON] `ImportResult` is in

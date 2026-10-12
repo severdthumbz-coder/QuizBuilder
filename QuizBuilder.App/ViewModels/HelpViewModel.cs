@@ -122,6 +122,10 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 52, "2026-10-12", new[]
+        {
+            "Test fix for b50: one existing test still expected the old \"not a valid .xlsx\" wording for a junk file, but since importing now also accepts CSV, a non-Excel file is read as CSV and fails with a clearer message pointing to the import template. Updated the test to match. No change to the app itself.",
+        }),
         new VersionEntry("0.26.0", 51, "2026-10-12", new[]
         {
             "Build fix for b50: a test file was missing a namespace import, so the test project wouldn't compile. Corrected. No change to the app itself.",

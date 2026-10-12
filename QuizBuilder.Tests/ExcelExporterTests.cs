@@ -822,11 +822,16 @@ public class ExcelImporterTests
     [Fact]
     public void AFileThatIsNotAZipFailsWithAUsefulMessage()
     {
+        // Since b50, a non-ZIP file is read as CSV (that is how the .csv import
+        // and the CSV template work). Junk text is therefore parsed as a one-cell
+        // CSV with no Type/Prompt column, and fails with that explanation rather
+        // than the .xlsx-specific one. The message is still useful and points the
+        // user at the import template.
         var result = Read(Encoding.UTF8.GetBytes("this is not a spreadsheet"));
 
         Assert.False(result.Success);
         Assert.NotNull(result.Error);
-        Assert.Contains(".xlsx", result.Error!);
+        Assert.Contains("Type or Prompt", result.Error!);
     }
 
     [Fact]
