@@ -50,6 +50,10 @@ public static class AttemptRecordBuilder
     private static AttemptQuestionRecord ToRecord(QuestionResult result) => new()
     {
         Number = result.Question.Number,
+        // The live question's id, so "practice my wrong answers" can map this
+        // record back to the current question even if its prompt is later
+        // edited. Prompt is still stored as the legacy fallback.
+        QuestionId = result.Question.Question.Id,
         Prompt = result.Question.Question.Prompt,
         GivenAnswer = DescribeGiven(result.Question.Question, result.Answer),
         CorrectAnswer = DescribeCorrect(result.Question.Question),

@@ -63,6 +63,28 @@ public partial class TakeView : UserControl
         RunSitting(takeViewModel);
     }
 
+    private void OnPracticeWrongClick(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.CanPracticeWrong) return;
+
+        // Null means nothing is currently in the wrong-answer set (e.g. history
+        // changed between the button enabling and the click). Guard rather than
+        // launch an empty sitting.
+        var paper = _viewModel.CompileWrongAnswersPaper();
+        if (paper is null) return;
+
+        var takeViewModel = new TakeQuizViewModel(
+            paper,
+            _viewModel.QuizId,
+            _viewModel.Settings,
+            _grader,
+            _history,
+            _theme,
+            _package.GetImage);
+
+        RunSitting(takeViewModel);
+    }
+
     private void OnResumeClick(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is PausedAttemptRowViewModel row)

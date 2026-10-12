@@ -25,6 +25,17 @@ public sealed class AttemptQuestionRecord
     // and the cost of being wrong is somebody else's data.
 
     public int Number { get; set; }
+
+    /// <summary>
+    /// The live question's id (QuizDocument question Guid) at the time of the
+    /// attempt. Lets "practice my wrong answers" map a record back to the current
+    /// question even after its prompt is edited. Empty on records written before
+    /// this field existed — those fall back to a prompt-text match, which is why
+    /// <see cref="Prompt"/> is still kept. Default (empty Guid), never required,
+    /// for the same file-format reason as every other field here.
+    /// </summary>
+    public Guid QuestionId { get; set; }
+
     public string Prompt { get; set; } = string.Empty;
 
     /// <summary>What they put. Empty means unanswered.</summary>

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using QuizBuilder.Core.Interfaces;
+using QuizBuilder.Core.Models;
 using QuizBuilder.Core.Services;
 
 namespace QuizBuilder.App.ViewModels;
@@ -137,6 +138,23 @@ public sealed class AttemptRowViewModel
 /// <summary>
 /// The Take tab: start a sitting, and see how past ones went.
 /// </summary>
+/// <summary>One row in the "hardest questions" list on the statistics card.</summary>
+public sealed class HardestQuestionViewModel
+{
+    public HardestQuestionViewModel(QuestionDifficulty difficulty)
+    {
+        Prompt = difficulty.Prompt;
+
+        // "missed 3 of 4 (75%)" — the rate plus the raw counts, so a single hard
+        // miss and a persistent one read differently.
+        var pct = (difficulty.MissRate * 100).ToString("0", CultureInfo.CurrentCulture);
+        Detail = $"missed {difficulty.TimesWrong} of {difficulty.TimesGraded} ({pct}%)";
+    }
+
+    public string Prompt { get; }
+    public string Detail { get; }
+}
+
 public sealed class TakeViewModel : ViewModelBase
 {
     private readonly IQuizDocumentService _document;
@@ -251,6 +269,111 @@ public sealed class TakeViewModel : ViewModelBase
 
     public QuizSettings Settings => _settings.Current.Quiz;
 
+    // --- Practice only my wrong answers ----------------------------------- //
+
+    /// <summary>
+    /// How many questions are currently in the "wrong answers" set — the live
+    /// questions whose most recent auto-graded verdict in this quiz's history is
+    /// wrong. Drives the button's enabled state and label.
+    /// </summary>
+    public int WrongAnswerCount { get; private set; }
+
+    public bool CanPracticeWrong => WrongAnswerCount > 0;
+
+    public string PracticeWrongLabel => WrongAnswerCount switch
+    {
+        0 => "Practice wrong answers",
+        1 => "Practice 1 wrong answer",
+        _ => $"Practice {WrongAnswerCount} wrong answers",
+    };
+
+    /// <summary>
+    /// Compiles a sitting from just this quiz's wrong-answer set, or null when
+    /// nothing is currently wrong. The paper is built from a trimmed copy of the
+    /// live document and compiled through the SAME compiler as a normal sitting,
+    /// so grading and history recording are identical — and because the recorded
+    /// attempt carries the real QuizId, getting one right here drops it from the
+    /// set next time.
+    /// </summary>
+    public CompiledQuiz? CompileWrongAnswersPaper()
+    {
+        var wrong = WrongAnswerSelector.SelectWrongQuestions(
+            _document.Current, _history.ForQuiz(_document.Current.Id));
+
+        if (wrong.Count == 0) return null;
+
+        // A transient one-section document holding clones of the missed
+        // questions. Clones, so the sitting can never mutate the live quiz; the
+        // title is kept so the recorded attempt reads sensibly in history.
+        var practice = new QuizDocument
+        {
+            Id = _document.Current.Id,     // same quiz identity -> history stays unified
+            Title = _document.Current.Title,
+            ThemeId = _document.Current.ThemeId,
+            CustomTheme = _document.Current.CustomTheme,
+        };
+
+        var section = new Section { Title = "Practice: wrong answers" };
+        foreach (var q in wrong)
+            section.Questions.Add(q.Clone());
+
+        practice.Sections.Add(section);
+        practice.SectionDisplayOrder.Add(section.Id);
+
+        // Whole-document compile (no section filter): the practice doc already
+        // contains only the questions we want.
+        return _compiler.Compile(practice, _settings.Current.Quiz, Random.Shared.Next());
+    }
+
+    // --- Per-quiz statistics ---------------------------------------------- //
+
+    /// <summary>Statistics for this quiz, recomputed on refresh. Never null.</summary>
+    public QuizStatistics Statistics { get; private set; } = QuizStatistics.Empty;
+
+    public bool HasStatistics => Statistics.HasAnyAttempts;
+
+    // Pre-formatted for the stats card, so the view needs no converters and the
+    // wording (and the "—" for not-applicable) lives in one place.
+    public string StatAttemptsText => Statistics.AttemptCount switch
+    {
+        0 => "No attempts yet",
+        1 => "1 attempt",
+        _ => $"{Statistics.AttemptCount} attempts",
+    };
+
+    public string StatAverageText => FormatPercent(Statistics.AveragePercentage);
+    public string StatBestText => FormatPercent(Statistics.BestPercentage);
+    public string StatLatestText => FormatPercent(Statistics.LatestPercentage);
+
+    public string StatPassFailText =>
+        $"{Statistics.PassCount} passed · {Statistics.FailCount} failed";
+
+    public string StatAverageTimeText =>
+        Statistics.AverageElapsedSeconds is { } s
+            ? FormatDuration(s)
+            : "—";
+
+    /// <summary>Up to the five hardest questions, for the stats card's list.</summary>
+    public IReadOnlyList<HardestQuestionViewModel> HardestQuestions =>
+        Statistics.Hardest
+            .Where(h => h.TimesWrong > 0)   // nothing to show for a never-missed question
+            .Take(5)
+            .Select(h => new HardestQuestionViewModel(h))
+            .ToList();
+
+    public bool HasHardestQuestions => HardestQuestions.Count > 0;
+
+    private static string FormatPercent(double? value)
+        => value is { } v ? v.ToString("0.#", CultureInfo.CurrentCulture) + "%" : "—";
+
+    private static string FormatDuration(int seconds)
+    {
+        var ts = TimeSpan.FromSeconds(seconds);
+        return ts.TotalMinutes >= 1
+            ? $"{(int)ts.TotalMinutes}m {ts.Seconds}s"
+            : $"{ts.Seconds}s";
+    }
+
     private void MarkStale()
     {
         if (_isVisible) Refresh();
@@ -271,8 +394,15 @@ public sealed class TakeViewModel : ViewModelBase
 
         Attempts.Clear();
 
-        foreach (var record in _history.ForQuiz(_document.Current.Id))
+        var records = _history.ForQuiz(_document.Current.Id);
+        foreach (var record in records)
             Attempts.Add(new AttemptRowViewModel(record));
+
+        // Recompute the derived views over the same history: the wrong-answer
+        // set (for the practice button) and the quiz statistics.
+        WrongAnswerCount = WrongAnswerSelector
+            .SelectWrongQuestions(_document.Current, records).Count;
+        Statistics = QuizStatisticsService.Compute(records);
 
         RebuildSectionChoices();
 
@@ -287,6 +417,19 @@ public sealed class TakeViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasPausedAttempts));
         OnPropertyChanged(nameof(QuizTitle));
         OnPropertyChanged(nameof(SummaryLine));
+        OnPropertyChanged(nameof(WrongAnswerCount));
+        OnPropertyChanged(nameof(CanPracticeWrong));
+        OnPropertyChanged(nameof(PracticeWrongLabel));
+        OnPropertyChanged(nameof(Statistics));
+        OnPropertyChanged(nameof(HasStatistics));
+        OnPropertyChanged(nameof(StatAttemptsText));
+        OnPropertyChanged(nameof(StatAverageText));
+        OnPropertyChanged(nameof(StatBestText));
+        OnPropertyChanged(nameof(StatLatestText));
+        OnPropertyChanged(nameof(StatPassFailText));
+        OnPropertyChanged(nameof(StatAverageTimeText));
+        OnPropertyChanged(nameof(HardestQuestions));
+        OnPropertyChanged(nameof(HasHardestQuestions));
 
         RelayCommand.RaiseCanExecuteChanged();
     }

@@ -1,8 +1,61 @@
 # Quiz Builder — Project Handoff
 
-**Last shipped:** v0.26.0 build 52 (stage `import-template`)
-**Deliverable:** `QuizBuilder_v0.26.0.52.zip` (kept in a sibling folder, outside the repo tree)
-**Status:** **b52 is a one-line TEST fix to b50.** b50 made the importer accept CSV,
+**Last shipped:** v0.26.0 build 53 (stage `wrong-answers-and-stats`)
+**Deliverable:** `QuizBuilder_v0.26.0.53.zip` (kept in a sibling folder, outside the repo tree)
+**Status:** **b53 adds PRACTICE WRONG ANSWERS + PER-QUIZ STATISTICS (desktop).**
+Core-first: the selection rule and stats aggregates were proven in
+`tools/port/wrong_answers_stats_port.py` (24 checks) before any C#.
+**[DESIGN, decided — J delegated the choice]** wrong-set rule = "still wrong on
+your MOST RECENT attempt" (a question you later got right drops out, so the set
+shrinks as you improve); practice runs as a REAL gradeable sitting (reuses the
+whole Take+grade+record pipeline), so the practice attempt updates the set.
+**Scope [J-confirmed]: DESKTOP now, Android in a follow-up** — both features read
+the same `AttemptHistoryService` the Player also has, so the port to mobile later
+is additive.
+
+**What shipped in b53:**
+- **`AttemptQuestionRecord.QuestionId` (new, non-required Guid)** + populated in
+  `AttemptRecordBuilder.ToRecord` from `result.Question.Question.Id`. Lets a stored
+  record map back to the live question even after its prompt is edited. Legacy
+  records (no id → `Guid.Empty`) fall back to a prompt-text match. **File-format
+  rule honoured:** plain get/set default, never `required`, so older `history.json`
+  still loads (test pins this with a hand-written camelCase legacy file — note the
+  serializer is `JsonNamingPolicy.CamelCase`, case-SENSITIVE, so legacy JSON must be
+  camelCase).
+- **`WrongAnswerSelector` (Core, static).** `SelectWrongQuestions(quiz, attempts)`
+  → live `Question`s whose MOST RECENT verdict (by `TakenAt`, not list order) is
+  `IsCorrect == false`. Null verdict (essay/needs-review) is EXCLUDED. Id match
+  preferred, prompt fallback for legacy. Returns in quiz display order.
+- **`QuizStatisticsService` (Core, static) + `QuizStatistics`/`QuestionDifficulty`.**
+  Attempt count, graded count, average/best/latest %, pass/fail, average seconds,
+  hardest-questions (miss RATE desc, then misses, then prompt; essays never counted),
+  and a percentage trend. All-essay attempts contribute no percentage.
+- **Desktop UI (Take tab):** `TakeViewModel` gained `CompileWrongAnswersPaper()`
+  (builds a transient one-section `QuizDocument` of CLONED missed questions, keeps
+  the real `QuizId` so history stays unified, compiles through the SAME
+  `IQuizCompiler`), `WrongAnswerCount`/`CanPracticeWrong`/`PracticeWrongLabel`, and
+  pre-formatted `Stat*Text` + `HardestQuestions` (new `HardestQuestionViewModel`).
+  `Refresh()` recomputes both over `_history.ForQuiz(id)`. `TakeView.xaml`: a
+  "Practice wrong answers" button beside Start (label carries the count, disabled at
+  zero) wired to `OnPracticeWrongClick` → existing `RunSitting`; a Statistics card
+  (UniformGrid of stat tiles + hardest-questions list), both gated on
+  `HasStatistics`. **[LESSON applied] named `QuizDocument`/`Section` in the VM →
+  added `using QuizBuilder.Core.Models;` (was absent; the file only used the type
+  via the interface before).** Both services are static → no DI change.
+- **Tests:** `QuizBuilder.Tests/WrongAnswersAndStatsTests.cs` — selector (recent
+  verdict wins, unsorted input, non-gradeable excluded, legacy prompt match, id
+  survives prompt edit, deleted question excluded, empty, quiz order), stats
+  (aggregates, essays out of hardest, all-essay no %, miss-rate ordering, empty),
+  QuestionId round-trips through history.json, legacy file without questionId loads.
+
+validate.py: ALL 12 PASS (incl. the new HardestQuestions ItemsSource binding). **CI
+is the real gate** (no .NET SDK in the authoring env). Watch core-tests + app-build.
+
+**ANDROID FOLLOW-UP (not done):** port `WrongAnswerSelector`/`QuizStatisticsService`
+use into the Player — a compact stats view on/near its History tab and a "practice
+wrong answers" take-side entry from its local history. Core logic is already shared.
+
+**b52 was a one-line TEST fix to b50.** b50 made the importer accept CSV,
 so a non-ZIP file is now read as CSV instead of being rejected as "not a valid .xlsx".
 The existing `ExcelImporterTests.AFileThatIsNotAZipFailsWithAUsefulMessage` (in
 `ExcelExporterTests.cs`, ~line 823) still asserted the `.xlsx` wording and failed at

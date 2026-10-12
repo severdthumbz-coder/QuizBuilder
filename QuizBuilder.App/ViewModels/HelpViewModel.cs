@@ -122,6 +122,11 @@ public sealed class HelpViewModel : ViewModelBase
     /// </summary>
     public IReadOnlyList<VersionEntry> History { get; } = new[]
     {
+        new VersionEntry("0.26.0", 53, "2026-10-12", new[]
+        {
+            "New: \"Practice wrong answers\" on the Take tab. It builds a sitting from just the questions you most recently got wrong on this quiz, marked and recorded like any other attempt — so getting one right drops it from the set next time. The button shows how many are waiting, and is greyed out when you've cleared them all.",
+            "New: a Statistics panel on the Take tab. Once you've sat a quiz, it shows your average, best and most-recent scores, average time, pass/fail tally, and your hardest questions ranked by how often you miss them. Essay questions aren't counted, since they aren't auto-marked.",
+        }),
         new VersionEntry("0.26.0", 52, "2026-10-12", new[]
         {
             "Test fix for b50: one existing test still expected the old \"not a valid .xlsx\" wording for a junk file, but since importing now also accepts CSV, a non-Excel file is read as CSV and fails with a clearer message pointing to the import template. Updated the test to match. No change to the app itself.",

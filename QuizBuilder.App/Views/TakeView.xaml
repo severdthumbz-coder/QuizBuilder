@@ -88,23 +88,123 @@
                         </ItemsControl>
                     </StackPanel>
 
-                    <Button x:Name="StartButton"
-                            Content="Start"
-                            Click="OnStartClick"
-                            IsEnabled="{Binding CanStart}"
-                            HorizontalAlignment="Left"
-                            Margin="0,12,0,0"
-                            Padding="20,8"
-                            Cursor="Hand"
-                            FontFamily="{DynamicResource Font.Family}"
-                            FontSize="{DynamicResource Font.Size.Body}"
-                            Background="{DynamicResource Brush.Primary}"
-                            Foreground="{DynamicResource Brush.OnPrimary}"
-                            BorderThickness="0" />
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button x:Name="StartButton"
+                                Content="Start"
+                                Click="OnStartClick"
+                                IsEnabled="{Binding CanStart}"
+                                Padding="20,8"
+                                Cursor="Hand"
+                                FontFamily="{DynamicResource Font.Family}"
+                                FontSize="{DynamicResource Font.Size.Body}"
+                                Background="{DynamicResource Brush.Primary}"
+                                Foreground="{DynamicResource Brush.OnPrimary}"
+                                BorderThickness="0" />
+
+                        <!-- Enabled only when there are questions you have most
+                             recently gotten wrong; its label carries the count. -->
+                        <Button x:Name="PracticeWrongButton"
+                                Content="{Binding PracticeWrongLabel}"
+                                Click="OnPracticeWrongClick"
+                                IsEnabled="{Binding CanPracticeWrong}"
+                                Margin="10,0,0,0"
+                                Padding="16,8"
+                                Cursor="Hand"
+                                FontFamily="{DynamicResource Font.Family}"
+                                FontSize="{DynamicResource Font.Size.Body}"
+                                Background="Transparent"
+                                Foreground="{DynamicResource Brush.TextPrimary}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1" />
+                    </StackPanel>
+
+                    <TextBlock Text="&quot;Practice wrong answers&quot; builds a sitting from just the questions you most recently got wrong on this quiz. Get one right and it leaves the set."
+                               Style="{StaticResource Hint}"
+                               Margin="0,8,0,0" />
 
                     <TextBlock Text="Essay questions are not marked automatically — they are listed for your review at the end, and left out of the score."
                                Style="{StaticResource Hint}"
                                Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Statistics -->
+            <Border Style="{StaticResource Card}"
+                    Visibility="{Binding HasStatistics, Converter={StaticResource BoolVis}}">
+                <StackPanel>
+                    <TextBlock Text="Statistics" Style="{StaticResource Heading}" />
+                    <TextBlock Text="{Binding StatAttemptsText}" Style="{StaticResource Hint}" />
+
+                    <UniformGrid Columns="2" Margin="0,12,0,0">
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Average score" Style="{StaticResource Hint}" />
+                            <TextBlock Text="{Binding StatAverageText}"
+                                       FontFamily="{DynamicResource Font.Family}"
+                                       FontSize="{DynamicResource Font.Size.Subtitle}"
+                                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Best score" Style="{StaticResource Hint}" />
+                            <TextBlock Text="{Binding StatBestText}"
+                                       FontFamily="{DynamicResource Font.Family}"
+                                       FontSize="{DynamicResource Font.Size.Subtitle}"
+                                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Most recent" Style="{StaticResource Hint}" />
+                            <TextBlock Text="{Binding StatLatestText}"
+                                       FontFamily="{DynamicResource Font.Family}"
+                                       FontSize="{DynamicResource Font.Size.Subtitle}"
+                                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Average time" Style="{StaticResource Hint}" />
+                            <TextBlock Text="{Binding StatAverageTimeText}"
+                                       FontFamily="{DynamicResource Font.Family}"
+                                       FontSize="{DynamicResource Font.Size.Subtitle}"
+                                       FontWeight="{DynamicResource Font.Weight.Bold}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" />
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <TextBlock Text="{Binding StatPassFailText}"
+                               Style="{StaticResource Hint}" />
+
+                    <!-- Hardest questions -->
+                    <StackPanel Margin="0,14,0,0"
+                                Visibility="{Binding HasHardestQuestions, Converter={StaticResource BoolVis}}">
+                        <TextBlock Text="Hardest questions"
+                                   FontFamily="{DynamicResource Font.Family}"
+                                   FontSize="{DynamicResource Font.Size.Body}"
+                                   FontWeight="{DynamicResource Font.Weight.Bold}"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding HardestQuestions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Prompt}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                                   FontFamily="{DynamicResource Font.Family}"
+                                                   FontSize="{DynamicResource Font.Size.Body}"
+                                                   Margin="0,0,12,0" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Detail}"
+                                                   Style="{StaticResource Hint}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
